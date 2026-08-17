@@ -1,0 +1,1 @@
+ALTER TABLE "CourseItem" ADD COLUMN "presentationViewMode" TEXT NOT NULL DEFAULT 'PDF_PREVIEW';

@@ -1,0 +1,58 @@
+{
+  "name": "lms",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:unit": "tsx --test src/modules/learning/domain/material-learning.test.ts src/modules/learning/application/record-material-learning-event.test.ts src/modules/assessment/domain/assessment.test.ts src/modules/assessment/domain/manual-review.test.ts src/modules/assessment/application/assessment-attempt.test.ts src/modules/assessment/application/review-assessment-attempt.test.ts src/modules/enrollment/domain/enrollment-access.test.ts src/modules/enrollment/domain/assignment-plan.test.ts src/modules/enrollment/domain/invite-recipient-plan.test.ts src/modules/enrollment/application/get-course-enrollment-access.test.ts src/modules/enrollment/application/change-course-assignments.test.ts src/modules/outbox/application/route-outbox-event.test.ts src/modules/content/domain/ordering.test.ts src/modules/content/application/manage-course-content.test.ts src/modules/course/domain/progression-settings.test.ts src/modules/course/domain/course-lifecycle.test.ts src/modules/course/application/manage-course-settings.test.ts src/modules/course/application/manage-course-lifecycle.test.ts src/app/course-management-tests/select-course-structure-editor.test.ts src/app/course-management-tests/select-course-basics.test.ts src/app/course-management-tests/select-course-management-request.test.ts src/app/course-management-tests/select-course-management-view-model.test.ts src/app/course-management-tests/management-load-policy.test.ts src/app/course-management-tests/select-course-report.test.ts src/app/course-management-tests/select-course-assignments.test.ts src/app/course-management-tests/select-course-progress-report.test.ts src/app/course-management-tests/select-course-survey.test.ts src/app/course-management-tests/select-management-section.test.ts src/lib/storage/dedup.test.ts src/lib/platform-settings.test.ts scripts/deploy-guard.test.mjs src/lib/email/smtp-auth-resolution.test.ts src/lib/storage/index-report.test.ts src/lib/storage/dedup-stale-key.test.ts",
+    "postinstall": "prisma generate",
+    "db:check": "node scripts/db-check.mjs",
+    "db:wal": "node scripts/sqlite-wal.mjs",
+    "db:seed": "tsx prisma/seed.ts",
+    "email:worker": "tsx scripts/email-worker.ts",
+    "email:worker:loop": "tsx scripts/email-worker.ts loop",
+    "course:reminders": "tsx scripts/course-reminder-worker.ts",
+    "course:reminders:loop": "tsx scripts/course-reminder-worker.ts loop",
+    "hr:notifications": "tsx scripts/hr-notification-worker.ts",
+    "hr:notifications:loop": "tsx scripts/hr-notification-worker.ts loop",
+    "hr:report-schedules": "tsx scripts/hr-report-schedule-worker.ts",
+    "hr:report-schedules:loop": "tsx scripts/hr-report-schedule-worker.ts loop",
+    "dev:3002": "bash scripts/dev-3002.sh",
+    "storage:index": "tsx scripts/storage-index.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "bcryptjs": "3.0.3",
+    "lucide-react": "1.12.0",
+    "next": "16.2.2",
+    "next-auth": "5.0.0-beta.30",
+    "nodemailer": "7.0.13",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "sharp": "0.34.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.2.2",
+    "@types/bcryptjs": "2.4.6",
+    "@types/node": "20.19.39",
+    "@types/nodemailer": "8.0.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "dotenv": "17.4.0",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.2",
+    "playwright": "1.59.1",
+    "prisma": "5.22.0",
+    "tailwindcss": "4.2.2",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3"
+  }
+}

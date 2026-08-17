@@ -1,0 +1,4 @@
+ALTER TABLE "Quiz" ADD COLUMN "timeLimitMinutes" INTEGER;
+ALTER TABLE "Quiz" ADD COLUMN "shuffleQuestions" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Quiz" ADD COLUMN "shuffleAnswers" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Quiz" ADD COLUMN "lockMaterialsOnStart" BOOLEAN NOT NULL DEFAULT false;

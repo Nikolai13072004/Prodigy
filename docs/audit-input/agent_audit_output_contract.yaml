@@ -1,0 +1,1034 @@
+contract_meta:
+  id: agent-audit-output-contract
+  version: 2.0.0
+  purpose: >-
+    Mandatory output and evidence contract for read-only repository audits performed by
+    Claude Code, Codex, or comparable coding agents. The contract makes code and observed
+    behavior primary, prevents terminal-only delivery, separates engineering defects from
+    manifesto deviations, and requires machine-readable evidence plus Russian human reports.
+  target_agents:
+    - claude_code
+    - codex
+  contract_precedence:
+    - this_output_contract_for_artifact_names_schemas_and_completion
+    - app_quality_audit_registry_for_requirements_and_check_logic
+    - project_manifest_for_normative_context_and_recommendations
+    - repository_documentation_as_claims_to_verify
+  review_mode: read_only_codebase_with_persistent_audit_artifacts
+
+language_policy:
+  machine_readable_artifacts:
+    language: en
+    applies_to:
+      - yaml_keys
+      - yaml_enum_values
+      - yaml_narrative_fields
+      - json_fields
+    explicit_exceptions:
+      - localized_report_labels_with_ru_suffix
+      - final_chat_template_in_Russian
+    preserve_without_translation:
+      - source_paths
+      - symbols
+      - commands
+      - identifiers
+      - requirement_ids
+      - manifest_section_numbers
+      - code_snippets
+  human_readable_artifacts:
+    language: ru
+    applies_to:
+      - markdown_reports
+      - html_report
+      - execution_log
+    rule: >-
+      Human reports MUST be written in professional Russian. Canonical IDs, source paths,
+      symbols, commands, severity enum labels, and code snippets remain unchanged.
+
+core_principles:
+  code_is_primary: true
+  observed_behavior_outranks_documentation: true
+  documentation_is_a_claim_not_proof: true
+  manifesto_is_not_infallible: true
+  severity_is_based_on_real_risk_not_wording_strength: true
+  absence_is_not_failure_without_applicability: true
+  positive_and_negative_results_require_evidence: true
+  missing_scope_must_be_reported: true
+  no_source_fixes_during_audit: true
+  no_terminal_only_delivery: true
+  no_unexplained_aggregate_quality_score: true
+  rules:
+    - >-
+      A severe implementation defect may be critical even when the manifesto does not mention it.
+    - >-
+      A manifesto mismatch may be low, info, not applicable, or a justified deviation when the
+      implementation is safe, coherent, and appropriate for the service horizon.
+    - >-
+      Small team size may reduce process ceremony, but MUST NOT downgrade material risks involving
+      security, tenant isolation, money, data integrity, recovery, release safety, or core business flows.
+    - >-
+      README, ADR, threat model, service profile, comments, and naming conventions cannot prove
+      runtime behavior when code, configuration, tests, migrations, or executable checks can verify it.
+
+permissions:
+  tracked_application_source_changes: forbidden
+  tracked_configuration_changes: forbidden
+  tracked_migration_changes: forbidden
+  tracked_test_changes: forbidden
+  tracked_documentation_changes_outside_output_dir: forbidden
+  production_or_live_environment_access: forbidden
+  destructive_commands: forbidden
+  persistent_write_paths:
+    - audit-output/**
+  temporary_execution_writes:
+    allowed: conditional
+    allowed_locations:
+      - existing_gitignored_dependency_directories
+      - existing_gitignored_build_directories
+      - operating_system_temp_directory
+      - disposable_local_containers_or_databases
+    conditions:
+      - inspect_scripts_before_execution
+      - never_modify_lockfiles_or_tracked_files
+      - never_use_production_credentials_or_data
+      - remove_new_non_output_artifacts_before_completion_when_practical
+      - record_side_effects_and_cleanup_in_execution_log
+  git_integrity_rule: >-
+    Capture repository status before the audit and after artifact generation. Existing dirty state may
+    remain, but the audit MUST introduce no tracked changes outside audit-output/. Record any inability
+    to prove this as a limitation and do not claim clean completion.
+  read_only_definition: >-
+    Read-only means no changes to the application or its tracked operational artifacts. It does not
+    prohibit creating the required audit-output/ package or safe temporary artifacts needed for
+    executable verification.
+
+source_authority:
+  ordered_evidence_strength:
+    - rank: 1
+      kind: executable_behavior
+      examples:
+        - isolated_runtime_reproduction
+        - clean_database_migration_test
+        - integration_or_security_test
+        - build_typecheck_lint_result
+        - database_role_or_constraint_assertion
+    - rank: 2
+      kind: implementation
+      examples:
+        - source_code
+        - database_schema
+        - migration_sql
+        - runtime_configuration
+        - deployment_configuration
+        - ci_pipeline
+    - rank: 3
+      kind: test_and_generated_contract
+      examples:
+        - tests
+        - openapi_artifact
+        - generated_client
+        - sbom_or_scan_report
+    - rank: 4
+      kind: operational_evidence
+      examples:
+        - restore_report
+        - release_record
+        - dashboard_or_alert_definition
+        - runbook_execution_record
+    - rank: 5
+      kind: documentation_claim
+      examples:
+        - adr
+        - service_profile
+        - threat_model
+        - runbook_without_execution
+        - readme
+        - comments
+    - rank: 6
+      kind: inference
+      examples:
+        - architecture_inference
+        - likely_runtime_behavior_not_executed
+  proof_rules:
+    - docs_only_evidence_cannot_prove_runtime_compliance_when_behavior_is_verifiable
+    - comments_and_names_are_low_confidence_until_confirmed
+    - absence_evidence_must_record_search_scope_patterns_and_result
+    - inferred_evidence_must_be_marked_and_cannot_have_high_confidence_without_confirmation
+    - executable_checks_must_record_command_exit_code_result_and_environment
+
+assessment_horizons:
+  required:
+    - id: current
+      default_label: current_preproduction_C1
+      purpose: Assess the repository for its current declared service profile and immediate release decision.
+    - id: target
+      default_label: target_C2_B2B_SaaS
+      purpose: Assess the additional launch gap for the intended C2 B2B SaaS operating model.
+  rule: >-
+    Every requirement result, justified absence, and material finding MUST distinguish current and target
+    horizon applicability. A deviation may be justified now and become a target release blocker later.
+
+review_axes:
+  - axis_id: governance_and_context
+    title_ru: Контекст, governance и управляемость решений
+  - axis_id: architecture_and_modularity
+    title_ru: Архитектура и модульность
+  - axis_id: frontend_api_boundary
+    title_ru: Граница фронтенда и API-контракт
+  - axis_id: backend_business_logic
+    title_ru: Backend и авторитетные бизнес-правила
+  - axis_id: data_database_and_migrations
+    title_ru: Модель данных, PostgreSQL и миграции
+  - axis_id: security_auth_tenancy_and_files
+    title_ru: Безопасность, аутентификация, тенантность и файлы
+  - axis_id: jobs_integrations_and_reliability
+    title_ru: Фоновые задачи, интеграции и надёжность
+  - axis_id: delivery_operations_and_recovery
+    title_ru: Delivery, эксплуатация и восстановление
+  - axis_id: tests_code_quality_and_maintainability
+    title_ru: Тесты, качество кода и сопровождаемость
+  - axis_id: documentation_alignment
+    title_ru: Соответствие документации фактической реализации
+
+execution_model:
+  minimum_review_passes:
+    - repository_inventory_and_context
+    - architecture_modules_and_dependencies
+    - frontend_api_and_business_authority
+    - data_money_migrations_and_concurrency
+    - security_auth_tenancy_files_and_secrets
+    - jobs_integrations_reliability_and_observability
+    - delivery_ci_containers_backups_and_operations
+    - tests_code_quality_and_documentation_alignment
+  coordinator_rule: >-
+    Subagents or parallel passes may collect evidence, but one coordinator MUST deduplicate findings,
+    assign canonical IDs, calculate summaries, render all final artifacts, and validate consistency.
+  critical_high_recheck:
+    required: true
+    acceptable_confirmation:
+      - two_independent_evidence_paths
+      - one_executable_reproduction
+      - one_primary_evidence_path_plus_independent_second_pass_review
+    fallback: >-
+      If a critical or high finding cannot be independently confirmed, retain it only with explicit
+      confidence and verification limitation; do not silently present it as certain.
+  deduplication:
+    unit: root_cause
+    duplicate_symptoms_become:
+      - symptoms
+      - confirmations
+      - related_axes
+    stable_key_required: true
+    rule: >-
+      Do not create one finding per file when several files demonstrate one root cause. Preserve every
+      evidence reference and confirmation under one canonical finding.
+
+severity_model:
+  values:
+    critical:
+      definition: >-
+        Blocks release or production because exploitation, data loss, financial corruption, tenant breach,
+        unrecoverability, or guaranteed deployment failure is active or highly credible.
+    high:
+      definition: >-
+        Material security, data, reliability, business, or operational risk that needs resolution before
+        production unless formally accepted with strong compensating controls.
+    medium:
+      definition: >-
+        Significant architecture, testing, operations, performance, or maintainability debt that increases
+        incident probability or cost but is not itself an immediate production blocker.
+    low:
+      definition: >-
+        Local consistency, readability, maintainability, or hardening improvement with limited direct impact.
+    info:
+      definition: >-
+        Observation, positive design note, justified deviation, conditional future requirement, or context
+        without immediate remediation risk.
+  decision_inputs:
+    - impact
+    - likelihood
+    - exposure
+    - reversibility
+    - detectability
+    - affected_business_flow
+    - current_stage
+    - current_service_class
+    - target_service_class
+  blocker_defaults:
+    - tenant_isolation_bypass_in_shared_B2B_scope
+    - authentication_or_authorization_bypass
+    - client_authoritative_money_or_core_business_state
+    - secrets_or_credentials_that_fail_open
+    - reproducibly_unusable_clean_or_upgrade_migrations
+    - no_recoverable_backup_for_non_disposable_data
+    - unrecoverable_or_unsafe_file_storage_for_required_business_data
+    - release_path_that_cannot_be_safely_deployed_or_rolled_forward
+    - known_sensitive_data_exposure
+  anti_inflation_rules:
+    - critical_requires_concrete_impact_and_reachable_or_guaranteed_failure_path
+    - dormant_or_conditional_risk_must_be_labeled_as_such
+    - recommendation_wording_in_manifest_does_not_set_severity_by_itself
+    - missing_evidence_is_not_automatically_a_defect_but_can_block_readiness_when_evidence_is_mandatory
+  effort_values:
+    - xs
+    - s
+    - m
+    - l
+    - xl
+    - unknown
+  effort_rule: >-
+    Use effort bands by default. Exact time estimates are optional and require an explicit confidence level;
+    avoid false precision.
+
+classification_model:
+  finding_kind:
+    - code_quality_defect
+    - security_defect
+    - data_integrity_defect
+    - reliability_defect
+    - architecture_gap
+    - api_contract_gap
+    - testing_gap
+    - production_readiness_gap
+    - missing_artifact
+    - missing_evidence
+    - documentation_drift
+    - process_gap
+    - manifest_deviation
+    - justified_deviation
+  risk_domain:
+    - security
+    - tenant_isolation
+    - privacy
+    - money_and_revenue
+    - data_integrity
+    - architecture
+    - api_contract
+    - frontend_boundary
+    - backend_business_logic
+    - jobs_and_concurrency
+    - external_integrations
+    - files_and_storage
+    - performance
+    - observability
+    - testing
+    - ci_cd
+    - supply_chain
+    - deployment
+    - migrations
+    - backup_and_recovery
+    - operations
+    - governance
+    - maintainability
+    - ai_safety
+  manifest_relation:
+    - aligned
+    - normative_violation
+    - recommendation_deviation
+    - justified_deviation
+    - not_applicable
+    - not_covered_by_manifest
+    - documentation_conflicts_with_code
+    - claim_not_proven
+  disclosure_status:
+    - hidden
+    - declared
+    - partially_declared
+    - falsely_declared
+    - docs_drift
+    - justified_absence
+    - unknown
+  exposure:
+    - active
+    - reachable
+    - dormant
+    - conditional
+    - future_target_only
+    - unknown
+
+requirement_status_values:
+  - pass
+  - partial
+  - fail
+  - missing_evidence
+  - not_applicable
+  - justified_deviation
+  - unreviewed
+
+finding_lifecycle_status_values:
+  - open
+  - accepted_risk
+  - needs_human_decision
+  - resolved_outside_audit
+  - false_positive
+
+finding_horizon_applicability_values:
+  - active_defect
+  - conditional_risk
+  - justified_deviation
+  - not_applicable
+  - future_target_only
+  - missing_evidence
+
+readiness_values:
+  - local_prototype_only
+  - preproduction_blocked
+  - C1_release_blocked
+  - C1_ready_C2_blocked
+  - C2_launch_candidate
+  - production_ready_for_declared_profile
+  - insufficient_evidence
+  - blocked_output_contract
+
+required_output_directory: audit-output
+
+optional_artifacts:
+  allowed_path: audit-output/attachments/**
+  rules:
+    - register_every_optional_artifact_in_manifest_json
+    - do_not_store_secrets_or_production_data
+    - use_only_for_supporting_evidence_or_rendering_assets
+    - human_reports_must_not_depend_on_external_network_assets
+    - optional_artifacts_do_not_replace_required_artifacts
+
+required_artifacts:
+  - path: audit-output/00_repo_inventory.yaml
+    role: machine_readable_repository_inventory
+    language: en
+    source_of_truth: true
+  - path: audit-output/01_review_context.yaml
+    role: machine_readable_assessment_baseline_and_method
+    language: en
+    source_of_truth: true
+  - path: audit-output/02_modules.yaml
+    role: machine_readable_module_and_dependency_map
+    language: en
+    source_of_truth: true
+  - path: audit-output/03_module_scorecards.yaml
+    role: machine_readable_module_quality_assessment
+    language: en
+    source_of_truth: true
+  - path: audit-output/04_evidence_map.yaml
+    role: canonical_machine_readable_evidence_index
+    language: en
+    source_of_truth: true
+  - path: audit-output/05_requirement_results.yaml
+    role: machine_readable_requirement_matrix
+    language: en
+    source_of_truth: true
+  - path: audit-output/06_findings.yaml
+    role: canonical_machine_readable_findings_and_risk_register
+    language: en
+    source_of_truth: true
+  - path: audit-output/07_strengths.yaml
+    role: evidence_based_machine_readable_strengths
+    language: en
+    source_of_truth: true
+  - path: audit-output/08_cross_confirmed_findings.yaml
+    role: independent_confirmation_index
+    language: en
+    source_of_truth: true
+  - path: audit-output/09_remediation_plan.yaml
+    role: prioritized_machine_readable_remediation_roadmap
+    language: en
+    source_of_truth: true
+  - path: audit-output/10_justified_absences.yaml
+    role: current_and_target_applicability_of_missing_capabilities
+    language: en
+    source_of_truth: true
+  - path: audit-output/11_declared_vs_implemented.yaml
+    role: machine_readable_documentation_and_process_alignment_analysis
+    language: en
+    source_of_truth: true
+  - path: audit-output/12_risk_register.ru.md
+    role: full_human_readable_risk_register
+    language: ru
+    source_of_truth: false
+    generated_from:
+      - audit-output/04_evidence_map.yaml
+      - audit-output/06_findings.yaml
+      - audit-output/08_cross_confirmed_findings.yaml
+  - path: audit-output/13_production_readiness_report.ru.md
+    role: detailed_human_readable_readiness_decision
+    language: ru
+    source_of_truth: false
+    generated_from:
+      - audit-output/00_repo_inventory.yaml
+      - audit-output/01_review_context.yaml
+      - audit-output/03_module_scorecards.yaml
+      - audit-output/05_requirement_results.yaml
+      - audit-output/06_findings.yaml
+      - audit-output/09_remediation_plan.yaml
+      - audit-output/10_justified_absences.yaml
+      - audit-output/11_declared_vs_implemented.yaml
+  - path: audit-output/14_executive_summary.ru.md
+    role: concise_human_readable_management_summary
+    language: ru
+    source_of_truth: false
+    generated_from:
+      - audit-output/01_review_context.yaml
+      - audit-output/06_findings.yaml
+      - audit-output/07_strengths.yaml
+      - audit-output/09_remediation_plan.yaml
+      - audit-output/11_declared_vs_implemented.yaml
+  - path: audit-output/15_audit_report.ru.html
+    role: standalone_clickable_human_dashboard
+    language: ru
+    source_of_truth: false
+    generated_from:
+      - all_machine_readable_yaml_artifacts
+  - path: audit-output/16_execution_log.ru.md
+    role: commands_checks_limitations_and_repository_integrity_log
+    language: ru
+    source_of_truth: false
+  - path: audit-output/manifest.json
+    role: artifact_manifest_hashes_and_validation_status
+    language: en
+    source_of_truth: false
+
+common_schema:
+  audit_meta_required_keys:
+    - audit_id
+    - schema_version
+    - generated_at_utc
+    - repository_root
+    - repository_name
+    - branch
+    - commit
+    - audit_mode
+    - agent
+    - contract_version
+    - registry_path
+    - manifest_path
+  id_conventions:
+    evidence: EV-<sequential>
+    finding: F-<sequential>
+    strength: STR-<sequential>
+    limitation: LIM-<sequential>
+    justified_absence: JA-<sequential>
+    remediation: REM-<sequential>
+  deterministic_ordering:
+    findings:
+      - current_release_blocker_desc
+      - current_severity_desc
+      - target_release_blocker_desc
+      - target_severity_desc
+      - axis_id_asc
+      - stable_key_asc
+    strengths:
+      - axis_id_asc
+      - strength_id_asc
+    remediation:
+      - bucket_order
+      - priority_asc
+      - remediation_id_asc
+  rerun_policy: >-
+    Existing audit-output/ may be overwritten. Preserve stable_key values for semantically identical findings,
+    do not retain stale records without renewed evidence, and record previous audit ID when available.
+
+schemas:
+  repo_inventory:
+    file: audit-output/00_repo_inventory.yaml
+    required_top_level_keys:
+      - audit_meta
+      - repository
+      - scopes
+      - missing_scopes
+      - missing_artifacts
+      - executable_checks
+      - limitations
+      - repository_integrity
+    scope_status_values:
+      - present
+      - partial
+      - missing
+      - not_applicable
+      - not_reviewed
+    executable_check_required_keys:
+      - check_id
+      - command
+      - status
+      - exit_code
+      - result_summary
+      - evidence_refs
+      - side_effects
+      - cleanup
+  review_context:
+    file: audit-output/01_review_context.yaml
+    required_top_level_keys:
+      - audit_meta
+      - application
+      - assessment_baseline
+      - service_horizons
+      - audit_method
+      - review_axes
+      - source_authority
+      - assumptions
+      - limitation_refs
+    assessment_baseline_required_keys:
+      - application_type
+      - current_stage
+      - current_service_class
+      - target_service_class
+      - tenancy_model_detected
+      - production_goal
+      - code_is_primary
+  modules:
+    file: audit-output/02_modules.yaml
+    required_top_level_keys:
+      - audit_meta
+      - modules
+      - dependency_edges
+      - orphan_or_unclear_areas
+    module_required_keys:
+      - module_id
+      - name
+      - module_type
+      - purpose
+      - paths
+      - responsibilities
+      - public_api
+      - data_ownership
+      - api_surface
+      - jobs
+      - external_integrations
+      - dependencies_in
+      - dependencies_out
+      - tenant_scope
+      - evidence_refs
+  module_scorecards:
+    file: audit-output/03_module_scorecards.yaml
+    required_top_level_keys:
+      - audit_meta
+      - module_scorecards
+      - summary
+    scorecard_required_keys:
+      - module_id
+      - maturity
+      - quality_assessment
+      - current_horizon
+      - target_horizon
+      - severity_summary
+      - strength_refs
+      - finding_refs
+      - release_blocker_refs
+      - evidence_refs
+  evidence_map:
+    file: audit-output/04_evidence_map.yaml
+    required_top_level_keys:
+      - audit_meta
+      - evidence
+      - summary
+    evidence_required_keys:
+      - evidence_id
+      - kind
+      - supports_or_contradicts
+      - summary
+      - confidence
+      - collected_by_pass
+    location_rule: >-
+      Code/config/migration/test/docs evidence MUST include path and, when possible, line_range and symbol.
+      Executable evidence MUST include command, exit_code, environment, and result summary. Absence evidence
+      MUST include searched_paths, search_terms_or_patterns, and result.
+  requirement_results:
+    file: audit-output/05_requirement_results.yaml
+    required_top_level_keys:
+      - audit_meta
+      - requirement_results
+      - summary
+      - unreviewed_requirements
+    result_required_keys:
+      - requirement_id
+      - title
+      - axis_id
+      - applicability
+      - current_assessment
+      - target_assessment
+      - evidence_refs
+      - finding_refs
+      - rationale
+    horizon_assessment_required_keys:
+      - status
+      - severity_if_failed
+      - release_blocker
+      - rationale
+  findings:
+    file: audit-output/06_findings.yaml
+    required_top_level_keys:
+      - audit_meta
+      - executive_verdict
+      - summary
+      - release_blockers
+      - findings
+    executive_verdict_required_keys:
+      - one_sentence
+      - current_readiness
+      - target_readiness
+      - strongest_positive_signal
+      - main_systemic_risk
+      - release_position
+    finding_required_keys:
+      - finding_id
+      - stable_key
+      - title
+      - primary_axis
+      - related_axes
+      - finding_kind
+      - lifecycle_status
+      - risk_domains
+      - manifest_relation
+      - disclosure_status
+      - exposure
+      - requirement_refs
+      - manifest_sections
+      - affected_scopes
+      - affected_modules
+      - evidence_refs
+      - symptoms
+      - root_cause
+      - impact
+      - likelihood
+      - confidence
+      - current_assessment
+      - target_assessment
+      - recommendation
+      - verification
+      - effort
+      - adr_or_exception
+      - owner_suggestion
+      - confirmations
+    horizon_assessment_required_keys:
+      - applicability
+      - severity
+      - release_blocker
+      - rationale
+    adr_or_exception_required_keys:
+      - required
+      - reason
+      - compensating_controls_required
+    summary_required_keys:
+      - findings_total
+      - by_current_severity
+      - by_target_severity
+      - current_release_blockers_count
+      - target_release_blockers_count
+      - hidden_critical_high_count
+      - cross_confirmed_count
+      - affected_modules_count
+    release_blocker_required_keys:
+      - finding_id
+      - horizon
+      - why_it_blocks
+      - evidence_refs
+    no_evidence_rule: >-
+      A finding without evidence_refs is invalid unless finding_kind is missing_evidence and it references a
+      limitation or an absence evidence record that documents the search performed.
+  strengths:
+    file: audit-output/07_strengths.yaml
+    required_top_level_keys:
+      - audit_meta
+      - strengths
+      - summary
+    summary_required_keys:
+      - strengths_total
+      - by_axis
+      - strong_blocks_count
+    strength_required_keys:
+      - strength_id
+      - title
+      - axis_id
+      - affected_scopes
+      - affected_modules
+      - evidence_refs
+      - why_it_matters
+      - confidence
+    rule: >-
+      Strengths MUST be specific and evidence-based. Generic praise, technology name-dropping, and documentation-only
+      claims are invalid when implementation evidence is available.
+  cross_confirmed_findings:
+    file: audit-output/08_cross_confirmed_findings.yaml
+    required_top_level_keys:
+      - audit_meta
+      - cross_confirmed_findings
+      - summary
+    summary_required_keys:
+      - cross_confirmed_total
+      - by_current_severity
+    item_required_keys:
+      - finding_id
+      - stable_key
+      - confirmation_count
+      - independent_passes
+      - evidence_refs
+      - confidence
+      - priority_boost
+  remediation_plan:
+    file: audit-output/09_remediation_plan.yaml
+    required_top_level_keys:
+      - audit_meta
+      - remediation_plan
+      - roadmap_summary
+    item_required_keys:
+      - remediation_id
+      - order
+      - bucket
+      - action
+      - finding_refs
+      - current_release_effect
+      - target_release_effect
+      - effort
+      - dependencies
+      - expected_risk_reduction
+      - verification
+      - owner_suggestion
+    bucket_values:
+      - before_any_release_or_client_fork
+      - before_C1_production
+      - before_C2_launch
+      - post_launch_or_planned_debt
+      - human_architecture_decision
+  justified_absences:
+    file: audit-output/10_justified_absences.yaml
+    required_top_level_keys:
+      - audit_meta
+      - justified_absences
+      - summary
+    item_required_keys:
+      - absence_id
+      - capability
+      - rationale
+      - evidence_refs
+      - current_assessment
+      - target_assessment
+      - invalidation_triggers
+      - owner
+      - review_or_expiry
+    rule: >-
+      A justified absence is not a blanket exemption. It MUST state the current boundary, target status, trigger that
+      invalidates the deviation, and review/expiry condition.
+  declared_vs_implemented:
+    file: audit-output/11_declared_vs_implemented.yaml
+    required_top_level_keys:
+      - audit_meta
+      - strategic_gaps_declared
+      - tactical_defects_hidden
+      - false_or_unproven_claims
+      - documentation_drift
+      - process_diagnosis
+      - recommended_process_controls
+      - summary
+    rule: >-
+      Compare ADR/service profile/threat model/runbooks with implementation evidence. Distinguish honest declared gaps,
+      hidden code defects, false compliance claims, and documentation that lags behind implemented controls.
+
+human_report_contract:
+  markdown_common_rules:
+    - language_is_professional_Russian
+    - include_concrete_paths_symbols_and_IDs
+    - explain_business_and_engineering_impact
+    - distinguish_current_C1_and_target_C2
+    - do_not_copy_raw_yaml_as_the_report
+    - do_not_hide_missing_evidence
+    - do_not_present_documentation_claims_as_runtime_facts
+    - do_not_use_generic_praise
+    - do_not_use_percentage_score_as_primary_readiness_decision
+  risk_register_sections:
+    file: audit-output/12_risk_register.ru.md
+    required_sections:
+      - scope_and_legend
+      - release_blockers
+      - findings_grouped_by_review_axis
+      - cross_confirmed_findings
+      - findings_by_module
+      - evidence_and_confidence_notes
+  readiness_report_sections:
+    file: audit-output/13_production_readiness_report.ru.md
+    required_sections:
+      - assessment_baseline
+      - verdict
+      - current_C1_readiness
+      - target_C2_gap
+      - evidence_based_strengths
+      - release_blockers
+      - module_maturity
+      - declared_vs_implemented
+      - remediation_roadmap
+      - justified_absences
+      - missing_artifacts_and_limitations
+      - final_release_decision
+  executive_summary_sections:
+    file: audit-output/14_executive_summary.ru.md
+    required_sections:
+      - one_sentence_verdict
+      - assessment_context
+      - KPI
+      - critical_blockers
+      - strongest_sides
+      - main_systemic_risk
+      - next_actions
+    length_guidance: concise_but_self_contained
+  execution_log_sections:
+    file: audit-output/16_execution_log.ru.md
+    required_sections:
+      - repository_state_before
+      - files_and_scopes_inspected
+      - commands_and_executable_checks
+      - failed_or_skipped_checks
+      - temporary_side_effects_and_cleanup
+      - limitations
+      - repository_state_after
+      - artifact_validation
+
+html_report_contract:
+  file: audit-output/15_audit_report.ru.html
+  document_language: ru
+  standalone: true
+  external_assets_or_network_dependencies: forbidden
+  requirements:
+    - valid_HTML5_with_UTF8
+    - responsive_layout
+    - print_styles
+    - keyboard_accessible_navigation
+    - visible_focus_states
+    - semantic_headings_and_tables
+    - internal_anchor_links
+    - inline_CSS_only
+    - inline_JavaScript_allowed_for_filters_only
+    - no_remote_fonts_scripts_or_images
+    - code_paths_link_to_internal_evidence_anchors
+    - filter_by_severity
+    - filter_by_review_axis
+    - filter_by_module
+    - filter_by_disclosure_status
+    - filter_by_current_or_target_blocker
+    - show_empty_filter_result_message
+  required_sections_in_order:
+    - header_metadata_chips
+    - executive_verdict
+    - KPI_cards
+    - critical_release_blocker_cards
+    - evidence_based_strengths_grid
+    - module_maturity_overview
+    - full_findings_by_review_axis
+    - cross_confirmed_findings
+    - declared_vs_implemented_analysis
+    - prioritized_remediation_plan
+    - justified_absences
+    - missing_artifacts_and_limitations
+    - audit_method_and_footer
+  KPI_card_minimums:
+    - current_critical_count
+    - findings_total
+    - current_release_blockers_count
+    - target_release_blockers_count
+    - cross_confirmed_count
+    - evidence_based_strengths_count
+  visual_rules:
+    - critical_and_high_risks_are_visually_distinct
+    - strengths_are_visible_but_not_more_prominent_than_blockers
+    - hidden_declared_partial_false_claim_and_docs_drift_statuses_are_distinguishable
+    - current_and_target_horizon_statuses_are_shown_separately
+    - report_remains_readable_without_JavaScript
+
+artifact_manifest_schema:
+  file: audit-output/manifest.json
+  required_top_level_keys:
+    - audit_id
+    - contract_version
+    - generated_at_utc
+    - repository
+    - artifacts
+    - self
+    - validation
+  artifacts_scope: all_required_and_optional_artifacts_except_manifest_json_itself
+  artifact_required_keys:
+    - path
+    - role
+    - language
+    - sha256
+    - bytes
+    - valid
+  self_required_keys:
+    - path
+    - sha256
+    - hash_policy
+  self_hash_policy: >-
+    manifest.json MUST NOT attempt a recursive self-hash. Set self.sha256 to null and
+    self.hash_policy to excluded_to_avoid_recursive_hash. Hash every other artifact.
+  validation_required_keys:
+    - all_required_artifacts_exist
+    - yaml_parse_success
+    - json_parse_success
+    - reference_integrity_success
+    - summary_consistency_success
+    - html_self_contained_success
+    - repository_integrity_success
+    - overall_status
+
+consistency_rules:
+  - all_finding_evidence_refs_exist_in_evidence_map
+  - all_finding_module_refs_exist_in_modules_or_are_explicitly_external
+  - all_finding_requirement_refs_exist_in_registry_or_are_marked_external
+  - all_strength_evidence_refs_exist
+  - all_cross_confirmed_finding_refs_exist
+  - all_remediation_finding_refs_exist
+  - all_release_blocker_ids_exist_and_match_horizon_assessments
+  - summary_counts_equal_canonical_findings_after_status_filters
+  - no_duplicate_stable_keys
+  - human_reports_match_machine_readable_counts_and_decisions
+  - current_and_target_readiness_are_not_conflated
+  - justified_absence_does_not_hide_an_active_current_defect
+  - false_or_unproven_documentation_claims_are_not_reported_as_pass
+  - generated_HTML_contains_no_external_http_or_https_assets
+
+completion_gate:
+  terminal_only_completion_allowed: false
+  chat_only_completion_allowed: false
+  audit_complete_requires:
+    - all_required_artifacts_exist
+    - all_yaml_files_parse_successfully
+    - manifest_json_parses_successfully
+    - required_top_level_keys_exist
+    - reference_integrity_passes
+    - summary_counts_are_consistent
+    - critical_and_high_findings_have_confirmation_status
+    - markdown_and_html_are_in_Russian
+    - YAML_narrative_content_is_in_English_except_explicit_localized_fields
+    - HTML_is_self_contained_and_clickable
+    - repository_integrity_is_proven
+    - manifest_json_overall_status_is_pass
+  failure_status: blocked_output_contract
+  if_artifact_creation_or_validation_fails: >-
+    Do not claim the audit is completed. Preserve any valid partial artifacts, set the overall status to
+    blocked_output_contract, identify the exact failed gate, and return only the failure summary in chat.
+
+final_chat_response_contract:
+  max_lines: 40
+  language: ru
+  must_include:
+    - audit_status
+    - current_readiness_decision
+    - target_readiness_decision
+    - counts_by_current_severity
+    - production_blocker_ids
+    - generated_artifact_paths
+    - explicit_statement_that_tracked_source_code_was_not_modified
+    - validation_status
+  must_not_include:
+    - full_findings_body
+    - long_tables
+    - raw_yaml_dump
+    - terminal_only_report
+    - unsupported_claim_that_everything_was_checked
+  template: |-
+    Аудит завершён с файловыми артефактами.
+
+    Текущая готовность C1: <decision>
+    Целевая готовность C2: <decision>
+
+    Находки: critical <n>, high <n>, medium <n>, low <n>, info <n>.
+    Блокеры: <IDs or none>.
+
+    Артефакты: <paths>.
+    Валидация контракта: <pass|blocked_output_contract>.
+    Отслеживаемые файлы исходного кода, конфигурации, миграций, тестов и документации не изменялись.

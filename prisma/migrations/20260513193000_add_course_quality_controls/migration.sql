@@ -1,0 +1,10 @@
+ALTER TABLE "Quiz" ADD COLUMN "questionPoolSize" INTEGER;
+ALTER TABLE "Quiz" ADD COLUMN "retryDelayMinutes" INTEGER;
+ALTER TABLE "Quiz" ADD COLUMN "trackSecurityEvents" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "QuizAttempt" ADD COLUMN "securityEventsJson" TEXT;
+ALTER TABLE "PlatformSettings" ADD COLUMN "courseRemindersEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "PlatformSettings" ADD COLUMN "courseReminderNotStartedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "PlatformSettings" ADD COLUMN "courseReminderExpiringEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "PlatformSettings" ADD COLUMN "courseReminderExpiredEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "PlatformSettings" ADD COLUMN "courseReminderQuizFailedEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "PlatformSettings" ADD COLUMN "courseReminderExpiringDays" INTEGER NOT NULL DEFAULT 3;

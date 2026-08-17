@@ -1,0 +1,69 @@
+x-lms-common: &lms-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  env_file:
+    - .env.traefik
+    - .env
+  environment:
+    DATABASE_URL: file:/app/data/dev.db
+    AUTH_TRUST_HOST: "true"
+    NODE_ENV: production
+    APP_BASE_URL: ${APP_BASE_URL:-https://lms.example.com}
+    NEXTAUTH_URL: ${NEXTAUTH_URL:-https://lms.example.com}
+    AUTH_URL: ${AUTH_URL:-https://lms.example.com}
+  volumes:
+    - lms_data:/app/data
+    - lms_uploads:/app/public/uploads
+    - lms_branding:/app/public/branding
+  mem_limit: ${LMS_MEM_LIMIT:-1536m}
+services:
+  lms:
+    <<: *lms-common
+    container_name: lms-course3-app
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - default
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.lms-course3.rule=Host(`${LMS_PUBLIC_HOST:-lms.example.com}`)"
+      - "traefik.http.routers.lms-course3.entrypoints=web"
+      - "traefik.http.routers.lms-course3.service=lms-course3-service"
+      - "traefik.http.services.lms-course3-service.loadbalancer.server.port=3000"
+
+  email-worker:
+    <<: *lms-common
+    container_name: lms-course3-email-worker
+    mem_limit: ${LMS_WORKER_MEM_LIMIT:-512m}
+    depends_on:
+      lms:
+        condition: service_healthy
+    command: ["npm", "run", "email:worker:loop"]
+
+  hr-notification-worker:
+    <<: *lms-common
+    container_name: lms-course3-hr-worker
+    mem_limit: ${LMS_WORKER_MEM_LIMIT:-512m}
+    depends_on:
+      lms:
+        condition: service_healthy
+    command: ["npm", "run", "hr:notifications:loop"]
+
+volumes:
+  lms_data:
+  lms_uploads:
+  lms_branding:
+
+networks:
+  traefik-public:
+    external: true
