@@ -1,0 +1,63 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 797 >>
+stream
+BT
+/F1 16 Tf
+50 790 Td
+(1C Accounting Test - Overview \(single slide\)) Tj
+/F1 11 Tf
+0 -24 Td
+(Source: https://proftest.me/test-1c-accounting) Tj
+0 -16 Td
+(Format: 4 minutes, 10 questions) Tj
+0 -16 Td
+(Key topics covered:) Tj
+0 -16 Td
+(- Amortization methods for intangible assets) Tj
+0 -16 Td
+(- Payment order field behavior in 1C) Tj
+0 -16 Td
+(- Permanent and temporary differences \(PBU 18/02\)) Tj
+0 -16 Td
+(- Service realization and processing documents) Tj
+0 -16 Td
+(- Standard reports and data roll-up function) Tj
+0 -16 Td
+(- Commission trade operations) Tj
+0 -16 Td
+(- Customs Union goods accounting setup) Tj
+0 -16 Td
+(- Taxation systems in commercial organizations) Tj
+0 -16 Td
+(- Inventory document posting behavior) Tj
+0 -16 Td
+(Use this slide as introductory course material.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001088 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1158
+%%EOF

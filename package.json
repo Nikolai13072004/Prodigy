@@ -1,0 +1,59 @@
+{
+  "name": "lms",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:unit": "node scripts/run-unit-tests.mjs",
+    "test:infra": "node scripts/run-infra-tests.mjs",
+    "postinstall": "prisma generate",
+    "db:check": "node scripts/db-check.mjs",
+    "db:wal": "node scripts/sqlite-wal.mjs",
+    "db:seed": "tsx prisma/seed.ts",
+    "email:worker": "tsx scripts/email-worker.ts",
+    "email:worker:loop": "tsx scripts/email-worker.ts loop",
+    "course:reminders": "tsx scripts/course-reminder-worker.ts",
+    "course:reminders:loop": "tsx scripts/course-reminder-worker.ts loop",
+    "hr:notifications": "tsx scripts/hr-notification-worker.ts",
+    "hr:notifications:loop": "tsx scripts/hr-notification-worker.ts loop",
+    "hr:report-schedules": "tsx scripts/hr-report-schedule-worker.ts",
+    "hr:report-schedules:loop": "tsx scripts/hr-report-schedule-worker.ts loop",
+    "dev:3002": "bash scripts/dev-3002.sh",
+    "storage:index": "tsx scripts/storage-index.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "bcryptjs": "3.0.3",
+    "lucide-react": "1.12.0",
+    "next": "16.2.2",
+    "next-auth": "5.0.0-beta.30",
+    "nodemailer": "7.0.13",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "sharp": "0.34.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.2.2",
+    "@types/bcryptjs": "2.4.6",
+    "@types/node": "20.19.39",
+    "@types/nodemailer": "8.0.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "dotenv": "17.4.0",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.2",
+    "playwright": "1.59.1",
+    "prisma": "5.22.0",
+    "tailwindcss": "4.2.2",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3"
+  }
+}

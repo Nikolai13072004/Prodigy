@@ -1,0 +1,714 @@
+@import "tailwindcss";
+
+/* Tailwind dark: по умолчанию завязан на prefers-color-scheme, а переключатель
+   темы ставит data-theme на <html>. Синхронизируем: dark:-классы (их сотни в
+   компонентах) активируются по data-theme="dark", как и наши токены. Иначе при
+   ручном переключении тёмной темы dark:-варианты не срабатывают → тёмный текст
+   на тёмном фоне. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Шрифты (IBM Plex Sans/Mono, Onest) подключены через next/font в layout.tsx —
+   не через CSS @import: в Tailwind 4 @import "tailwindcss" разворачивается в
+   правила, и любой @import после него ломает парсинг CSS. */
+
+/* Дизайн-язык по референсу Trenning (Fikri Studio), адаптация под финансовую LMS.
+   Токены — источник истины; старые --aurora-* оставлены АЛИАСАМИ на них, чтобы
+   существующий слой !important-переопределений (zinc-* → aurora-*) ниже
+   перекрасился в новую палитру без правки каждого компонента. */
+:root,
+[data-theme="light"] {
+  --canvas: #f2f5f2;
+  --surface: #fbfcfa;
+  --surface-raised: #ffffff;
+  --ink: #172522;
+  --ink-muted: #65736f;
+  --line: #d7dfda;
+
+  --accent: #176f74;
+  --accent-strong: #10575c;
+  --accent-soft: #dcefed;
+
+  --success: #13795b;
+  --success-soft: #dcefe7;
+  --warning: #ad6717;
+  --warning-soft: #f7e8cf;
+  --danger: #b84852;
+  --danger-soft: #f6dfe1;
+  --info: #356ea6;
+  --info-soft: #deebf6;
+
+  --shadow-1: 0 1px 2px rgb(15 38 34 / 5%), 0 8px 24px rgb(15 38 34 / 4%);
+  --shadow-2: 0 18px 50px rgb(15 38 34 / 10%);
+
+  /* Алиасы старой палитры → новые токены */
+  --aurora-bg: var(--canvas);
+  --aurora-bg-secondary: var(--surface);
+  --aurora-surface: var(--surface-raised);
+  --aurora-surface-soft: var(--surface);
+  --aurora-ink: var(--ink);
+  --aurora-ink-soft: var(--ink);
+  --aurora-muted: var(--ink-muted);
+  --aurora-border: var(--line);
+  --aurora-border-soft: var(--line);
+  --aurora-primary: var(--accent);
+  --aurora-primary-hover: var(--accent-strong);
+  --aurora-primary-strong: var(--accent-strong);
+  --aurora-sidebar: #0f2f31;
+  --aurora-sidebar-hover: #17494c;
+  --aurora-sidebar-active: var(--accent);
+  --aurora-success-soft: var(--success-soft);
+  --aurora-success-text: var(--success);
+  --aurora-warning-soft: var(--warning-soft);
+  --aurora-warning-text: var(--warning);
+  --aurora-danger-soft: var(--danger-soft);
+  --aurora-danger-text: var(--danger);
+}
+
+[data-theme="dark"] {
+  --canvas: #0d1514;
+  --surface: #121d1b;
+  --surface-raised: #182421;
+  --ink: #edf4f1;
+  --ink-muted: #97a9a3;
+  --line: #2b3a36;
+
+  --accent: #6bc5c3;
+  --accent-strong: #8bd7d3;
+  --accent-soft: #173b3a;
+
+  --success: #75d2aa;
+  --success-soft: #15392d;
+  --warning: #e4ac62;
+  --warning-soft: #3d2c17;
+  --danger: #ef929b;
+  --danger-soft: #412126;
+  --info: #90bde6;
+  --info-soft: #1b3043;
+
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 18%), 0 12px 28px rgb(0 0 0 / 12%);
+  --shadow-2: 0 20px 60px rgb(0 0 0 / 28%);
+
+  /* Тёмный сайдбар глубже полотна; текстовые алиасы наследуют токены выше */
+  --aurora-surface: var(--surface-raised);
+  --aurora-sidebar: #0a1211;
+  --aurora-sidebar-hover: #16211f;
+}
+
+@theme inline {
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+
+  --font-sans: var(--font-ibm-sans), "Segoe UI", sans-serif;
+  --font-display: var(--font-onest), "Segoe UI", sans-serif;
+  --font-mono: var(--font-ibm-mono), ui-monospace, monospace;
+
+  --radius-control: 8px;
+  --radius-panel: 14px;
+  --radius-feature: 20px;
+
+  --shadow-panel: var(--shadow-1);
+  --shadow-float: var(--shadow-2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-ibm-sans), "Segoe UI", Tahoma, sans-serif;
+}
+
+/* Заголовки — дисплейный Onest (референс Trenning) */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display), "Segoe UI", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Не окрашивать посещённые пункты навигации браузерным :visited */
+.app-sidebar a:visited,
+.app-header a:visited {
+  color: inherit;
+}
+
+::selection {
+  background: rgba(0, 127, 168, 0.2);
+}
+
+a {
+  color: inherit;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 127, 168, 0.24);
+}
+
+input,
+textarea,
+select {
+  background-color: var(--surface-raised) !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+  caret-color: var(--ink);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-muted) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: rgba(0, 127, 168, 0.58) !important;
+  box-shadow: 0 0 0 2px rgba(0, 127, 168, 0.2);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--aurora-primary);
+}
+
+.user-active-toggle-track {
+  background-color: #bfd0e5;
+}
+
+.user-active-toggle:checked + .user-active-toggle-track {
+  background-color: #2dbf6e !important;
+}
+
+.user-active-toggle:disabled + .user-active-toggle-track {
+  opacity: 0.6;
+}
+
+.user-active-toggle:checked ~ .user-active-toggle-thumb {
+  transform: translateX(1.25rem);
+}
+
+table {
+  background: var(--aurora-surface);
+}
+
+.app-main table {
+  max-width: 100%;
+}
+
+.app-main th,
+.app-main td {
+  /* break-word вместо anywhere: не рвёт обычные слова («Администратор»,
+     «Опубликован»), но переносит только реально длинные строки без пробелов */
+  overflow-wrap: break-word;
+}
+
+/* Кнопки и ссылки-действия в таблицах не переносятся посреди слова */
+.app-main td a,
+.app-main td button {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+.app-main th {
+  vertical-align: middle;
+}
+
+.app-main thead th {
+  height: 3rem;
+  line-height: 1.2;
+  vertical-align: middle;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.app-main thead th > * {
+  vertical-align: middle;
+}
+
+.app-main td {
+  vertical-align: top;
+}
+
+.app-shell {
+  background: transparent;
+}
+
+.app-header {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+  box-shadow: var(--shadow-1);
+}
+
+.app-sidebar {
+  background:
+    radial-gradient(
+      500px 250px at 0% 0%,
+      rgba(23, 111, 116, 0.3) 0%,
+      transparent 70%
+    ),
+    linear-gradient(180deg, #123a3c 0%, var(--aurora-sidebar) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.app-main {
+  background: transparent;
+}
+
+.hr-target-panel:target {
+  animation: hr-target-flash 1.6s ease-out;
+}
+
+@keyframes hr-target-flash {
+  0%,
+  35% {
+    border-color: rgba(0, 127, 168, 0.72);
+    box-shadow:
+      0 0 0 4px rgba(0, 127, 168, 0.18),
+      0 14px 32px rgba(12, 39, 73, 0.16) !important;
+  }
+
+  100% {
+    border-color: var(--aurora-border-soft);
+    box-shadow: 0 10px 22px rgba(12, 39, 73, 0.1) !important;
+  }
+}
+
+.admin-content-modal {
+  inset: 0;
+}
+
+@media (min-width: 1024px) {
+  .admin-content-modal {
+    left: calc(max((100vw - 1440px) / 2, 0px) + 18rem);
+    right: max((100vw - 1440px) / 2, 0px);
+  }
+}
+
+.rounded-xl.border,
+.rounded-lg.border {
+  box-shadow: 0 10px 24px rgba(11, 40, 74, 0.08);
+}
+
+.shadow-sm {
+  box-shadow: 0 10px 22px rgba(12, 39, 73, 0.1) !important;
+}
+
+.hover\:shadow:hover {
+  box-shadow: 0 14px 30px rgba(12, 39, 73, 0.15) !important;
+}
+
+.bg-white {
+  background-color: var(--aurora-surface) !important;
+}
+
+.bg-zinc-50 {
+  background-color: var(--aurora-surface-soft) !important;
+}
+
+.bg-zinc-100 {
+  background-color: var(--aurora-bg-secondary) !important;
+}
+
+.bg-zinc-200 {
+  background-color: #d3dfef !important;
+}
+
+.bg-zinc-300 {
+  background-color: #bfd0e5 !important;
+}
+
+.bg-zinc-800 {
+  background-color: var(--aurora-sidebar) !important;
+}
+
+.bg-zinc-900 {
+  background-color: var(--aurora-primary-strong) !important;
+}
+
+.bg-zinc-900\/80 {
+  background-color: rgba(16, 52, 96, 0.84) !important;
+}
+
+.bg-zinc-900\/60 {
+  background-color: rgba(16, 52, 96, 0.62) !important;
+}
+
+.bg-zinc-950\/95 {
+  background-color: rgba(6, 19, 40, 0.95) !important;
+}
+
+.bg-zinc-950\/60 {
+  background-color: rgba(6, 19, 40, 0.62) !important;
+}
+
+.bg-teal-50 {
+  background-color: #e7f6fb !important;
+}
+
+.bg-teal-600,
+.bg-teal-700 {
+  background-color: var(--aurora-primary) !important;
+}
+
+.hover\:bg-teal-800:hover {
+  background-color: var(--aurora-primary-hover) !important;
+}
+
+.text-black,
+.text-zinc-900,
+.text-zinc-950 {
+  color: var(--aurora-ink) !important;
+}
+
+.text-zinc-800,
+.text-zinc-700 {
+  color: var(--aurora-ink-soft) !important;
+}
+
+.text-zinc-600,
+.text-zinc-500 {
+  color: var(--aurora-muted) !important;
+}
+
+.text-zinc-400 {
+  color: #8092ad !important;
+}
+
+.text-zinc-100,
+.text-white {
+  color: #f8fbff !important;
+}
+
+.text-teal-900 {
+  color: #0a4660 !important;
+}
+
+.text-teal-700 {
+  color: #0a5f8a !important;
+}
+
+.border-black {
+  border-color: var(--aurora-border) !important;
+}
+
+.border-zinc-200 {
+  border-color: #d1dded !important;
+}
+
+.border-zinc-300 {
+  border-color: var(--aurora-border-soft) !important;
+}
+
+.border-zinc-500 {
+  border-color: #6f84a4 !important;
+}
+
+.border-zinc-600 {
+  border-color: #45648b !important;
+}
+
+.border-zinc-700 {
+  border-color: #35557e !important;
+}
+
+.border-zinc-800 {
+  border-color: #214772 !important;
+}
+
+.ring-teal-500 {
+  --tw-ring-color: rgba(0, 127, 168, 0.34) !important;
+}
+
+.hover\:bg-zinc-50:hover {
+  background-color: var(--accent-soft) !important;
+}
+
+.hover\:bg-zinc-100:hover {
+  background-color: var(--accent-soft) !important;
+}
+
+.hover\:bg-white:hover {
+  background-color: var(--accent-soft) !important;
+}
+
+.hover\:bg-zinc-800:hover {
+  background-color: var(--aurora-sidebar-hover) !important;
+}
+
+.hover\:bg-zinc-900:hover {
+  background-color: var(--aurora-primary-hover) !important;
+}
+
+.bg-emerald-100 {
+  background-color: var(--aurora-success-soft) !important;
+}
+
+/* Сплошные emerald-кнопки/прогресс — к акцентной teal-палитре, а не ярко-зелёные */
+.bg-emerald-600 {
+  background-color: var(--accent) !important;
+}
+
+.hover\:bg-emerald-700:hover {
+  background-color: var(--accent-strong) !important;
+}
+
+.bg-emerald-500 {
+  background-color: var(--accent) !important;
+}
+
+/* Брендовый зелёный кнопок создания (#2dbf6e) — к акцентной teal-палитре */
+.bg-\[\#2dbf6e\] {
+  background-color: var(--accent) !important;
+}
+
+.hover\:bg-\[\#27a860\]:hover {
+  background-color: var(--accent-strong) !important;
+}
+
+.text-emerald-700 {
+  color: var(--aurora-success-text) !important;
+}
+
+.bg-amber-100 {
+  background-color: var(--aurora-warning-soft) !important;
+}
+
+.text-amber-700 {
+  color: var(--aurora-warning-text) !important;
+}
+
+.bg-red-50 {
+  background-color: var(--aurora-danger-soft) !important;
+}
+
+.text-red-700,
+.text-red-600 {
+  color: var(--aurora-danger-text) !important;
+}
+
+.border-red-200,
+.border-red-300 {
+  border-color: #efb8bd !important;
+}
+
+/* Старые захардкоженные Aurora-hex (navy/teal/голубой) → токены Trenning.
+   Компоненты аналитики/отчётов используют прямые hex мимо zinc-маппинга. */
+.text-\[\#203451\], .text-\[\#0f315d\], .text-\[\#0b2446\], .text-\[\#213456\],
+.text-\[\#243652\], .text-\[\#1f2f4d\], .text-\[\#0f2240\], .text-\[\#0a4660\] {
+  color: var(--ink) !important;
+}
+
+.text-\[\#6a7891\], .text-\[\#7386a3\], .text-\[\#6d7f99\], .text-\[\#4d617c\],
+.text-\[\#60718c\], .text-\[\#5b6f8c\], .text-\[\#8092ad\] {
+  color: var(--ink-muted) !important;
+}
+
+.text-\[\#0f7c9f\], .text-\[\#1a83a8\], .text-\[\#008db3\], .text-\[\#0589ad\],
+.text-\[\#0a5f8a\] {
+  color: var(--accent) !important;
+}
+
+.border-\[\#dce3ec\], .border-\[\#d6deea\], .border-\[\#edf1f7\], .border-\[\#c7d8ee\],
+.border-\[\#e1e8f0\], .border-\[\#bfd6e6\], .border-\[\#bfd2e8\], .border-\[\#c3d2e6\],
+.border-\[\#d1dded\] {
+  border-color: var(--line) !important;
+}
+
+.bg-\[\#f7fbfe\], .bg-\[\#fbfdff\], .bg-\[\#f7f9fc\], .bg-\[\#f6f9fc\], .bg-\[\#f5f8fc\],
+.bg-\[\#f8fbff\], .bg-\[\#f4f8fd\], .bg-\[\#e7f6fb\], .bg-\[\#e6f5fb\] {
+  background-color: var(--surface) !important;
+}
+
+.bg-\[\#0f7c9f\], .bg-\[\#008db3\] {
+  background-color: var(--accent) !important;
+}
+
+.ring-\[\#78c6e2\], .ring-\[\#0b2446\], .ring-\[\#008db3\] {
+  --tw-ring-color: var(--accent) !important;
+}
+
+/* Светлые фоны иконок-бейджей (кружки KPI) → адаптивный accent-soft:
+   в тёмной теме не остаются белыми, а темнеют вместе с палитрой */
+.bg-emerald-50,
+.bg-teal-50,
+.bg-sky-50,
+.bg-indigo-50 {
+  background-color: var(--accent-soft) !important;
+}
+
+/* Светлые tone-фоны/тексты бейджей → семантические токены (адаптивны в тёмной). */
+.bg-amber-50,
+.bg-amber-100 {
+  background-color: var(--warning-soft) !important;
+}
+
+.bg-rose-50,
+.bg-rose-100,
+.bg-red-100 {
+  background-color: var(--danger-soft) !important;
+}
+
+.bg-sky-50,
+.bg-sky-100,
+.bg-blue-50 {
+  background-color: var(--info-soft) !important;
+}
+
+.bg-slate-50,
+.bg-slate-100,
+.bg-violet-50 {
+  background-color: var(--surface) !important;
+}
+
+.text-amber-700,
+.text-amber-800 {
+  color: var(--warning) !important;
+}
+
+.text-rose-700,
+.text-rose-600 {
+  color: var(--danger) !important;
+}
+
+.text-sky-700,
+.text-sky-800,
+.text-blue-700 {
+  color: var(--info) !important;
+}
+
+/* Полупрозрачные светлые фоны (opacity-варианты) и арбитрарные светлые hex —
+   в тёмной теме белеют. Маппим на непрозрачные адаптивные токены.
+   Оверлеи bg-white/10..25 (на тёмных элементах) НЕ трогаем. */
+.bg-zinc-50\/70,
+.bg-zinc-50\/60,
+.bg-zinc-50\/80 {
+  background-color: var(--surface) !important;
+}
+
+.bg-white\/70,
+.bg-white\/80,
+.bg-white\/90,
+.bg-white\/95 {
+  background-color: var(--surface-raised) !important;
+}
+
+.bg-emerald-50\/70,
+.bg-emerald-50\/50,
+.bg-emerald-50\/40 {
+  background-color: var(--accent-soft) !important;
+}
+
+.bg-amber-50\/70,
+.bg-amber-50\/60 {
+  background-color: var(--warning-soft) !important;
+}
+
+.bg-sky-50\/70 {
+  background-color: var(--info-soft) !important;
+}
+
+.bg-slate-50\/70 {
+  background-color: var(--surface) !important;
+}
+
+.bg-\[\#eaf3fb\],
+.bg-\[\#e7f6fb\],
+.bg-\[\#e6f5fb\],
+.bg-\[\#f8fbff\] {
+  background-color: var(--accent-soft) !important;
+}
+
+/* ИСЧЕРПЫВАЮЩИЙ маппинг светлых арбитрарных фонов и остаточных hover →
+   адаптивные токены. Источник большинства «белых моментов» в тёмной теме. */
+.bg-\[\#e6f5fb\], .bg-\[\#e9f5fb\], .bg-\[\#eaf3fb\], .bg-\[\#edf2f7\], .bg-\[\#eef8fc\],
+.bg-\[\#f3f7fb\], .bg-\[\#f4f8fc\], .bg-\[\#f5f8fc\], .bg-\[\#f6f9fc\], .bg-\[\#f6faff\],
+.bg-\[\#f7f9fc\], .bg-\[\#f7fbfe\], .bg-\[\#f8fbfe\], .bg-\[\#f8fbff\], .bg-\[\#fafdff\],
+.bg-\[\#fbfcfe\], .bg-\[\#fbfdff\] {
+  background-color: var(--surface) !important;
+}
+
+.bg-\[\#e8f8ef\] {
+  background-color: var(--accent-soft) !important;
+}
+
+.bg-\[\#fff4de\] {
+  background-color: var(--warning-soft) !important;
+}
+
+.hover\:bg-amber-50:hover {
+  background-color: var(--warning-soft) !important;
+}
+
+.hover\:bg-sky-50:hover,
+.hover\:bg-sky-50\/70:hover {
+  background-color: var(--info-soft) !important;
+}
+
+.hover\:bg-teal-50:hover,
+.hover\:bg-teal-50\/40:hover {
+  background-color: var(--accent-soft) !important;
+}
+
+.hover\:bg-white\/70:hover,
+.hover\:bg-white\/90:hover {
+  background-color: var(--surface-raised) !important;
+}
+
+/* Печать сертификата: убираем хром приложения, лист — A4 landscape (ADR-012). */
+@media print {
+  .app-header,
+  .app-sidebar,
+  [data-app-chrome] {
+    display: none !important;
+  }
+  .app-shell,
+  .app-main,
+  body {
+    background: #fff !important;
+  }
+  .app-main {
+    padding: 0 !important;
+  }
+  .certificate-sheet {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+}

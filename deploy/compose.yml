@@ -1,0 +1,155 @@
+# Стек приложения для развёртывания на СТЕНДЕ и на ПРОДЕ.
+#
+# Отличия от корневого docker-compose.yml (он для локальной разработки):
+#   • образ берётся из registry, а не собирается — на стенд едет ровно тот артефакт,
+#     который прошёл проверки, без повторной сборки;
+#   • один файл на оба контура: чем именно отличается окружение, задают переменные
+#     (APP_HOST, TRAEFIK_ENTRYPOINT, TRAEFIK_TLS), а не вторая копия файла, которая
+#     неизбежно разъедется с первой;
+#   • .env целиком генерируется выкаткой из переменных CI/CD, руками на
+#     стенде не правится.
+#
+# Кто какие переменные подставляет:
+#   IMAGE, IMAGE_TAG            — пайплайн (тег = короткий SHA коммита)
+#   APP_HOST                    — имя, под которым приложение опубликовано.
+#                                 Подставляется через ${VAR:?...}, а не ${VAR}:
+#                                 обычная подстановка при пустой переменной лишь
+#                                 печатает предупреждение и подставляет пустую
+#                                 строку. Тогда контейнер поднимется, healthcheck
+#                                 пройдёт (он ходит на 127.0.0.1 и от хоста не
+#                                 зависит), пайплайн отчитается зелёным — а
+#                                 снаружи приложение не найдётся и NEXTAUTH_URL
+#                                 станет "https://", сломав авторизацию. Худший
+#                                 вид отказа: всё зелёное, но не работает.
+#                                 С :? compose падает до старта контейнеров.
+#   TRAEFIK_ENTRYPOINT/TRAEFIK_TLS — на стенде TLS снимает шлюз (web/false),
+#                                 на проде — локальный Traefik (websecure/true).
+#                                 Дефолты выбраны в пользу защищённого варианта.
+#
+# Схема БД применяется на старте контейнера командой из Dockerfile (prisma db push).
+# Это инвариант, защищённый deploy-guard: база исторически накатывалась db push и не
+# имеет таблицы _prisma_migrations, поэтому migrate deploy падает с P3005 и уводит
+# контейнер в рестарт-луп, а следом не поднимаются воркеры.
+
+services:
+  lms:
+    image: "${IMAGE}:${IMAGE_TAG}"
+    container_name: lms-course3-app
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      DATABASE_URL: file:/app/data/dev.db
+      AUTH_TRUST_HOST: "true"
+      NODE_ENV: production
+      APP_BASE_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
+      NEXTAUTH_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
+      AUTH_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
+    volumes:
+      - lms_data:/app/data
+      - lms_uploads:/app/data/uploads
+      - lms_branding:/app/public/branding
+    # Потолок памяти обязателен: стенд общий, и стек без лимита при утечке
+    # роняет соседей. LibreOffice поднимается внутри этого контейнера на каждую
+    # конвертацию pptx и является самым прожорливым местом.
+    mem_limit: "${LMS_MEM_LIMIT:-1536m}"
+    cpus: "${LMS_CPUS:-2}"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "fetch('http://127.0.0.1:3000/api/health')
+          .then((response) => process.exit(response.ok ? 0 : 1))
+          .catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      # Не занижать: на старте контейнер выполняет prisma db push и включает WAL,
+      # до этого приложение не отвечает.
+      start_period: 45s
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.lms-course3.rule=Host(`${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}`)"
+      - "traefik.http.routers.lms-course3.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.lms-course3.tls=${TRAEFIK_TLS:-true}"
+      - "traefik.http.routers.lms-course3.service=lms-course3-service"
+      - "traefik.http.services.lms-course3-service.loadbalancer.server.port=3000"
+
+  email-worker:
+    image: "${IMAGE}:${IMAGE_TAG}"
+    container_name: lms-course3-email-worker
+    restart: unless-stopped
+    command: ["npm", "run", "email:worker:loop"]
+    env_file: [.env]
+    environment:
+      DATABASE_URL: file:/app/data/dev.db
+      AUTH_TRUST_HOST: "true"
+      NODE_ENV: production
+      APP_BASE_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
+      NEXTAUTH_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
+      AUTH_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
+    volumes:
+      - lms_data:/app/data
+      - lms_uploads:/app/data/uploads
+      - lms_branding:/app/public/branding
+    mem_limit: "${LMS_WORKER_MEM_LIMIT:-512m}"
+    cpus: "${LMS_WORKER_CPUS:-1}"
+    # Воркер ждёт готовности приложения: схему на старте накатывает именно оно,
+    # и до этого работать с базой некорректно.
+    depends_on:
+      lms:
+        condition: service_healthy
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=false"
+
+  hr-notification-worker:
+    image: "${IMAGE}:${IMAGE_TAG}"
+    container_name: lms-course3-hr-worker
+    restart: unless-stopped
+    command: ["npm", "run", "hr:notifications:loop"]
+    env_file: [.env]
+    environment:
+      DATABASE_URL: file:/app/data/dev.db
+      AUTH_TRUST_HOST: "true"
+      NODE_ENV: production
+      APP_BASE_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
+      NEXTAUTH_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
+      AUTH_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
+    volumes:
+      - lms_data:/app/data
+      - lms_uploads:/app/data/uploads
+      - lms_branding:/app/public/branding
+    mem_limit: "${LMS_WORKER_MEM_LIMIT:-512m}"
+    cpus: "${LMS_WORKER_CPUS:-1}"
+    depends_on:
+      lms:
+        condition: service_healthy
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=false"
+
+networks:
+  traefik-public:
+    external: true
+
+# Физические имена томов зафиксированы намеренно.
+#
+# Без `name:` compose делает их project-scoped: реальное имя получается как
+# «<имя проекта>_lms_data», а имя проекта по умолчанию — имя каталога, из
+# которого запускается compose. На стенде это /opt/learning, на проде по
+# конвенции Авроры каталог может называться иначе — и тогда Docker МОЛЧА создаст
+# новые пустые тома. Приложение поднимется, healthcheck пройдёт, пайплайн будет
+# зелёным, а в интерфейсе не окажется ни одного курса: данные останутся в старых
+# томах, но выглядеть это будет как полная их потеря — в момент выкатки на прод.
+volumes:
+  lms_data:
+    name: learning_lms_data
+  lms_uploads:
+    name: learning_lms_uploads
+  lms_branding:
+    name: learning_lms_branding

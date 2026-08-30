@@ -1,0 +1,25 @@
+// markdownlint — единый конфиг репо (правила + исключения).
+// Читают И CLI (markdownlint-cli2), И расширение VS Code (DavidAnson.vscode-markdownlint).
+// Стандарт: ~/matrix/projects/atlas/standards/markdown-style.md.
+// ВАЖНО: после создания/правки конфига — Reload Window в VS Code (расширение кеширует).
+{
+  "config": {
+    "default": true,
+
+    "MD013": false,  // line-length: русская проза + широкие таблицы → лимит 80 нерабочий
+    "MD025": false,  // multiple-H1: многосекционные доки используют осознанно
+    "MD028": false,  // no-blanks-blockquote: две соседние цитаты через пустую строку — норма
+    "MD033": false,  // inline-html: <details>/<br>/<kbd> и т.п. в насыщенных доках — норма
+    "MD036": false,  // emphasis-as-heading: жирная строка как псевдо-заголовок — допустимо
+    "MD040": false,  // fenced-code-language: много намеренно «голых» блоков (вывод/текст)
+    "MD041": false,  // first-line-h1: доки нередко начинаются с YAML-фронтматтера
+    "MD060": false,  // table-column-style: используем компактные сепараторы |---|
+
+    "MD024": { "siblings_only": true }  // одноимённые подсекции под разными разделами ок
+  },
+  "ignores": [
+    "node_modules/**",
+    "docs/audit-output/**",  // сгенерированные артефакты аудита
+    "CLAUDE.local.md"        // личный
+  ]
+}

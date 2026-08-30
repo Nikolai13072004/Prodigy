@@ -1,0 +1,14 @@
+node_modules
+.next
+npm-debug.log
+Dockerfile*
+docker-compose*.yml
+test-results
+backups
+.git
+.gitignore
+public/uploads
+tmp
+exports
+dev.db
+.volume-snapshots
