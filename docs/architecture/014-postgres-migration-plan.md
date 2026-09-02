@@ -80,8 +80,18 @@ TSX_TSCONFIG_PATH=tsconfig.infra.json node_modules/.bin/tsx --test --test-concur
 npx prisma generate && docker rm -f lms-pg-test             # вернуть клиент под sqlite
 ```
 
-TODO: завести это в `scripts/run-infra-tests.mjs` через `INFRA_DATABASE_URL`,
-чтобы PG-прогон стал штатной командой (сейчас процедура ручная).
+PG-прогон заведён в `scripts/run-infra-tests.mjs`: при
+`INFRA_DATABASE_URL=postgresql://...` раннер создаёт временную pg-схему,
+`db push --force-reset` в указанную БД, генерирует клиент под postgres, гоняет
+тесты и **возвращает клиент под sqlite** в cleanup. Дефолтный прогон (временная
+SQLite) — без изменений.
+
+```bash
+docker run -d --name lms-pg-test -e POSTGRES_PASSWORD=test -e POSTGRES_USER=lms \
+  -e POSTGRES_DB=lmstest -p 55432:5432 postgres:16
+INFRA_DATABASE_URL="postgresql://lms:test@localhost:55432/lmstest?schema=public" \
+  npm run test:infra            # 118/118, клиент возвращается под sqlite
+```
 
 ### Шаг 1. Провайдер и schema
 
@@ -175,8 +185,18 @@ Cutover — это смена образа/compose. Откат: вернуть �
 откате теряются — поэтому cutover выполняется в maintenance-окне с коротким
 окном записи. SQLite-том и дамп сохраняются до подтверждённой стабильности PG.
 
-## Открытые вопросы к владельцу
+## Решения по инфраструктуре (делегированы инженерии, 2026-09-02)
 
-- Managed PostgreSQL (внешний) или контейнер в том же стеке Traefik?
-- Допустимое окно обслуживания для переноса данных.
-- Нужен ли PgBouncer сразу или достаточно `connection_limit`.
+- **Контейнер `postgres:16` в том же compose-стеке** (не managed): соответствует
+  текущей self-hosted топологии (Traefik/compose), без внешнего вендора и
+  доплаты. Managed — опция на будущее при росте.
+- **`connection_limit` в URL, без PgBouncer на старте.** 5 процессов (веб + 4
+  воркера) — задать `connection_limit` так, чтобы сумма ≤ `max_connections`
+  Postgres (дефолт 100) с запасом, напр. по 10 на процесс = 50. PgBouncer —
+  когда процессов/пик станет больше.
+- **Окно обслуживания для cutover** выбирает владелец при выкатке — это
+  единственный прод-влияющий шаг (флип провайдера + `migrate deploy` + перенос
+  данных лендятся вместе одной выкаткой, откат — возврат образа/тома SQLite).
+
+Остаётся владельцу: назначить окно cutover и подтвердить доступ к прод-данным
+для одноразового переноса.
