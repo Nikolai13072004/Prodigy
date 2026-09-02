@@ -18,6 +18,9 @@ test("валидное событие → PROCESSED и письмо в EmailJob"
     data: {
       topic: "certification.certificate-issued-email.v1",
       status: "PENDING",
+      // Явно в прошлом: иначе availableAt @default(now()) может совпасть с claim-now
+      // до миллисекунды, и `availableAt <= now` иногда не матчит (флак-гонка).
+      availableAt: new Date(Date.now() - 60_000),
       payloadJson: JSON.stringify({
         recipients: [{ email: "learner@corp.ru", name: "Ученик", firstName: "Ученик" }],
         courseTitle: "Курс",
@@ -48,6 +51,7 @@ test("событие без получателей → не PROCESSED (FAILED/DE
     data: {
       topic: "certification.certificate-issued-email.v1",
       status: "PENDING",
+      availableAt: new Date(Date.now() - 60_000),
       payloadJson: JSON.stringify({ courseTitle: "Без получателей" }),
     },
   });
