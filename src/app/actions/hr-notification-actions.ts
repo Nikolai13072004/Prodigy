@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth-guards";
 import { queueHrNotificationEmailsForUser } from "@/lib/hr-notifications";
-import prisma from "@/lib/prisma";
 import { PERMISSIONS } from "@/lib/roles";
+import { hrNotifications } from "@/modules/hr-reporting/server/hr-notifications";
 
 function asBoolean(formData: FormData, key: string) {
   return formData.get(key) === "on";
@@ -31,23 +31,12 @@ export async function saveHrNotificationPreferences(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.REPORTS_VIEW);
   const returnTo = safeReturnPath(formData.get("returnTo")?.toString());
 
-  await prisma.hrNotificationPreference.upsert({
-    where: { userId: session.user.id },
-    update: {
-      notifyCourseCompleted: asBoolean(formData, "notifyCourseCompleted"),
-      notifyLowActivity: asBoolean(formData, "notifyLowActivity"),
-      lowActivityDays: asInt(formData, "lowActivityDays", 7),
-      notifyAccessExpiring: asBoolean(formData, "notifyAccessExpiring"),
-      accessExpiringDays: asInt(formData, "accessExpiringDays", 7),
-    },
-    create: {
-      userId: session.user.id,
-      notifyCourseCompleted: asBoolean(formData, "notifyCourseCompleted"),
-      notifyLowActivity: asBoolean(formData, "notifyLowActivity"),
-      lowActivityDays: asInt(formData, "lowActivityDays", 7),
-      notifyAccessExpiring: asBoolean(formData, "notifyAccessExpiring"),
-      accessExpiringDays: asInt(formData, "accessExpiringDays", 7),
-    },
+  await hrNotifications.savePreferences(session.user.id, {
+    notifyCourseCompleted: asBoolean(formData, "notifyCourseCompleted"),
+    notifyLowActivity: asBoolean(formData, "notifyLowActivity"),
+    lowActivityDays: asInt(formData, "lowActivityDays", 7),
+    notifyAccessExpiring: asBoolean(formData, "notifyAccessExpiring"),
+    accessExpiringDays: asInt(formData, "accessExpiringDays", 7),
   });
 
   revalidatePath("/");
@@ -87,26 +76,11 @@ export async function dismissHrNotification(formData: FormData) {
     redirect(returnTo);
   }
 
-  await prisma.hrNotificationDismissal.upsert({
-    where: {
-      userId_notificationKey: {
-        userId: session.user.id,
-        notificationKey,
-      },
-    },
-    update: {
-      dismissedAt: new Date(),
-      type,
-      courseId,
-      learnerId,
-    },
-    create: {
-      userId: session.user.id,
-      notificationKey,
-      type,
-      courseId,
-      learnerId,
-    },
+  await hrNotifications.dismiss(session.user.id, {
+    notificationKey,
+    type,
+    courseId,
+    learnerId,
   });
 
   revalidatePath("/");
@@ -133,12 +107,7 @@ export async function restoreHrNotification(formData: FormData) {
   const returnTo = safeReturnPath(asString(formData, "returnTo"));
 
   if (notificationKey) {
-    await prisma.hrNotificationDismissal.deleteMany({
-      where: {
-        userId: session.user.id,
-        notificationKey,
-      },
-    });
+    await hrNotifications.restore(session.user.id, notificationKey);
   }
 
   revalidatePath("/");
