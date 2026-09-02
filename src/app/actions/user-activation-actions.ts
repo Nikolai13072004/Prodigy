@@ -1,6 +1,5 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { recordAuditEvent } from "@/lib/audit-log";
@@ -8,9 +7,8 @@ import {
   getPlatformSecuritySettings,
   validatePasswordAgainstPolicy,
 } from "@/lib/platform-settings";
-import prisma from "@/lib/prisma";
-import { hashUserActivationToken } from "@/lib/user-activations";
-import { USER_STATUSES } from "@/lib/users";
+import { ActivateUserAccountError } from "@/modules/user/application/activate-user-account-errors";
+import { activateUserAccount as applyUserActivation } from "@/modules/user/server/activate-user-account";
 
 function activationPageUrl(token: string, params?: Record<string, string | undefined>) {
   const query = new URLSearchParams();
@@ -41,74 +39,35 @@ export async function activateUserAccount(formData: FormData) {
   const passwordError = validatePasswordAgainstPolicy(password, securitySettings);
   if (passwordError) activationError(token, passwordError);
 
-  const invite = await prisma.userActivationInvite.findUnique({
-    where: { tokenHash: hashUserActivationToken(token) },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          login: true,
-          email: true,
-          status: true,
-        },
-      },
-    },
-  });
-
-  if (!invite) activationError(token, "Ссылка активации не найдена или уже недействительна.");
-  if (invite.status !== "PENDING") {
-    activationError(token, invite.status === "ACCEPTED" ? "Эта ссылка активации уже использована." : "Ссылка активации больше не активна.");
+  let result;
+  try {
+    result = await applyUserActivation({ token, password });
+  } catch (error) {
+    if (error instanceof ActivateUserAccountError) {
+      activationError(token, error.message);
+    }
+    throw error;
   }
 
-  if (invite.expiresAt.getTime() < Date.now()) {
-    await prisma.userActivationInvite.update({
-      where: { id: invite.id },
-      data: { status: "EXPIRED" },
-    });
-    activationError(token, "Срок действия ссылки активации истек. Попросите администратора отправить новое приглашение.");
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: invite.userId },
-      data: {
-        passwordHash,
-        status: USER_STATUSES.ACTIVE,
-        failedLoginAttempts: 0,
-        loginLockedUntil: null,
-      },
-    });
-
-    await tx.userActivationInvite.update({
-      where: { id: invite.id },
-      data: {
-        status: "ACCEPTED",
-        activatedAt: new Date(),
-      },
-    });
-  });
-
+  const { user, inviteId } = result;
   await recordAuditEvent({
     actor: {
-      id: invite.user.id,
-      login: invite.user.login,
-      name: invite.user.name,
+      id: user.id,
+      login: user.login,
+      name: user.name,
     },
     action: "users:activate",
     objectType: "user",
-    objectId: invite.user.id,
-    objectLabel: invite.user.name,
+    objectId: user.id,
+    objectLabel: user.name,
     metadata: {
-      login: invite.user.login,
-      email: invite.user.email,
-      activationInviteId: invite.id,
+      login: user.login,
+      email: user.email,
+      activationInviteId: inviteId,
     },
   });
 
   revalidatePath("/admin/users-groups");
-  revalidatePath(`/admin/users/${invite.user.id}/edit`);
+  revalidatePath(`/admin/users/${user.id}/edit`);
   redirect(loginNoticeUrl("Активация завершена. Теперь войдите с новым паролем."));
 }
