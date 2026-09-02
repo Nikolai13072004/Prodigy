@@ -1,18 +1,22 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth-guards";
 import type { RolePermissionsFormState } from "@/app/admin/roles/role-permissions-form-state";
-import { auditActorFromSessionUser, recordAuditEvent } from "@/lib/audit-log";
-import prisma from "@/lib/prisma";
-import { parsePermissionsJson } from "@/lib/role-profiles";
-import { PERMISSIONS, primaryRole, type Permission, normalizePermissions } from "@/lib/roles";
 import {
-  isSystemRoleRenameAttempt,
-  validateRolePermissionsForm,
-} from "@/modules/user/domain/role-profile-form";
+  auditActorFromSessionUser,
+  getAuditRequestContext,
+} from "@/lib/audit-log";
+import { PERMISSIONS, primaryRole, type Permission, normalizePermissions } from "@/lib/roles";
+import { RoleProfileApplicationError } from "@/modules/user/application/role-profile-errors";
+import {
+  createRole as createRoleUseCase,
+  deleteRole as deleteRoleUseCase,
+  loadRolePermissions,
+  setUserRole as setUserRoleUseCase,
+  updateRole as updateRoleUseCase,
+} from "@/modules/user/server/roles";
 
 function asString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -21,10 +25,6 @@ function asString(formData: FormData, key: string) {
 function collectPermissions(formData: FormData): Permission[] {
   const values = formData.getAll("permission").map((value) => String(value));
   return normalizePermissions(values);
-}
-
-function serializePermissions(permissions: Permission[]) {
-  return JSON.stringify([...new Set(permissions)].sort());
 }
 
 function buildRolePermissionsFormState(
@@ -38,43 +38,37 @@ function buildRolePermissionsFormState(
   };
 }
 
+async function roleActorContext(sessionUser: Parameters<typeof auditActorFromSessionUser>[0]) {
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(sessionUser);
+  return {
+    actor: { id: actor.id, login: actor.login, name: actor.name },
+    audit: {
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+    },
+  };
+}
+
 export async function createRoleProfile(_state: RolePermissionsFormState, formData: FormData) {
   const session = await requirePermission(PERMISSIONS.USERS_EDIT_ACCESS_LEVEL);
   const name = asString(formData, "name");
   const permissions = collectPermissions(formData);
   const values = { name, permissions };
-  const formError = validateRolePermissionsForm(name, permissions);
-  if (formError) return buildRolePermissionsFormState(values, { error: formError });
+  const { actor, audit } = await roleActorContext(session.user);
 
   let created;
   try {
-    created = await prisma.roleProfile.create({
-      data: {
-        name,
-        permissionsJson: serializePermissions(permissions),
-        isSystem: false,
-      },
-    });
+    created = await createRoleUseCase({ name, permissions, actor, audit });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return buildRolePermissionsFormState(values, { error: "Роль с таким названием уже существует" });
+    if (error instanceof RoleProfileApplicationError) {
+      return buildRolePermissionsFormState(values, { error: error.message });
     }
     throw error;
   }
 
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "roles:create",
-    objectType: "role",
-    objectId: created.id,
-    objectLabel: created.name,
-    metadata: {
-      permissions,
-    },
-  });
-
   revalidatePath("/admin/roles");
-  redirect(`/admin/roles/${created.id}`);
+  redirect(`/admin/roles/${created.roleId}`);
 }
 
 export async function updateRoleProfile(roleId: string, _state: RolePermissionsFormState, formData: FormData) {
@@ -82,54 +76,16 @@ export async function updateRoleProfile(roleId: string, _state: RolePermissionsF
   const name = asString(formData, "name");
   const permissions = collectPermissions(formData);
   const values = { name, permissions };
-  const formError = validateRolePermissionsForm(name, permissions);
-  if (formError) return buildRolePermissionsFormState(values, { error: formError });
-
-  const current = await prisma.roleProfile.findUnique({
-    where: { id: roleId },
-    select: { id: true, name: true, isSystem: true, permissionsJson: true },
-  });
-  if (!current) return buildRolePermissionsFormState(values, { error: "Роль не найдена" });
-  if (isSystemRoleRenameAttempt(current, name)) {
-    return buildRolePermissionsFormState(values, { error: "Системные роли нельзя переименовывать" });
-  }
+  const { actor, audit } = await roleActorContext(session.user);
 
   try {
-    await prisma.$transaction(async (tx) => {
-      await tx.roleProfile.update({
-        where: { id: roleId },
-        data: {
-          name,
-          permissionsJson: serializePermissions(permissions),
-        },
-      });
-
-      if (name !== current.name) {
-        await tx.user.updateMany({
-          where: { role: current.name },
-          data: { role: name },
-        });
-      }
-    });
+    await updateRoleUseCase({ roleId, name, permissions, actor, audit });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return buildRolePermissionsFormState(values, { error: "Роль с таким названием уже существует" });
+    if (error instanceof RoleProfileApplicationError) {
+      return buildRolePermissionsFormState(values, { error: error.message });
     }
     throw error;
   }
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "roles:update",
-    objectType: "role",
-    objectId: roleId,
-    objectLabel: name,
-    metadata: {
-      previousName: current.name,
-      permissions,
-      renamed: name !== current.name,
-    },
-  });
 
   revalidatePath("/admin/roles");
   revalidatePath(`/admin/roles/${roleId}`);
@@ -141,86 +97,45 @@ export async function updateRoleProfile(roleId: string, _state: RolePermissionsF
 export async function deleteRoleProfile(roleId: string, _formData?: FormData) {
   void _formData;
   const session = await requirePermission(PERMISSIONS.USERS_EDIT_ACCESS_LEVEL);
+  const { actor, audit } = await roleActorContext(session.user);
 
-  const role = await prisma.roleProfile.findUnique({
-    where: { id: roleId },
-    select: { id: true, name: true, isSystem: true, permissionsJson: true },
-  });
-  if (!role) throw new Error("Роль не найдена");
-  if (role.isSystem) throw new Error("Системную роль удалять нельзя");
-
-  const usersCount = await prisma.user.count({
-    where: {
-      OR: [
-        { role: role.name },
-        {
-          userRoles: {
-            some: {
-              roleProfileId: role.id,
-            },
-          },
-        },
-      ],
-    },
-  });
-  if (usersCount > 0) {
-    throw new Error("Нельзя удалить роль, пока она назначена пользователям");
+  try {
+    await deleteRoleUseCase({ roleId, actor, audit });
+  } catch (error) {
+    if (error instanceof RoleProfileApplicationError) {
+      throw new Error(error.message);
+    }
+    throw error;
   }
 
-  await prisma.roleProfile.delete({ where: { id: roleId } });
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "roles:delete",
-    objectType: "role",
-    objectId: role.id,
-    objectLabel: role.name,
-    metadata: {
-      permissions: parsePermissionsJson(role.permissionsJson),
-    },
-  });
   revalidatePath("/admin/roles");
   redirect("/admin/roles");
 }
 
 export async function setUserRole(userId: string, formData: FormData) {
   const session = await requirePermission(PERMISSIONS.USERS_EDIT_ACCESS_LEVEL);
-  const roleNames = [...new Set(formData.getAll("role").map((value) => String(value).trim()).filter(Boolean))];
-  const roleName = primaryRole(roleNames);
-  if (!roleName) throw new Error("Роль не выбрана");
-
-  const roles = await prisma.roleProfile.findMany({
-    where: { name: { in: roleNames } },
-    select: { id: true, name: true },
-  });
-  if (roles.length !== roleNames.length) throw new Error("Одна или несколько выбранных ролей не существуют");
-
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: userId },
-      data: { role: roleName },
-    }),
-    prisma.userRole.deleteMany({ where: { userId } }),
-    ...roles.map((role) =>
-      prisma.userRole.create({
-        data: {
-          userId,
-          roleProfileId: role.id,
-        },
-      })
+  const roleNames = [
+    ...new Set(
+      formData.getAll("role").map((value) => String(value).trim()).filter(Boolean),
     ),
-  ]);
+  ];
+  const primaryRoleName = primaryRole(roleNames) ?? "";
+  const { actor, audit } = await roleActorContext(session.user);
 
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "users:set_roles",
-    objectType: "user",
-    objectId: userId,
-    objectLabel: roleName,
-    metadata: {
+  try {
+    await setUserRoleUseCase({
+      userId,
       roleNames,
-    },
-  });
+      primaryRoleName,
+      actor,
+      audit,
+    });
+  } catch (error) {
+    if (error instanceof RoleProfileApplicationError) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
 
   revalidatePath("/admin/users-groups");
   revalidatePath("/admin/roles");
@@ -228,10 +143,5 @@ export async function setUserRole(userId: string, formData: FormData) {
 
 export async function cloneRolePermissions(roleId: string) {
   await requirePermission(PERMISSIONS.USERS_EDIT_ACCESS_LEVEL);
-  const role = await prisma.roleProfile.findUnique({
-    where: { id: roleId },
-    select: { permissionsJson: true },
-  });
-  if (!role) return [];
-  return parsePermissionsJson(role.permissionsJson);
+  return loadRolePermissions(roleId);
 }

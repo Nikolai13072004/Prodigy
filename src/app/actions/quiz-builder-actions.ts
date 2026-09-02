@@ -2,9 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
 import { requireAdmin, requireManageCourse } from "@/lib/auth-guards";
-import { RESULT_VIEW_MODES } from "@/lib/constants";
+import { QuizBuilderApplicationError } from "@/modules/assessment/application/quiz-builder-errors";
+import {
+  addQuizBuilderQuestion as addQuizBuilderQuestionUseCase,
+  deleteQuizBuilderQuestion as deleteQuizBuilderQuestionUseCase,
+  deleteQuizFromBuilder as deleteQuizFromBuilderUseCase,
+  importQuizBuilderQuestions as importQuizBuilderQuestionsUseCase,
+  loadQuizBuilderQuestionForUpdate,
+  moveQuizBuilderQuestion as moveQuizBuilderQuestionUseCase,
+  saveQuizBuilderSettings as saveQuizBuilderSettingsUseCase,
+  updateQuizBuilderQuestion as updateQuizBuilderQuestionUseCase,
+} from "@/modules/assessment/server/quiz-builder";
 import { parseSingleChoiceQuestionsFromDocx } from "@/lib/quiz-docx-import";
 import {
   normalizeQuizQuestionMedia,
@@ -162,42 +171,6 @@ function afterSave(
   redirect(builderUrl(courseId, quizId, { ...params, saved: message }));
 }
 
-async function ensureQuiz(courseId: string, quizId: string) {
-  const quiz = await prisma.quiz.findUnique({
-    where: { id: quizId },
-    select: {
-      id: true,
-      courseItemId: true,
-      courseItem: {
-        select: {
-          courseId: true,
-        },
-      },
-    },
-  });
-
-  if (!quiz || quiz.courseItem.courseId !== courseId) {
-    fail(courseId, quizId, "Тест не найден");
-    throw new Error("unreachable");
-  }
-
-  return quiz;
-}
-
-async function markCourseContentChanged(courseId: string) {
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: { status: true },
-  });
-
-  if (!course || course.status !== "PUBLISHED") return;
-
-  await prisma.course.update({
-    where: { id: courseId },
-    data: { hasUnpublishedChanges: true },
-  });
-}
-
 function parseOptions(formData: FormData) {
   const options = asStringList(formData, "optionValues");
   const normalizedOptions = options.length > 0 ? options : asMultilineList(formData, "options");
@@ -309,68 +282,35 @@ function parseMatching(formData: FormData) {
   return { ok: true as const, left, right, correctPairs: textBasedPairs.correctPairs };
 }
 
-async function nextOrderIndex(quizId: string) {
-  const last = await prisma.question.findFirst({
-    where: {
-      quizId,
-      archivedAt: null,
-    },
-    orderBy: { orderIndex: "desc" },
-    select: { orderIndex: true },
-  });
-  return (last?.orderIndex ?? -1) + 1;
-}
-
 export async function saveQuizBuilderSettings(courseId: string, quizId: string, formData: FormData) {
   await requireAdmin();
   await requireManageCourse(courseId);
-  const quiz = await ensureQuiz(courseId, quizId);
 
-  const title = asString(formData, "title");
-  const description = asOptionalString(formData, "description");
-  const maxAttempts = asPositiveInt(formData, "maxAttempts", 1);
-  const minCorrectAnswers = asPositiveInt(formData, "minCorrectAnswers", 1);
-  const timeLimitMinutes = asOptionalPositiveInt(formData, "timeLimitMinutes");
-  const questionPoolSize = asOptionalPositiveInt(formData, "questionPoolSize");
-  const retryDelayMinutes = asOptionalPositiveInt(formData, "retryDelayMinutes");
-  const shuffleQuestions = formData.get("shuffleQuestions") === "1";
-  const shuffleAnswers = formData.get("shuffleAnswers") === "1";
-  const lockMaterialsOnStart = formData.get("lockMaterialsOnStart") === "1";
-  const trackSecurityEvents = formData.get("trackSecurityEvents") === "1";
-  const resultViewMode = asString(formData, "resultViewMode");
-
-  if (!title) fail(courseId, quizId, "Введите название теста");
-  if (!RESULT_VIEW_MODES.includes(resultViewMode as (typeof RESULT_VIEW_MODES)[number])) {
-    fail(courseId, quizId, "Выберите корректный режим показа результата");
+  try {
+    await saveQuizBuilderSettingsUseCase({
+      courseId,
+      quizId,
+      settings: {
+        title: asString(formData, "title"),
+        description: asOptionalString(formData, "description"),
+        maxAttempts: asPositiveInt(formData, "maxAttempts", 1),
+        minCorrectAnswers: asPositiveInt(formData, "minCorrectAnswers", 1),
+        timeLimitMinutes: asOptionalPositiveInt(formData, "timeLimitMinutes"),
+        questionPoolSize: asOptionalPositiveInt(formData, "questionPoolSize"),
+        retryDelayMinutes: asOptionalPositiveInt(formData, "retryDelayMinutes"),
+        shuffleQuestions: formData.get("shuffleQuestions") === "1",
+        shuffleAnswers: formData.get("shuffleAnswers") === "1",
+        lockMaterialsOnStart: formData.get("lockMaterialsOnStart") === "1",
+        trackSecurityEvents: formData.get("trackSecurityEvents") === "1",
+        resultViewMode: asString(formData, "resultViewMode"),
+      },
+    });
+  } catch (error) {
+    if (error instanceof QuizBuilderApplicationError) {
+      fail(courseId, quizId, error.message);
+    }
+    throw error;
   }
-
-  await prisma.$transaction([
-    prisma.courseItem.update({
-      where: { id: quiz.courseItemId },
-      data: { title },
-    }),
-    prisma.quiz.update({
-      where: { id: quizId },
-      data: {
-	        description,
-	        maxAttempts,
-	        minCorrectAnswers,
-	        timeLimitMinutes,
-	        questionPoolSize,
-	        retryDelayMinutes,
-	        shuffleQuestions,
-	        shuffleAnswers,
-	        lockMaterialsOnStart,
-	        trackSecurityEvents,
-	      },
-    }),
-    prisma.course.update({
-      where: { id: courseId },
-      data: { resultViewMode },
-    }),
-  ]);
-
-  await markCourseContentChanged(courseId);
 
   revalidatePath(`/courses/${courseId}/manage`);
   revalidatePath(`/courses/${courseId}`);
@@ -381,120 +321,121 @@ export async function saveQuizBuilderSettings(courseId: string, quizId: string, 
 export async function addQuizBuilderQuestion(courseId: string, quizId: string, formData: FormData) {
   await requireAdmin();
   await requireManageCourse(courseId);
-  await ensureQuiz(courseId, quizId);
 
   const questionType = resolveQuestionType(formData);
   const prompt = asString(formData, "prompt");
   const points = asPositiveInt(formData, "points", 1);
   const mediaResult = parseQuestionMedia(formData);
-  if (!prompt) fail(courseId, quizId, "Введите текст вопроса");
   if (!mediaResult.ok) fail(courseId, quizId, mediaResult.error);
 
-  const orderIndex = await nextOrderIndex(quizId);
+  const data = buildQuestionDataFromForm(courseId, quizId, {
+    type: questionType,
+    prompt,
+    points,
+    media: mediaResult.media,
+    formData,
+  });
 
-  let createdQuestionId: string | null = null;
-
-  if (questionType === "SINGLE_CHOICE") {
-    const parsed = parseOptions(formData);
-    if (!parsed.ok) fail(courseId, quizId, parsed.error);
-
-    const createdQuestion = await prisma.question.create({
-      data: {
-        quizId,
-        orderIndex,
-        type: "SINGLE_CHOICE",
-        prompt,
-        points,
-        config: JSON.stringify(
-          withQuestionMedia(
-            {
-              options: parsed.options,
-              correctIndex: parsed.correctIndex,
-            },
-            mediaResult.media
-          )
-        ),
-      },
+  let result;
+  try {
+    result = await addQuizBuilderQuestionUseCase({
+      courseId,
+      quizId,
+      data,
     });
-    createdQuestionId = createdQuestion.id;
-  } else if (questionType === "OPEN") {
-    const parsed = parseOpenQuestion(formData);
-    if (!parsed.ok) fail(courseId, quizId, parsed.error);
-
-    const createdQuestion = await prisma.question.create({
-      data: {
-        quizId,
-        orderIndex,
-        type: "OPEN",
-        prompt,
-        points,
-        config: JSON.stringify(
-          withQuestionMedia(
-            {
-              sampleAnswer: parsed.sampleAnswer,
-              reviewMode: parsed.reviewMode,
-            },
-            mediaResult.media
-          )
-        ),
-      },
-    });
-    createdQuestionId = createdQuestion.id;
-  } else if (questionType === "MATCHING") {
-    const parsed = parseMatching(formData);
-    if (!parsed.ok) fail(courseId, quizId, parsed.error);
-
-    const createdQuestion = await prisma.question.create({
-      data: {
-        quizId,
-        orderIndex,
-        type: "MATCHING",
-        prompt,
-        points,
-        config: JSON.stringify(
-          withQuestionMedia(
-            {
-              left: parsed.left,
-              right: parsed.right,
-              correctPairs: parsed.correctPairs,
-            },
-            mediaResult.media
-          )
-        ),
-      },
-    });
-    createdQuestionId = createdQuestion.id;
-  } else if (questionType === "FILE") {
-    const parsed = parseFileQuestion(formData);
-    if (!parsed.ok) fail(courseId, quizId, parsed.error);
-
-    const createdQuestion = await prisma.question.create({
-      data: {
-        quizId,
-        orderIndex,
-        type: "FILE",
-        prompt,
-        points,
-        config: JSON.stringify(
-          withQuestionMedia(
-            {
-              allowedExtensions: parsed.allowedExtensions,
-              maxFileSizeMb: parsed.maxFileSizeMb,
-            },
-            mediaResult.media
-          )
-        ),
-      },
-    });
-    createdQuestionId = createdQuestion.id;
-  } else {
-    fail(courseId, quizId, "Выберите тип вопроса");
+  } catch (error) {
+    if (error instanceof QuizBuilderApplicationError) {
+      fail(courseId, quizId, error.message);
+    }
+    throw error;
   }
 
-  await markCourseContentChanged(courseId);
-
   revalidatePath(builderUrl(courseId, quizId));
-  afterSave(courseId, quizId, "Вопрос добавлен", { edit: createdQuestionId ?? undefined });
+  afterSave(courseId, quizId, "Вопрос добавлен", { edit: result.questionId });
+}
+
+// Собирает {type, prompt, points, config} по типу вопроса. Парсинг остаётся
+// в транспорте, потому что политики (пары/варианты/файлы) заведены на форму
+// целиком, а не только на config. Ошибки парсинга — прямой fail() редирект.
+function buildQuestionDataFromForm(
+  courseId: string,
+  quizId: string,
+  input: {
+    type: QuestionKind | null;
+    prompt: string;
+    points: number;
+    media: QuizQuestionMedia | null;
+    formData: FormData;
+  },
+) {
+  if (input.type === "SINGLE_CHOICE") {
+    const parsed = parseOptions(input.formData);
+    if (!parsed.ok) fail(courseId, quizId, parsed.error);
+    return {
+      type: input.type,
+      prompt: input.prompt,
+      points: input.points,
+      config: JSON.stringify(
+        withQuestionMedia(
+          { options: parsed.options, correctIndex: parsed.correctIndex },
+          input.media,
+        ),
+      ),
+    };
+  }
+  if (input.type === "OPEN") {
+    const parsed = parseOpenQuestion(input.formData);
+    if (!parsed.ok) fail(courseId, quizId, parsed.error);
+    return {
+      type: input.type,
+      prompt: input.prompt,
+      points: input.points,
+      config: JSON.stringify(
+        withQuestionMedia(
+          { sampleAnswer: parsed.sampleAnswer, reviewMode: parsed.reviewMode },
+          input.media,
+        ),
+      ),
+    };
+  }
+  if (input.type === "MATCHING") {
+    const parsed = parseMatching(input.formData);
+    if (!parsed.ok) fail(courseId, quizId, parsed.error);
+    return {
+      type: input.type,
+      prompt: input.prompt,
+      points: input.points,
+      config: JSON.stringify(
+        withQuestionMedia(
+          {
+            left: parsed.left,
+            right: parsed.right,
+            correctPairs: parsed.correctPairs,
+          },
+          input.media,
+        ),
+      ),
+    };
+  }
+  if (input.type === "FILE") {
+    const parsed = parseFileQuestion(input.formData);
+    if (!parsed.ok) fail(courseId, quizId, parsed.error);
+    return {
+      type: input.type,
+      prompt: input.prompt,
+      points: input.points,
+      config: JSON.stringify(
+        withQuestionMedia(
+          {
+            allowedExtensions: parsed.allowedExtensions,
+            maxFileSizeMb: parsed.maxFileSizeMb,
+          },
+          input.media,
+        ),
+      ),
+    };
+  }
+  fail(courseId, quizId, "Выберите тип вопроса");
 }
 
 export async function importQuizBuilderQuestionsFromDocx(
@@ -504,7 +445,6 @@ export async function importQuizBuilderQuestionsFromDocx(
 ) {
   await requireAdmin();
   await requireManageCourse(courseId);
-  await ensureQuiz(courseId, quizId);
 
   const upload = formData.get("docxFile");
   if (!(upload instanceof File) || upload.size === 0) {
@@ -520,9 +460,11 @@ export async function importQuizBuilderQuestionsFromDocx(
     fail(courseId, quizId, "DOCX-файл должен быть не больше 5 МБ");
   }
 
-  let questions: ReturnType<typeof parseSingleChoiceQuestionsFromDocx>;
+  let parsedQuestions: ReturnType<typeof parseSingleChoiceQuestionsFromDocx>;
   try {
-    questions = parseSingleChoiceQuestionsFromDocx(Buffer.from(await upload.arrayBuffer()));
+    parsedQuestions = parseSingleChoiceQuestionsFromDocx(
+      Buffer.from(await upload.arrayBuffer()),
+    );
   } catch (error) {
     fail(
       courseId,
@@ -531,60 +473,34 @@ export async function importQuizBuilderQuestionsFromDocx(
     );
   }
 
-  if (questions.length === 0) {
-    fail(
+  let result;
+  try {
+    result = await importQuizBuilderQuestionsUseCase({
       courseId,
       quizId,
-      "Не удалось найти вопросы. Формат: абзац с вопросом, затем варианты ответов, правильный вариант выделен жирным."
-    );
+      questions: parsedQuestions.map((question) => ({
+        type: "SINGLE_CHOICE",
+        prompt: question.prompt,
+        points: 1,
+        config: JSON.stringify({
+          options: question.options,
+          correctIndex: question.correctIndex,
+        }),
+      })),
+    });
+  } catch (error) {
+    if (error instanceof QuizBuilderApplicationError) {
+      fail(courseId, quizId, error.message);
+    }
+    throw error;
   }
-
-  const existingQuestions = await prisma.question.findMany({
-    where: { quizId, archivedAt: null },
-    select: { prompt: true },
-  });
-  const seenPrompts = new Set(existingQuestions.map((question) => question.prompt));
-  const questionsToCreate = questions.filter((question) => {
-    if (seenPrompts.has(question.prompt)) return false;
-    seenPrompts.add(question.prompt);
-    return true;
-  });
-
-  if (questionsToCreate.length === 0) {
-    fail(courseId, quizId, `Все ${questions.length} вопросов уже есть в тесте`);
-  }
-
-  const startOrderIndex = await nextOrderIndex(quizId);
-  let firstCreatedQuestionId: string | null = null;
-
-  await prisma.$transaction(
-    questionsToCreate.map((question, index) =>
-      prisma.question.create({
-        data: {
-          quizId,
-          orderIndex: startOrderIndex + index,
-          type: "SINGLE_CHOICE",
-          prompt: question.prompt,
-          points: 1,
-          config: JSON.stringify({
-            options: question.options,
-            correctIndex: question.correctIndex,
-          }),
-        },
-      })
-    )
-  ).then((createdQuestions) => {
-    firstCreatedQuestionId = createdQuestions[0]?.id ?? null;
-  });
-
-  await markCourseContentChanged(courseId);
 
   revalidatePath(builderUrl(courseId, quizId));
   afterSave(
     courseId,
     quizId,
-    `Импортировано вопросов: ${questionsToCreate.length}. Дубликаты пропущены: ${questions.length - questionsToCreate.length}`,
-    { edit: firstCreatedQuestionId ?? undefined }
+    `Импортировано вопросов: ${result.createdCount}. Дубликаты пропущены: ${result.duplicatesSkipped}`,
+    { edit: result.firstCreatedQuestionId ?? undefined }
   );
 }
 
@@ -596,103 +512,38 @@ export async function updateQuizBuilderQuestion(
 ) {
   await requireAdmin();
   await requireManageCourse(courseId);
-  await ensureQuiz(courseId, quizId);
 
-  const question = await prisma.question.findUnique({
-    where: { id: questionId },
-    select: { id: true, quizId: true, type: true, config: true },
-  });
-  if (!question || question.quizId !== quizId) {
+  const existing = await loadQuizBuilderQuestionForUpdate(courseId, quizId, questionId);
+  if (!existing) {
     fail(courseId, quizId, "Вопрос не найден");
-    throw new Error("unreachable");
   }
 
   const prompt = asString(formData, "prompt");
   const points = asPositiveInt(formData, "points", 1);
-  const mediaResult = parseQuestionMedia(formData, getQuestionMediaFromConfig(question.config));
-  if (!prompt) fail(courseId, quizId, "Введите текст вопроса");
+  const mediaResult = parseQuestionMedia(formData, getQuestionMediaFromConfig(existing.config));
   if (!mediaResult.ok) fail(courseId, quizId, mediaResult.error);
 
-  if (question.type === "SINGLE_CHOICE") {
-    const parsed = parseOptions(formData);
-    if (!parsed.ok) fail(courseId, quizId, parsed.error);
-    await prisma.question.update({
-      where: { id: questionId },
-      data: {
-        prompt,
-        points,
-        config: JSON.stringify(
-          withQuestionMedia(
-            {
-              options: parsed.options,
-              correctIndex: parsed.correctIndex,
-            },
-            mediaResult.media
-          )
-        ),
-      },
-    });
-  } else if (question.type === "OPEN") {
-    const parsed = parseOpenQuestion(formData);
-    if (!parsed.ok) fail(courseId, quizId, parsed.error);
-    await prisma.question.update({
-      where: { id: questionId },
-      data: {
-        prompt,
-        points,
-        config: JSON.stringify(
-          withQuestionMedia(
-            {
-              sampleAnswer: parsed.sampleAnswer,
-              reviewMode: parsed.reviewMode,
-            },
-            mediaResult.media
-          )
-        ),
-      },
-    });
-  } else if (question.type === "MATCHING") {
-    const parsed = parseMatching(formData);
-    if (!parsed.ok) fail(courseId, quizId, parsed.error);
-    await prisma.question.update({
-      where: { id: questionId },
-      data: {
-        prompt,
-        points,
-        config: JSON.stringify(
-          withQuestionMedia(
-            {
-              left: parsed.left,
-              right: parsed.right,
-              correctPairs: parsed.correctPairs,
-            },
-            mediaResult.media
-          )
-        ),
-      },
-    });
-  } else if (question.type === "FILE") {
-    const parsed = parseFileQuestion(formData);
-    if (!parsed.ok) fail(courseId, quizId, parsed.error);
-    await prisma.question.update({
-      where: { id: questionId },
-      data: {
-        prompt,
-        points,
-        config: JSON.stringify(
-          withQuestionMedia(
-            {
-              allowedExtensions: parsed.allowedExtensions,
-              maxFileSizeMb: parsed.maxFileSizeMb,
-            },
-            mediaResult.media
-          )
-        ),
-      },
-    });
-  }
+  const data = buildQuestionDataFromForm(courseId, quizId, {
+    type: existing.type as QuestionKind,
+    prompt,
+    points,
+    media: mediaResult.media,
+    formData,
+  });
 
-  await markCourseContentChanged(courseId);
+  try {
+    await updateQuizBuilderQuestionUseCase({
+      courseId,
+      quizId,
+      questionId,
+      data,
+    });
+  } catch (error) {
+    if (error instanceof QuizBuilderApplicationError) {
+      fail(courseId, quizId, error.message);
+    }
+    throw error;
+  }
 
   revalidatePath(builderUrl(courseId, quizId));
   afterSave(courseId, quizId, "Вопрос обновлен", { edit: questionId });
@@ -706,46 +557,25 @@ export async function moveQuizBuilderQuestion(
 ) {
   await requireAdmin();
   await requireManageCourse(courseId);
-  await ensureQuiz(courseId, quizId);
 
-  const questions = await prisma.question.findMany({
-    where: {
+  let result;
+  try {
+    result = await moveQuizBuilderQuestionUseCase({
+      courseId,
       quizId,
-      archivedAt: null,
-    },
-    orderBy: { orderIndex: "asc" },
-    select: { id: true, orderIndex: true },
-  });
-  const currentIndex = questions.findIndex((question) => question.id === questionId);
-  if (currentIndex < 0) {
-    fail(courseId, quizId, "Вопрос не найден");
-    throw new Error("unreachable");
+      questionId,
+      direction,
+    });
+  } catch (error) {
+    if (error instanceof QuizBuilderApplicationError) {
+      fail(courseId, quizId, error.message);
+    }
+    throw error;
   }
 
-  const swapIndex = direction === "UP" ? currentIndex - 1 : currentIndex + 1;
-  if (swapIndex < 0 || swapIndex >= questions.length) {
+  if (!result.moved) {
     redirect(builderUrl(courseId, quizId));
   }
-
-  const current = questions[currentIndex];
-  const target = questions[swapIndex];
-
-  await prisma.$transaction([
-    prisma.question.update({
-      where: { id: current.id },
-      data: { orderIndex: -1 },
-    }),
-    prisma.question.update({
-      where: { id: target.id },
-      data: { orderIndex: current.orderIndex },
-    }),
-    prisma.question.update({
-      where: { id: current.id },
-      data: { orderIndex: target.orderIndex },
-    }),
-  ]);
-
-  await markCourseContentChanged(courseId);
 
   revalidatePath(builderUrl(courseId, quizId));
   afterSave(courseId, quizId, "Порядок вопросов обновлен", { edit: questionId });
@@ -758,23 +588,21 @@ export async function deleteQuizBuilderQuestion(
 ) {
   await requireAdmin();
   await requireManageCourse(courseId);
-  await ensureQuiz(courseId, quizId);
 
-  const question = await prisma.question.findUnique({
-    where: { id: questionId },
-    select: { id: true, quizId: true },
-  });
-
-  if (!question || question.quizId !== quizId) {
-    fail(courseId, quizId, "Вопрос не найден");
-    throw new Error("unreachable");
+  try {
+    await deleteQuizBuilderQuestionUseCase({
+      courseId,
+      quizId,
+      questionId,
+      now: new Date(),
+    });
+  } catch (error) {
+    if (error instanceof QuizBuilderApplicationError) {
+      fail(courseId, quizId, error.message);
+    }
+    throw error;
   }
 
-  await prisma.question.update({
-    where: { id: questionId },
-    data: { archivedAt: new Date() },
-  });
-  await markCourseContentChanged(courseId);
   revalidatePath(builderUrl(courseId, quizId));
   afterSave(courseId, quizId, "Вопрос удален");
 }
@@ -782,14 +610,19 @@ export async function deleteQuizBuilderQuestion(
 export async function deleteQuizFromBuilder(courseId: string, quizId: string) {
   await requireAdmin();
   await requireManageCourse(courseId);
-  const quiz = await ensureQuiz(courseId, quizId);
 
-  await prisma.courseItem.update({
-    where: { id: quiz.courseItemId },
-    data: { archivedAt: new Date() },
-  });
-
-  await markCourseContentChanged(courseId);
+  try {
+    await deleteQuizFromBuilderUseCase({
+      courseId,
+      quizId,
+      now: new Date(),
+    });
+  } catch (error) {
+    if (error instanceof QuizBuilderApplicationError) {
+      fail(courseId, quizId, error.message);
+    }
+    throw error;
+  }
 
   revalidatePath(`/courses/${courseId}/manage`);
   revalidatePath(`/courses/${courseId}`);
