@@ -2,54 +2,46 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth-guards";
-import { auditActorFromSessionUser, recordAuditEvent } from "@/lib/audit-log";
-import prisma from "@/lib/prisma";
+import {
+  auditActorFromSessionUser,
+  getAuditRequestContext,
+} from "@/lib/audit-log";
 import { PERMISSIONS } from "@/lib/roles";
+import { departments } from "@/modules/org-structure/server/departments";
 
 function asString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
+async function actorContext(
+  sessionUser: Parameters<typeof auditActorFromSessionUser>[0],
+) {
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(sessionUser);
+  return {
+    actor: { id: actor.id, login: actor.login, name: actor.name },
+    audit: {
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+    },
+  };
+}
+
 export async function createDepartment(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.DEPARTMENTS_CREATE_EDIT);
-  const name = asString(formData, "name");
-  if (!name) throw new Error("Название подразделения обязательно");
-
-  const department = await prisma.department.create({ data: { name } });
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "departments:create",
-    objectType: "department",
-    objectId: department.id,
-    objectLabel: department.name,
-  });
+  const { actor, audit } = await actorContext(session.user);
+  await departments.create({ name: asString(formData, "name"), actor, audit });
   revalidatePath("/admin/departments");
 }
 
 export async function updateDepartment(departmentId: string, formData: FormData) {
   const session = await requirePermission(PERMISSIONS.DEPARTMENTS_CREATE_EDIT);
-  const name = asString(formData, "name");
-  if (!name) throw new Error("Название подразделения обязательно");
-
-  const existing = await prisma.department.findUnique({
-    where: { id: departmentId },
-    select: { id: true, name: true },
-  });
-  if (!existing) throw new Error("Подразделение не найдено");
-
-  await prisma.department.update({
-    where: { id: departmentId },
-    data: { name },
-  });
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "departments:update",
-    objectType: "department",
-    objectId: departmentId,
-    objectLabel: name,
-    metadata: {
-      previousName: existing.name,
-    },
+  const { actor, audit } = await actorContext(session.user);
+  await departments.update({
+    id: departmentId,
+    name: asString(formData, "name"),
+    actor,
+    audit,
   });
   revalidatePath("/admin/departments");
 }
@@ -57,19 +49,7 @@ export async function updateDepartment(departmentId: string, formData: FormData)
 export async function deleteDepartment(departmentId: string, _formData?: FormData) {
   void _formData;
   const session = await requirePermission(PERMISSIONS.DEPARTMENTS_DELETE);
-  const department = await prisma.department.findUnique({
-    where: { id: departmentId },
-    select: { id: true, name: true },
-  });
-  if (!department) throw new Error("Подразделение не найдено");
-
-  await prisma.department.delete({ where: { id: departmentId } });
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "departments:delete",
-    objectType: "department",
-    objectId: department.id,
-    objectLabel: department.name,
-  });
+  const { actor, audit } = await actorContext(session.user);
+  await departments.remove({ id: departmentId, actor, audit });
   revalidatePath("/admin/departments");
 }
