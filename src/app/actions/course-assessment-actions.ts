@@ -5,234 +5,21 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { requireManageCourse, requireSession } from "@/lib/auth-guards";
 import { auditActorFromSessionUser, recordAuditEvent } from "@/lib/audit-log";
-import { canManageCourse, canOpenQuizPage } from "@/lib/access";
-import { normalizePresentationViewMode } from "@/lib/constants";
+import { canOpenQuizPage } from "@/lib/access";
 import { getCourseManualReviewStatusParam } from "@/lib/course-manual-reviews";
-import { isPublishedSnapshotActive, parsePublishedCourseSnapshot } from "@/lib/course-content";
-import { buildCourseOutline } from "@/lib/course-navigation";
 import { getManualReviewQuestions, parseAttemptAnswers as parseAttemptAnswersFromJson, parseManualReviewData, parseQuestionSnapshot } from "@/lib/quiz-manual-review";
-import { canTrackLearningProgress } from "@/lib/roles";
 import { enqueueQuizReviewedEmails } from "@/lib/email/queue";
 import { issueCertificateIfCompleted } from "@/modules/certification/server/issue-certificate-if-completed";
 import { getAssessmentRetryAvailableAt, prepareAssessmentQuestions } from "@/modules/assessment/domain/delivery";
 import { isAssessmentTimeLimitExpired } from "@/modules/assessment/domain/assessment";
 import { normalizeFileAnswer } from "@/modules/assessment/domain/file-answer";
+import { loadQuizDeliveryContext } from "@/modules/assessment/server/quiz-delivery-context";
+import { assertQuizUnlockedByRequiredLessons } from "@/modules/assessment/server/quiz-unlock-gate";
 import { reviewAssessmentAttempt } from "@/modules/assessment/server/review-assessment-attempt";
 import { saveAssessmentDraft } from "@/modules/assessment/server/save-assessment-draft";
 import { startAssessmentAttempt } from "@/modules/assessment/server/start-assessment-attempt";
 import { submitAssessmentAttempt } from "@/modules/assessment/server/submit-assessment-attempt";
 import { asOptionalString, asString } from "./course-action-input";
-
-async function loadQuizDeliveryContext(args: {
-  quizId: string;
-  courseId: string;
-  user: {
-    id: string;
-    roles: string[];
-    permissions?: string[] | null;
-  };
-}) {
-  const quiz = await prisma.quiz.findUnique({
-    where: { id: args.quizId },
-    include: {
-      courseItem: {
-        include: {
-          course: {
-            select: {
-              id: true,
-              ownerId: true,
-              status: true,
-              hasUnpublishedChanges: true,
-              publishedSnapshotJson: true,
-              navigationMode: true,
-              quizGateMode: true,
-            },
-          },
-        },
-      },
-      questions: {
-        where: { archivedAt: null },
-        orderBy: { orderIndex: "asc" },
-      },
-      attempts: {
-        where: { userId: args.user.id },
-        orderBy: { attemptNumber: "asc" },
-      },
-    },
-  });
-
-  if (!quiz || quiz.courseItem.courseId !== args.courseId) {
-    throw new Error("Тест не найден");
-  }
-
-  const shouldUsePublishedSnapshot =
-    quiz.courseItem.course.status === "PUBLISHED" &&
-    quiz.courseItem.course.hasUnpublishedChanges &&
-    !canManageCourse(args.user.roles, args.user.id, {
-      ownerId: quiz.courseItem.course.ownerId,
-    });
-  const publishedSnapshot = shouldUsePublishedSnapshot
-    ? parsePublishedCourseSnapshot(quiz.courseItem.course.publishedSnapshotJson)
-    : null;
-  const snapshotItem = publishedSnapshot?.items.find((item) => item.quiz?.id === args.quizId) ?? null;
-
-  return {
-    quiz,
-    questions: snapshotItem?.quiz?.questions ?? quiz.questions,
-    title: snapshotItem?.title ?? quiz.courseItem.title,
-    description: snapshotItem?.quiz?.description ?? quiz.description,
-    usingPublishedSnapshot: Boolean(snapshotItem),
-  };
-}
-
-async function ensureQuizUnlockedByRequiredLessons(args: {
-  courseId: string;
-  quizId: string;
-  quizCourseItemId: string;
-  user: {
-    id: string;
-    roles: string[];
-    permissions?: string[] | null;
-  };
-  course: {
-    id: string;
-    ownerId: string | null;
-    status: string;
-    hasUnpublishedChanges: boolean;
-    publishedSnapshotJson: string | null;
-    navigationMode: string;
-    quizGateMode: string;
-  };
-}) {
-  if (!canTrackLearningProgress(args.user.roles, args.user.permissions)) return;
-
-  const publishedSnapshot =
-    isPublishedSnapshotActive(args.course) &&
-    !canManageCourse(args.user.roles, args.user.id, {
-      ownerId: args.course.ownerId,
-    })
-      ? parsePublishedCourseSnapshot(args.course.publishedSnapshotJson)
-      : null;
-
-  const courseItems = await prisma.courseItem.findMany({
-    where: publishedSnapshot
-      ? {
-          id: {
-            in: publishedSnapshot.items.map((item) => item.id),
-          },
-        }
-      : { courseId: args.courseId, archivedAt: null },
-    orderBy: { orderIndex: "asc" },
-    select: {
-      id: true,
-      moduleId: true,
-      orderIndex: true,
-      type: true,
-      title: true,
-      content: true,
-      fileUrl: true,
-      totalSlides: true,
-      presentationViewMode: true,
-      isRequired: true,
-      module: {
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          orderIndex: true,
-        },
-      },
-      views: {
-        where: { userId: args.user.id },
-        select: {
-          progressPercent: true,
-          viewedAt: true,
-        },
-        take: 1,
-      },
-      quiz: {
-        select: {
-          id: true,
-	          description: true,
-	          maxAttempts: true,
-	          minCorrectAnswers: true,
-	          timeLimitMinutes: true,
-	          shuffleQuestions: true,
-	          shuffleAnswers: true,
-	          lockMaterialsOnStart: true,
-          questions: {
-            where: { archivedAt: null },
-            select: {
-              id: true,
-            },
-          },
-          attempts: {
-            where: { userId: args.user.id },
-            orderBy: { attemptNumber: "asc" },
-            select: {
-              id: true,
-              outcome: true,
-              correctAnswers: true,
-              attemptNumber: true,
-              score: true,
-              maxScore: true,
-              completedAt: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  const displayCourseItems = publishedSnapshot
-    ? publishedSnapshot.items.map((item) => {
-        const liveItem = courseItems.find((candidate) => candidate.id === item.id);
-        return {
-          id: item.id,
-          moduleId: item.moduleId,
-          orderIndex: item.orderIndex,
-          type: item.type,
-          title: item.title,
-          content: item.content,
-          fileUrl: item.fileUrl,
-          totalSlides: item.totalSlides,
-          presentationViewMode: normalizePresentationViewMode(item.presentationViewMode),
-          isRequired: item.isRequired,
-          module:
-            item.moduleId ? publishedSnapshot.modules.find((module) => module.id === item.moduleId) ?? null : null,
-          views: liveItem?.views ?? [],
-          quiz: item.quiz
-            ? {
-                id: item.quiz.id,
-                description: item.quiz.description,
-                maxAttempts: item.quiz.maxAttempts,
-                minCorrectAnswers: item.quiz.minCorrectAnswers,
-                lockMaterialsOnStart: item.quiz.lockMaterialsOnStart,
-                questions: item.quiz.questions.map((question) => ({ id: question.id })),
-                attempts: liveItem?.quiz?.attempts ?? [],
-              }
-            : null,
-        };
-      })
-    : courseItems.map((item) => ({
-        ...item,
-        quiz: item.quiz ? { ...item.quiz } : null,
-      }));
-
-  const navigationMode =
-    (publishedSnapshot?.navigationMode ?? args.course.navigationMode) === "SEQUENTIAL" ? "SEQUENTIAL" : "FREE";
-  const quizGateMode =
-    (publishedSnapshot?.quizGateMode ?? args.course.quizGateMode) === "PASSED" ? "PASSED" : "RESOLVED";
-  const outline = buildCourseOutline(displayCourseItems, navigationMode, {
-    lockQuizzesUntilPreviousRequiredComplete: true,
-    quizGateMode,
-  });
-  const quizEntry = outline.find((item) => item.id === args.quizCourseItemId) ?? null;
-
-  if (quizEntry?.isLocked) {
-    throw new Error("Тест станет доступен после завершения предыдущего обязательного материала");
-  }
-}
 
 function readAnswersFromFormData(
   questions: { id: string; type: string; config: string }[],
@@ -365,7 +152,7 @@ export async function saveQuizAttemptProgress(
     session.user.permissions
   );
   if (!allowed) throw new Error("Нет доступа к тесту");
-  await ensureQuizUnlockedByRequiredLessons({
+  await assertQuizUnlockedByRequiredLessons({
     courseId,
     quizId,
     quizCourseItemId: quiz.courseItemId,
@@ -431,7 +218,7 @@ export async function startQuizAttempt(quizId: string, courseId: string) {
     session.user.permissions,
   );
   if (!allowed) throw new Error("Нет доступа к тесту");
-  await ensureQuizUnlockedByRequiredLessons({
+  await assertQuizUnlockedByRequiredLessons({
     courseId,
     quizId,
     quizCourseItemId: quiz.courseItemId,
@@ -478,7 +265,7 @@ export async function submitQuizAttempt(
     session.user.permissions
   );
   if (!allowed) throw new Error("Нет доступа к тесту");
-  await ensureQuizUnlockedByRequiredLessons({
+  await assertQuizUnlockedByRequiredLessons({
     courseId,
     quizId,
     quizCourseItemId: quiz.courseItemId,

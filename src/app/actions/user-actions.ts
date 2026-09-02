@@ -1,12 +1,14 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { appBaseUrl } from "@/lib/app-base-url";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth-guards";
-import { auditActorFromSessionUser, recordAuditEvent } from "@/lib/audit-log";
-import { isUserAssignedToCourse } from "@/lib/access";
+import {
+  auditActorFromSessionUser,
+  getAuditRequestContext,
+  recordAuditEvent,
+} from "@/lib/audit-log";
 import {
   enqueueCourseAssignedEmails,
   enqueueStudentInviteEmails,
@@ -16,29 +18,27 @@ import { enqueueUserAccessEmails } from "@/lib/email/queue";
 import {
   generatePasswordForPolicy,
   getPlatformSecuritySettings,
-  validatePasswordAgainstPolicy,
 } from "@/lib/platform-settings";
 import { parseCourseAccessDateInput } from "@/lib/course-access-window";
-import prisma from "@/lib/prisma";
 import { ensureSystemRoleProfiles } from "@/lib/role-profiles";
-import {
-  PERMISSIONS,
-  STANDARD_ROLE_NAMES,
-  hasPermission,
-  primaryRole,
-} from "@/lib/roles";
-import {
-  createUserActivationToken,
-  userActivationExpiresAt,
-} from "@/lib/user-activations";
-import { USER_STATUSES, buildUserDisplayName } from "@/lib/users";
-import {
-  haveRolesChanged,
-  isSelfBlockAttempt,
-  resolveEditedUserStatus,
-} from "@/modules/user/domain/user-profile-update";
+import { PERMISSIONS, hasPermission } from "@/lib/roles";
+import { USER_STATUSES } from "@/lib/users";
 import { resolveNewUserAccountPlan } from "@/modules/user/domain/new-user-account";
-import { planBulkArchive } from "@/modules/user/domain/bulk-archive";
+import { UserApplicationError } from "@/modules/user/application/errors";
+import {
+  archiveUser as archiveUserUseCase,
+  bulkArchiveUsers as bulkArchiveUsersUseCase,
+  permanentlyDeleteUser as permanentlyDeleteUserUseCase,
+  restoreUser as restoreUserUseCase,
+} from "@/modules/user/server/lifecycle";
+import { updateUserProfile as updateUserProfileUseCase } from "@/modules/user/server/profile";
+import { createUserAccount as createUserAccountUseCase } from "@/modules/user/server/creation";
+import {
+  resetUserPassword as resetUserPasswordUseCase,
+  sendUserInvite as sendUserInviteUseCase,
+} from "@/modules/user/server/credentials";
+import { EnrollmentApplicationError } from "@/modules/enrollment/application/errors";
+import { assignCourseToLearner as assignCourseToLearnerUseCase } from "@/modules/enrollment/server/learner-access";
 
 function asString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -140,40 +140,16 @@ function asUserEditReturnTab(formData: FormData) {
     : undefined;
 }
 
-function roleNamesForUser(user: {
-  role: string;
-  userRoles: Array<{ roleProfile: { name: string } }>;
-}) {
-  return [
-    ...new Set(
-      [
-        ...user.userRoles.map((item) => item.roleProfile.name),
-        user.role,
-      ].filter(Boolean),
-    ),
-  ];
-}
-
-function userHasRoleName(
-  user: {
-    role: string;
-    userRoles: Array<{ roleProfile: { name: string } }>;
-  },
-  roleName: string,
-) {
-  return roleNamesForUser(user).includes(roleName);
-}
-
 export async function createUser(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.USERS_CREATE);
   await ensureSystemRoleProfiles();
   const securitySettings = await getPlatformSecuritySettings();
-
   const canEditAccessLevel = hasPermission(
     session.user.roles,
     PERMISSIONS.USERS_EDIT_ACCESS_LEVEL,
     session.user.permissions,
   );
+
   const plan = resolveNewUserAccountPlan({
     canEditAccessLevel,
     submitModeRaw: asString(formData, "submitMode"),
@@ -181,179 +157,87 @@ export async function createUser(formData: FormData) {
     collectedRoles: collectRoleNames(formData),
     statusRaw: asString(formData, "status"),
   });
-  const shouldSendInvite = plan.shouldSendInvite;
+
   const firstName = asString(formData, "firstName");
   const lastName = asOptionalString(formData, "lastName");
-  const name = buildUserDisplayName(firstName, lastName);
   const login = asString(formData, "login").toLowerCase();
   const email = asOptionalString(formData, "email");
+  const groupId = asString(formData, "groupId");
+  const departmentId = asString(formData, "departmentId");
+  const organizationId = asString(formData, "organizationId");
   const passwordInput = canEditAccessLevel ? asString(formData, "password") : "";
   const password =
     plan.passwordSource === "generate"
       ? generatePasswordForPolicy(securitySettings)
       : passwordInput;
-  const roles = plan.roles;
-  const role = plan.role;
-  const status = plan.status;
-  const groupId = asString(formData, "groupId");
-  const departmentId = asString(formData, "departmentId");
-  const organizationId = asString(formData, "organizationId");
+
   const createUserDraft: CreateUserDraft = {
     firstName,
     lastName: lastName ?? undefined,
     login,
     email: email ?? undefined,
-    role: roles,
-    status,
+    role: plan.roles,
+    status: plan.status,
     groupId,
     departmentId,
     organizationId,
-    sendInvite: shouldSendInvite ? "1" : "0",
+    sendInvite: plan.shouldSendInvite ? "1" : "0",
   };
 
-  if (!firstName) redirectCreateError("Имя обязательно", createUserDraft);
-  if (!login) redirectCreateError("Логин обязателен", createUserDraft);
-  if (!email) redirectCreateError("Email обязателен", createUserDraft);
-  if (!password) redirectCreateError("Пароль обязателен", createUserDraft);
-  const passwordError = validatePasswordAgainstPolicy(
-    password,
-    securitySettings,
-  );
-  if (passwordError) redirectCreateError(passwordError, createUserDraft);
-  if (!role) redirectCreateError("Выберите хотя бы одну роль", createUserDraft);
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
 
-  if (groupId) {
-    const groupExists = await prisma.group.findUnique({
-      where: { id: groupId },
-      select: { id: true },
-    });
-    if (!groupExists)
-      redirectCreateError("Выбранная группа не существует", createUserDraft);
-  }
-
-  if (departmentId) {
-    const departmentExists = await prisma.department.findUnique({
-      where: { id: departmentId },
-      select: { id: true },
-    });
-    if (!departmentExists)
-      redirectCreateError(
-        "Выбранное подразделение не существует",
-        createUserDraft,
-      );
-  }
-
-  if (organizationId) {
-    const organizationExists = await prisma.organization.findUnique({
-      where: { id: organizationId },
-      select: { id: true },
-    });
-    if (!organizationExists)
-      redirectCreateError(
-        "Выбранная организация не существует",
-        createUserDraft,
-      );
-  }
-
-  const roleProfiles = await prisma.roleProfile.findMany({
-    where: { name: { in: roles } },
-    select: { id: true, name: true },
-  });
-  if (roleProfiles.length !== roles.length) {
-    redirectCreateError(
-      "Одна или несколько выбранных ролей не существуют",
-      createUserDraft,
-    );
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10);
-  const activationToken = plan.needsActivationToken ? createUserActivationToken() : null;
-  let createdUser: {
-    id: string;
-    email: string | null;
-    login: string;
-    name: string;
-    firstName: string;
-  } | null = null;
-
+  let result;
   try {
-    createdUser = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          name,
-          login,
-          email,
-          firstName,
-          lastName,
-          passwordHash,
-          role,
-          status,
-          departmentId: departmentId || null,
-          organizationId: organizationId || null,
-          userRoles: {
-            create: roleProfiles.map((roleProfile) => ({
-              roleProfileId: roleProfile.id,
-            })),
-          },
-          groupMemberships: groupId
-            ? {
-                create: {
-                  groupId,
-                },
-              }
-            : undefined,
-        },
-        select: {
-          id: true,
-          email: true,
-          login: true,
-          name: true,
-          firstName: true,
-        },
-      });
-
-      if (activationToken && user.email) {
-        await tx.userActivationInvite.create({
-          data: {
-            userId: user.id,
-            email: user.email,
-            tokenHash: activationToken.tokenHash,
-            invitedById: session.user.id,
-            expiresAt: userActivationExpiresAt(securitySettings.userActivationInviteTtlDays),
-          },
-        });
-      }
-
-      return user;
+    result = await createUserAccountUseCase({
+      actor: { id: actor.id, login: actor.login, name: actor.name },
+      audit: {
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      fields: {
+        firstName,
+        lastName,
+        login,
+        email,
+        departmentId,
+        organizationId,
+        groupId,
+      },
+      plan: {
+        roles: plan.roles,
+        role: plan.role,
+        status: plan.status,
+        password,
+        needsActivationToken: plan.needsActivationToken,
+        shouldSendInvite: plan.shouldSendInvite,
+      },
+      security: securitySettings,
     });
   } catch (error) {
-    const code =
-      typeof error === "object" && error && "code" in error
-        ? String(error.code)
-        : "";
-    if (code === "P2002") {
-      redirectCreateError(
-        "Пользователь с таким логином или email уже существует",
-        createUserDraft,
-      );
+    if (error instanceof UserApplicationError) {
+      redirectCreateError(error.message, createUserDraft);
     }
+    console.error("Failed to create user", error);
     redirectCreateError(
       "Не удалось создать пользователя. Проверьте введенные данные и попробуйте снова.",
       createUserDraft,
     );
   }
 
+  const createdUser = result.user;
+  const activationToken = result.activationToken;
   let notice = "Пользователь создан.";
 
-  if (canEditAccessLevel && shouldSendInvite && createdUser?.email) {
+  if (canEditAccessLevel && plan.shouldSendInvite && createdUser.email && activationToken) {
     try {
       await enqueueUserActivationEmails([
         {
           email: createdUser.email,
           name: createdUser.name,
-              firstName: createdUser.firstName,
+          firstName: createdUser.firstName,
           login: createdUser.login,
-          activationUrl: `${appBaseUrl()}/activate/${activationToken?.token}`,
+          activationUrl: `${appBaseUrl()}/activate/${activationToken.token}`,
         },
       ]);
       notice =
@@ -363,8 +247,8 @@ export async function createUser(formData: FormData) {
       notice =
         "Пользователь создан, но письмо со ссылкой для активации не удалось поставить в очередь.";
     }
-  } else if (!canEditAccessLevel && createdUser?.email) {
-    if (shouldSendInvite) {
+  } else if (!canEditAccessLevel && createdUser.email) {
+    if (plan.shouldSendInvite) {
       try {
         await enqueueStudentInviteEmails(
           [
@@ -390,26 +274,6 @@ export async function createUser(formData: FormData) {
     }
   }
 
-  if (createdUser) {
-    await recordAuditEvent({
-      actor: auditActorFromSessionUser(session.user),
-      action: "users:create",
-      objectType: "user",
-      objectId: createdUser.id,
-      objectLabel: createdUser.name,
-      metadata: {
-        login: createdUser.login,
-        email: createdUser.email,
-        roles,
-        status,
-        groupId: groupId || null,
-        departmentId: departmentId || null,
-        organizationId: organizationId || null,
-        inviteQueued: shouldSendInvite && Boolean(createdUser.email),
-      },
-    });
-  }
-
   revalidatePath("/admin/users-groups");
   revalidatePath("/admin/users/new");
   revalidatePath("/admin/organizations");
@@ -419,76 +283,44 @@ export async function createUser(formData: FormData) {
 export async function deleteUser(userId: string, formData?: FormData) {
   const session = await requirePermission(PERMISSIONS.USERS_DELETE);
   const returnTab = formData ? asUserEditReturnTab(formData) : undefined;
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
 
-  if (session.user.id === userId) {
-    redirect(
-      userEditUrl(userId, {
-        error: "Нельзя архивировать текущего пользователя.",
-        tab: returnTab,
-      }),
-    );
-  }
-
-  const existingUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, login: true, email: true, name: true, status: true },
-  });
-
-  if (!existingUser) {
-    redirect(
-      userEditUrl(userId, {
-        error: "Пользователь не найден.",
-        tab: returnTab,
-      }),
-    );
-  }
-
-  if (existingUser.status === USER_STATUSES.ARCHIVED) {
-    redirect(
-      userEditUrl(existingUser.id, {
-        notice: "Пользователь уже архивирован.",
-        tab: returnTab,
-      }),
-    );
-  }
-
-  await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        status: USER_STATUSES.ARCHIVED,
-        failedLoginAttempts: 0,
-        loginLockedUntil: null,
+  let result;
+  try {
+    result = await archiveUserUseCase({
+      userId,
+      currentUserId: session.user.id,
+      audit: {
+        actorId: actor.id,
+        actorLogin: actor.login,
+        actorName: actor.name,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
       },
     });
-
-    await tx.userActivationInvite.updateMany({
-      where: {
-        userId,
-        status: "PENDING",
-      },
-      data: {
-        status: "CANCELLED",
-      },
-    });
-  });
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "users:archive",
-    objectType: "user",
-    objectId: existingUser.id,
-    objectLabel: existingUser.name,
-    metadata: {
-      login: existingUser.login,
-      email: existingUser.email,
-      previousStatus: existingUser.status,
-      nextStatus: USER_STATUSES.ARCHIVED,
-    },
-  });
+  } catch (error) {
+    if (error instanceof UserApplicationError) {
+      if (error.code === "ALREADY_ARCHIVED") {
+        redirect(
+          userEditUrl(userId, {
+            notice: error.message,
+            tab: returnTab,
+          }),
+        );
+      }
+      redirect(
+        userEditUrl(userId, {
+          error: error.message,
+          tab: returnTab,
+        }),
+      );
+    }
+    throw error;
+  }
 
   revalidatePath("/admin/users-groups");
-  revalidatePath(`/admin/users/${existingUser.id}/edit`);
+  revalidatePath(`/admin/users/${result.user.id}/edit`);
   revalidatePath("/admin/departments");
   revalidatePath("/admin/organizations");
   redirect(usersListUrl("Пользователь архивирован."));
@@ -497,54 +329,42 @@ export async function deleteUser(userId: string, formData?: FormData) {
 export async function restoreUser(userId: string, formData?: FormData) {
   const session = await requirePermission(PERMISSIONS.USERS_DELETE);
   const returnTab = formData ? asUserEditReturnTab(formData) : undefined;
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
 
-  const existingUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, login: true, email: true, name: true, status: true },
-  });
-
-  if (!existingUser) {
-    redirect(usersListUrl("Пользователь не найден."));
+  let result;
+  try {
+    result = await restoreUserUseCase({
+      userId,
+      audit: {
+        actorId: actor.id,
+        actorLogin: actor.login,
+        actorName: actor.name,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+    });
+  } catch (error) {
+    if (error instanceof UserApplicationError) {
+      if (error.code === "NOT_FOUND") {
+        redirect(usersListUrl(error.message));
+      }
+      redirect(
+        userEditUrl(userId, {
+          error: error.message,
+          tab: returnTab,
+        }),
+      );
+    }
+    throw error;
   }
-
-  if (existingUser.status !== USER_STATUSES.ARCHIVED) {
-    redirect(
-      userEditUrl(userId, {
-        error: "Восстановить можно только архивированного пользователя.",
-        tab: returnTab,
-      }),
-    );
-  }
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      status: USER_STATUSES.ACTIVE,
-      failedLoginAttempts: 0,
-      loginLockedUntil: null,
-    },
-  });
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "users:restore",
-    objectType: "user",
-    objectId: existingUser.id,
-    objectLabel: existingUser.name,
-    metadata: {
-      login: existingUser.login,
-      email: existingUser.email,
-      previousStatus: existingUser.status,
-      nextStatus: USER_STATUSES.ACTIVE,
-    },
-  });
 
   revalidatePath("/admin/users-groups");
-  revalidatePath(`/admin/users/${existingUser.id}/edit`);
+  revalidatePath(`/admin/users/${result.user.id}/edit`);
   revalidatePath("/admin/departments");
   revalidatePath("/admin/organizations");
   redirect(
-    userEditUrl(existingUser.id, {
+    userEditUrl(result.user.id, {
       notice: "Пользователь восстановлен и снова активен.",
       tab: returnTab,
     }),
@@ -553,93 +373,48 @@ export async function restoreUser(userId: string, formData?: FormData) {
 
 export async function bulkArchiveUsers(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.USERS_DELETE);
-  const selectedUserIds = [
-    ...new Set(
-      formData
-        .getAll("userId")
-        .map((value) => String(value).trim())
-        .filter(Boolean),
-    ),
-  ];
+  const selectedUserIds = formData
+    .getAll("userId")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
 
   if (selectedUserIds.length === 0) {
     redirect(usersListUrl("Выберите пользователей для архивирования."));
   }
 
-  const users = await prisma.user.findMany({
-    where: {
-      id: { in: selectedUserIds },
-    },
-    select: {
-      id: true,
-      login: true,
-      email: true,
-      name: true,
-      status: true,
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
+
+  const result = await bulkArchiveUsersUseCase({
+    requestedUserIds: selectedUserIds,
+    currentUserId: session.user.id,
+    audit: {
+      actorId: actor.id,
+      actorLogin: actor.login,
+      actorName: actor.name,
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
     },
   });
-  const { skippedCurrentUser, archiveUserIds } = planBulkArchive(users, session.user.id);
 
-  if (archiveUserIds.length === 0) {
+  if (result.status === "NOTHING_TO_ARCHIVE") {
     redirect(
       usersListUrl(
-        skippedCurrentUser
+        result.skippedCurrentUser
           ? "Текущего пользователя нельзя архивировать."
           : "Нет пользователей, которых можно архивировать.",
       ),
     );
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.user.updateMany({
-      where: { id: { in: archiveUserIds } },
-      data: {
-        status: USER_STATUSES.ARCHIVED,
-        failedLoginAttempts: 0,
-        loginLockedUntil: null,
-      },
-    });
-
-    await tx.userActivationInvite.updateMany({
-      where: {
-        userId: { in: archiveUserIds },
-        status: "PENDING",
-      },
-      data: {
-        status: "CANCELLED",
-      },
-    });
-  });
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "users:bulk_archive",
-    objectType: "user_batch",
-    objectLabel: `bulk_archive_${archiveUserIds.length}`,
-    metadata: {
-      requestedCount: selectedUserIds.length,
-      archivedCount: archiveUserIds.length,
-      skippedCurrentUser,
-      users: users
-        .filter((user) => archiveUserIds.includes(user.id))
-        .slice(0, 100)
-        .map((user) => ({
-          id: user.id,
-          login: user.login,
-          email: user.email,
-          previousStatus: user.status,
-        })),
-    },
-  });
-
   revalidatePath("/admin/users-groups");
   revalidatePath("/admin/departments");
   revalidatePath("/admin/organizations");
   redirect(
     usersListUrl(
-      skippedCurrentUser
-        ? `Архивировано пользователей: ${archiveUserIds.length}. Текущий пользователь пропущен.`
-        : `Архивировано пользователей: ${archiveUserIds.length}.`,
+      result.skippedCurrentUser
+        ? `Архивировано пользователей: ${result.archivedCount}. Текущий пользователь пропущен.`
+        : `Архивировано пользователей: ${result.archivedCount}.`,
     ),
   );
 }
@@ -650,13 +425,6 @@ export async function permanentlyDeleteUser(
 ) {
   const session = await requirePermission(PERMISSIONS.USERS_DELETE);
   const confirmed = asString(formData, "confirmPermanentDelete") === "1";
-
-  if (session.user.id === userId) {
-    redirect(
-      userEditUrl(userId, { error: "Нельзя удалить текущего пользователя." }),
-    );
-  }
-
   if (!confirmed) {
     redirect(
       userEditUrl(userId, {
@@ -665,52 +433,29 @@ export async function permanentlyDeleteUser(
     );
   }
 
-  const existingUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, login: true, email: true, name: true, status: true },
-  });
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
 
-  if (!existingUser) {
-    redirect(usersListUrl("Пользователь не найден."));
-  }
-
-  if (existingUser.status !== USER_STATUSES.ARCHIVED) {
-    redirect(
-      userEditUrl(userId, {
-        error:
-          "Окончательно удалить можно только архивированного пользователя.",
-      }),
-    );
-  }
-
+  let result;
   try {
-    await prisma.$transaction(async (tx) => {
-      if (existingUser.email) {
-        await tx.emailJob.deleteMany({
-          where: {
-            toEmail: existingUser.email,
-            status: { in: ["PENDING", "PROCESSING", "FAILED"] },
-          },
-        });
-
-        await tx.courseInvite.deleteMany({
-          where: {
-            email: existingUser.email,
-          },
-        });
-      }
-
-      await tx.courseInvite.deleteMany({
-        where: {
-          acceptedUserId: userId,
-        },
-      });
-
-      await tx.user.delete({
-        where: { id: userId },
-      });
+    result = await permanentlyDeleteUserUseCase({
+      userId,
+      currentUserId: session.user.id,
+      audit: {
+        actorId: actor.id,
+        actorLogin: actor.login,
+        actorName: actor.name,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
     });
   } catch (error) {
+    if (error instanceof UserApplicationError) {
+      if (error.code === "NOT_FOUND") {
+        redirect(usersListUrl(error.message));
+      }
+      redirect(userEditUrl(userId, { error: error.message }));
+    }
     console.error("Failed to permanently delete user", error);
     redirect(
       userEditUrl(userId, {
@@ -720,21 +465,8 @@ export async function permanentlyDeleteUser(
     );
   }
 
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "users:delete_permanently",
-    objectType: "user",
-    objectId: existingUser.id,
-    objectLabel: existingUser.name,
-    metadata: {
-      login: existingUser.login,
-      email: existingUser.email,
-      previousStatus: existingUser.status,
-    },
-  });
-
   revalidatePath("/admin/users-groups");
-  revalidatePath(`/admin/users/${existingUser.id}/edit`);
+  revalidatePath(`/admin/users/${result.user.id}/edit`);
   revalidatePath("/admin/departments");
   revalidatePath("/admin/organizations");
   redirect(
@@ -748,225 +480,59 @@ export async function updateUser(userId: string, formData: FormData) {
   const session = await requirePermission(PERMISSIONS.USERS_EDIT_PROFILE);
   await ensureSystemRoleProfiles();
   const securitySettings = await getPlatformSecuritySettings();
-
   const canEditAccessLevel = hasPermission(
     session.user.roles,
     PERMISSIONS.USERS_EDIT_ACCESS_LEVEL,
     session.user.permissions,
   );
-  const firstName = asString(formData, "firstName");
-  const lastName = asOptionalString(formData, "lastName");
-  const name = buildUserDisplayName(firstName, lastName);
-  const loginInput = asString(formData, "login").toLowerCase();
-  const email = asOptionalString(formData, "email");
-  const password = asString(formData, "password");
-  const passwordConfirm = asString(formData, "passwordConfirm");
-  const groupId = asString(formData, "groupId");
-  const departmentId = asString(formData, "departmentId");
-  const organizationId = asString(formData, "organizationId");
-  const avatarUrl = asOptionalAvatarUrl(formData);
-  const statusRaw = asString(formData, "status");
-  const statusControl = asString(formData, "statusControl");
   const returnTab = asUserEditReturnTab(formData);
-  const currentUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      name: true,
-      firstName: true,
-      lastName: true,
-      login: true,
-      email: true,
-      avatarUrl: true,
-      role: true,
-      status: true,
-      departmentId: true,
-      organizationId: true,
-      groupMemberships: {
-        select: {
-          groupId: true,
-        },
-      },
-      userRoles: {
-        include: {
-          roleProfile: {
-            select: { name: true },
-          },
-        },
-      },
-    },
-  });
-  if (!currentUser) {
-    redirect(usersListUrl("Пользователь не найден."));
-  }
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
 
-  const login = canEditAccessLevel ? loginInput : currentUser.login;
-
-  if (!firstName) redirectUserEditError(userId, "Имя обязательно");
-  if (!login) redirectUserEditError(userId, "Логин обязателен");
-  if (avatarUrl === "invalid")
-    redirectUserEditError(userId, "Некорректный адрес аватара");
-
-  const currentRoles = roleNamesForUser(currentUser);
-  if (
-    !canEditAccessLevel &&
-    !userHasRoleName(currentUser, STANDARD_ROLE_NAMES.STUDENT)
-  ) {
-    redirectUserEditError(userId, "HR может редактировать только учеников.");
-  }
-
-  const roles = canEditAccessLevel ? collectRoleNames(formData) : currentRoles;
-  const role = primaryRole(roles) ?? currentUser.role;
-  const status = resolveEditedUserStatus({
-    canEditAccessLevel,
-    statusControl,
-    currentStatus: currentUser.status,
-    activeUserChecked: hasCheckedValue(formData, "activeUser", "1"),
-    statusRaw,
-  });
-
-  if (
-    isSelfBlockAttempt({
-      sessionUserId: session.user.id,
-      targetUserId: userId,
-      nextStatus: status,
-      currentStatus: currentUser.status,
-    })
-  ) {
-    redirectUserEditError(userId, "Нельзя заблокировать текущего пользователя");
-  }
-
-  if (!role) redirectUserEditError(userId, "Выберите хотя бы одну роль");
-
-  const roleProfiles = await prisma.roleProfile.findMany({
-    where: { name: { in: roles } },
-    select: { id: true, name: true },
-  });
-  if (roleProfiles.length !== roles.length) {
-    redirectUserEditError(
-      userId,
-      "Одна или несколько выбранных ролей не существуют",
-    );
-  }
-
-  const rolesChanged = haveRolesChanged(currentRoles, roles);
-
-  if (rolesChanged) {
-    await requirePermission(PERMISSIONS.USERS_EDIT_ACCESS_LEVEL);
-  }
-
-  if (!canEditAccessLevel && (password || passwordConfirm)) {
-    redirectUserEditError(userId, "Недостаточно прав для изменения пароля");
-  }
-
-  if (canEditAccessLevel && (password || passwordConfirm)) {
-    if (currentUser.status === USER_STATUSES.ARCHIVED) {
-      redirectUserEditError(
-        userId,
-        "Нельзя менять пароль архивного пользователя",
-      );
-    }
-    if (!password || !passwordConfirm) {
-      redirectUserEditError(userId, "Введите новый пароль и подтверждение");
-    }
-    if (password !== passwordConfirm) {
-      redirectUserEditError(userId, "Пароли не совпадают");
-    }
-
-    const passwordError = validatePasswordAgainstPolicy(
-      password,
-      securitySettings,
-    );
-    if (passwordError) redirectUserEditError(userId, passwordError);
-  }
-
-  if (groupId) {
-    const groupExists = await prisma.group.findUnique({
-      where: { id: groupId },
-      select: { id: true },
-    });
-    if (!groupExists)
-      redirectUserEditError(userId, "Выбранная группа не существует");
-  }
-
-  if (departmentId) {
-    const departmentExists = await prisma.department.findUnique({
-      where: { id: departmentId },
-      select: { id: true },
-    });
-    if (!departmentExists)
-      redirectUserEditError(userId, "Выбранное подразделение не существует");
-  }
-
-  if (organizationId) {
-    const organizationExists = await prisma.organization.findUnique({
-      where: { id: organizationId },
-      select: { id: true },
-    });
-    if (!organizationExists)
-      redirectUserEditError(userId, "Выбранная организация не существует");
-  }
-
-  const passwordHash =
-    canEditAccessLevel && password ? await bcrypt.hash(password, 10) : null;
-  const passwordUpdated = Boolean(passwordHash);
-
+  let result;
   try {
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: userId },
-        data: {
-          name,
-          firstName,
-          lastName,
-          login,
-          email,
-          avatarUrl,
-          role,
-          status,
-          departmentId: departmentId || null,
-          organizationId: organizationId || null,
-          ...(passwordHash ? { passwordHash } : {}),
-        },
-      }),
-      ...(passwordUpdated
-        ? [
-            prisma.passwordResetToken.updateMany({
-              where: { userId, status: "PENDING" },
-              data: { status: "CANCELLED" },
-            }),
-          ]
-        : []),
-      prisma.userRole.deleteMany({ where: { userId } }),
-      ...roleProfiles.map((roleProfile) =>
-        prisma.userRole.create({
-          data: {
-            userId,
-            roleProfileId: roleProfile.id,
-          },
-        }),
-      ),
-      prisma.groupMembership.deleteMany({ where: { userId } }),
-      ...(groupId
-        ? [
-            prisma.groupMembership.create({
-              data: { userId, groupId },
-            }),
-          ]
-        : []),
-    ]);
+    result = await updateUserProfileUseCase({
+      userId,
+      canEditAccessLevel,
+      fields: {
+        firstName: asString(formData, "firstName"),
+        lastName: asOptionalString(formData, "lastName"),
+        loginInput: asString(formData, "login").toLowerCase(),
+        email: asOptionalString(formData, "email"),
+        password: asString(formData, "password"),
+        passwordConfirm: asString(formData, "passwordConfirm"),
+        groupId: asString(formData, "groupId"),
+        departmentId: asString(formData, "departmentId"),
+        organizationId: asString(formData, "organizationId"),
+        avatarUrl: asOptionalAvatarUrl(formData),
+        statusRaw: asString(formData, "status"),
+        statusControl: asString(formData, "statusControl"),
+        activeUserChecked: hasCheckedValue(formData, "activeUser", "1"),
+        submittedRoles: collectRoleNames(formData),
+      },
+      security: securitySettings,
+      actor: {
+        id: actor.id,
+        login: actor.login,
+        name: actor.name,
+      },
+      audit: {
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      authorizeRoleChange: async () => {
+        // Двойной guard от рассинхрона session.user.permissions с актуальной
+        // сессией: use-case вызовет только когда роли реально меняются.
+        await requirePermission(PERMISSIONS.USERS_EDIT_ACCESS_LEVEL);
+      },
+    });
   } catch (error) {
-    const code =
-      typeof error === "object" && error && "code" in error
-        ? String(error.code)
-        : "";
-    if (code === "P2002") {
-      redirectUserEditError(
-        userId,
-        "Пользователь с таким логином или email уже существует",
-      );
+    if (error instanceof UserApplicationError) {
+      if (error.code === "NOT_FOUND") {
+        redirect(usersListUrl(error.message));
+      }
+      redirectUserEditError(userId, error.message);
     }
-
     console.error("Failed to update user", error);
     redirectUserEditError(
       userId,
@@ -974,51 +540,12 @@ export async function updateUser(userId: string, formData: FormData) {
     );
   }
 
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "users:update",
-    objectType: "user",
-    objectId: userId,
-    objectLabel: name,
-    metadata: {
-      previous: {
-        name: currentUser.name,
-        firstName: currentUser.firstName,
-        lastName: currentUser.lastName,
-        login: currentUser.login,
-        email: currentUser.email,
-        avatarUrl: currentUser.avatarUrl,
-        roles: currentRoles,
-        status: currentUser.status,
-        departmentId: currentUser.departmentId,
-        organizationId: currentUser.organizationId,
-        groupIds: currentUser.groupMemberships.map(
-          (membership) => membership.groupId,
-        ),
-      },
-      next: {
-        firstName,
-        lastName,
-        name,
-        login,
-        email,
-        avatarUrl,
-        roles,
-        status,
-        departmentId: departmentId || null,
-        organizationId: organizationId || null,
-        groupIds: groupId ? [groupId] : [],
-      },
-      passwordUpdated,
-    },
-  });
-
   revalidatePath("/admin/users-groups");
   revalidatePath("/admin/departments");
   revalidatePath("/admin/organizations");
-  revalidatePath(`/admin/users/${userId}/edit`);
+  revalidatePath(`/admin/users/${result.userId}/edit`);
   const notice = canEditAccessLevel
-    ? passwordUpdated
+    ? result.passwordUpdated
       ? "Пользователь обновлен. Пароль изменен."
       : "Пользователь обновлен."
     : "Профиль ученика обновлен.";
@@ -1028,7 +555,7 @@ export async function updateUser(userId: string, formData: FormData) {
   }
 
   redirect(
-    userEditUrl(userId, {
+    userEditUrl(result.userId, {
       notice,
       tab: returnTab,
     }),
@@ -1064,62 +591,41 @@ export async function assignCourseToUserFromProfile(
     );
   }
 
-  const [user, course] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, name: true, firstName: true, email: true, status: true },
-    }),
-    prisma.course.findUnique({
-      where: { id: courseId },
-      select: { id: true, title: true, status: true },
-    }),
-  ]);
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
 
-  if (!user) {
-    redirect(usersListUrl("Пользователь не найден."));
-  }
-  if (user.status === USER_STATUSES.ARCHIVED) {
-    redirect(coursesTabUrl({ error: "Нельзя назначить курс архивному пользователю." }));
-  }
-  if (!course || course.status !== "PUBLISHED") {
-    redirect(
-      coursesTabUrl({
-        error: "Для назначения доступны только опубликованные неархивные курсы.",
-      }),
-    );
-  }
-
-  const isAlreadyAssigned = await isUserAssignedToCourse(userId, courseId);
-  if (isAlreadyAssigned) {
-    redirect(coursesTabUrl({ notice: "Курс уже назначен пользователю." }));
-  }
-
-  const assignedAt = new Date();
-  await prisma.courseUserAssignment.upsert({
-    where: {
-      courseId_userId: {
-        courseId,
-        userId,
-      },
-    },
-    create: {
+  let result;
+  try {
+    result = await assignCourseToLearnerUseCase({
       courseId,
-      userId,
-      assignedById: session.user.id,
-      assignedAt,
-      expiresAt: accessExpiresAt,
-    },
-    update: {
-      assignedById: session.user.id,
-      assignedAt,
-      expiresAt: accessExpiresAt,
-    },
-  });
+      learnerId: userId,
+      accessExpiresAt,
+      audit: {
+        actorId: actor.id,
+        actorLogin: actor.login,
+        actorName: actor.name,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+    });
+  } catch (error) {
+    if (error instanceof EnrollmentApplicationError) {
+      if (error.code === "USER_NOT_FOUND") {
+        redirect(usersListUrl(error.message));
+      }
+      if (error.code === "ALREADY_ASSIGNED") {
+        redirect(coursesTabUrl({ notice: error.message }));
+      }
+      redirect(coursesTabUrl({ error: error.message }));
+    }
+    throw error;
+  }
 
-  if (user.email && user.status === USER_STATUSES.ACTIVE) {
+  const { course, learner } = result;
+  if (learner.email && learner.status === USER_STATUSES.ACTIVE) {
     try {
       await enqueueCourseAssignedEmails(
-        [{ email: user.email, name: user.name, firstName: user.firstName }],
+        [{ email: learner.email, name: learner.name, firstName: learner.firstName }],
         {
           courseTitle: course.title,
           courseUrl: `${appBaseUrl()}/courses/${course.id}`,
@@ -1130,19 +636,6 @@ export async function assignCourseToUserFromProfile(
       console.error("Failed to queue course assignment email", error);
     }
   }
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "courses:assign",
-    objectType: "course",
-    objectId: course.id,
-    objectLabel: course.title,
-    metadata: {
-      source: "user_profile",
-      directUserIds: [userId],
-      accessExpiresAt,
-    },
-  });
 
   revalidatePath("/");
   revalidatePath("/courses");
@@ -1158,50 +651,33 @@ export async function resetUserPassword(userId: string) {
   const session = await requirePermission(PERMISSIONS.USERS_EDIT_ACCESS_LEVEL);
   await ensureSystemRoleProfiles();
   const securitySettings = await getPlatformSecuritySettings();
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      email: true,
-      login: true,
-      name: true,
-      firstName: true,
-    },
-  });
-
-  if (!user) {
-    redirect(usersListUrl("Пользователь не найден."));
-  }
-
-  if (!user.email) {
-    redirect(
-      userEditUrl(user.id, {
-        error: "У пользователя не указан email для отправки временного пароля.",
-      }),
-    );
-  }
-
   const temporaryPassword = generatePasswordForPolicy(securitySettings);
-  const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordHash, failedLoginAttempts: 0, loginLockedUntil: null },
-  });
-  await prisma.passwordResetToken.updateMany({
-    where: { userId: user.id, status: "PENDING" },
-    data: { status: "CANCELLED" },
-  });
+  let result;
+  try {
+    result = await resetUserPasswordUseCase({
+      userId,
+      newPassword: temporaryPassword,
+    });
+  } catch (error) {
+    if (error instanceof UserApplicationError) {
+      if (error.code === "NOT_FOUND") {
+        redirect(usersListUrl(error.message));
+      }
+      redirect(userEditUrl(userId, { error: error.message }));
+    }
+    throw error;
+  }
 
-
+  const user = result.user;
+  let inviteQueued = true;
   let notice = "Временный пароль сохранен и поставлен в очередь на отправку.";
 
   try {
     await enqueueUserAccessEmails(
       [
         {
-          email: user.email,
+          email: user.email!,
           name: user.name,
           firstName: user.firstName,
           login: user.login,
@@ -1215,6 +691,7 @@ export async function resetUserPassword(userId: string) {
     );
   } catch (error) {
     console.error("Failed to queue password reset email", error);
+    inviteQueued = false;
     notice =
       "Пароль обновлен, но письмо с временным паролем не удалось поставить в очередь.";
   }
@@ -1228,7 +705,7 @@ export async function resetUserPassword(userId: string) {
     metadata: {
       login: user.login,
       email: user.email,
-      inviteQueued: notice.includes("поставлен"),
+      inviteQueued,
     },
   });
 
@@ -1246,78 +723,34 @@ export async function sendUserInvite(userId: string) {
     PERMISSIONS.USERS_EDIT_ACCESS_LEVEL,
     session.user.permissions,
   );
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      email: true,
-      login: true,
-      name: true,
-      role: true,
-      firstName: true,
-      status: true,
-      userRoles: {
-        select: {
-          roleProfile: {
-            select: { name: true },
-          },
-        },
-      },
-    },
-  });
-
-  if (!user) {
-    redirect(usersListUrl("Пользователь не найден."));
-  }
-
-  if (
-    !canEditAccessLevel &&
-    !userHasRoleName(user, STANDARD_ROLE_NAMES.STUDENT)
-  ) {
-    redirect(
-      usersListUrl(
-        "Недостаточно прав для отправки приглашения этому пользователю.",
-      ),
-    );
-  }
-
-  if (user.status === USER_STATUSES.ARCHIVED) {
-    redirect(
-      userEditUrl(user.id, {
-        error: "Нельзя отправить приглашение архивированному пользователю.",
-      }),
-    );
-  }
-
-  if (!user.email) {
-    redirect(
-      userEditUrl(user.id, {
-        error: "У пользователя не указан email для отправки приглашения.",
-      }),
-    );
-  }
-
   const temporaryPassword = generatePasswordForPolicy(securitySettings);
-  const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordHash, failedLoginAttempts: 0, loginLockedUntil: null },
-  });
-  await prisma.passwordResetToken.updateMany({
-    where: { userId: user.id, status: "PENDING" },
-    data: { status: "CANCELLED" },
-  });
+  let result;
+  try {
+    result = await sendUserInviteUseCase({
+      userId,
+      canEditAccessLevel,
+      newPassword: temporaryPassword,
+    });
+  } catch (error) {
+    if (error instanceof UserApplicationError) {
+      if (error.code === "NOT_FOUND" || error.code === "HR_FORBIDDEN") {
+        redirect(usersListUrl(error.message));
+      }
+      redirect(userEditUrl(userId, { error: error.message }));
+    }
+    throw error;
+  }
 
-
+  const user = result.user;
+  let inviteQueued = true;
   let notice = "Приглашение отправлено: временный пароль поставлен в очередь.";
 
   try {
     await enqueueUserAccessEmails(
       [
         {
-          email: user.email,
+          email: user.email!,
           name: user.name,
           firstName: user.firstName,
           login: user.login,
@@ -1331,6 +764,7 @@ export async function sendUserInvite(userId: string) {
     );
   } catch (error) {
     console.error("Failed to queue user invite email", error);
+    inviteQueued = false;
     notice =
       "Пользователь обновлен, но приглашение с временным паролем не удалось поставить в очередь.";
   }
@@ -1344,7 +778,7 @@ export async function sendUserInvite(userId: string) {
     metadata: {
       login: user.login,
       email: user.email,
-      inviteQueued: notice.includes("поставлен"),
+      inviteQueued,
       byHrManager: !canEditAccessLevel,
     },
   });
