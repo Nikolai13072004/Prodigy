@@ -52,9 +52,11 @@ next-env.d.ts
 /src/generated/prisma
 
 # local data
-# Временная pg-схема инфра-раннера (run-infra-tests.mjs, режим INFRA_DATABASE_URL);
-# обычно чистится сама, тут — страховка от жёсткого обрыва.
+# Временные pg-схемы инфра-раннера и скрипта переноса данных
+# (run-infra-tests.mjs / migrate-sqlite-to-postgres.mjs); обычно чистятся сами,
+# тут — страховка от жёсткого обрыва.
 /prisma/schema.infra-pg-*.prisma
+/prisma/schema.migrate-pg.prisma
 /prisma/dev.db
 /prisma/dev.db-journal
 /prisma/dev.db-shm
