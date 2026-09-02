@@ -144,6 +144,9 @@ model GroupMembership {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
+  // Членство ученика по userId (learnerCourseAssignmentWhere: memberships { some { userId } }).
+  // @@unique([groupId, userId]) не покрывает — userId не leftmost.
+  @@index([userId])
 }
 
 model Course {
@@ -192,6 +195,8 @@ model Course {
   // выдачи `/uploads/*` (src/lib/storage/upload-access.ts).
   @@index([coverUrl])
   @@index([thumbnailUrl])
+  // Каталог/HR/аналитика: where { status } (+ orderBy publishedAt в каталоге).
+  @@index([status, publishedAt])
 }
 
 // Сертификат о прохождении курса — иммутабельный снимок факта завершения (ADR-012).
@@ -237,6 +242,9 @@ model CourseUserAssignment {
   assignedBy User?  @relation("CourseAssignedByUser", fields: [assignedById], references: [id], onDelete: SetNull)
 
   @@unique([courseId, userId])
+  // «Мои назначения» ученика (where { userId }). @@unique([courseId, userId])
+  // не покрывает — userId не leftmost.
+  @@index([userId])
 }
 
 model CourseGroupAssignment {

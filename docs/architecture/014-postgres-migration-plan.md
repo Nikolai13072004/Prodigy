@@ -75,9 +75,12 @@
   `prisma migrate dev --name init_postgres` на чистой PG. Это сброс истории
   миграций под новый провайдер — штатно при смене диалекта.
 
-### Шаг 2. Индексы + поиск (волна D, вносится в baseline)
+### Шаг 2. Индексы + поиск (волна D)
 
-Добавить в `schema.prisma` до генерации baseline:
+**Индексы уже внесены** миграцией `20260902120000_add_hot_path_indexes`
+(диалектно-нейтральный `CREATE INDEX`, работает и на SQLite, и на PG; при
+baseline «с нуля» они попадут в init автоматически, т.к. baseline
+генерируется из схемы):
 
 - `CourseUserAssignment @@index([userId])` — «мои назначения» ученика
   (`where { userId }`; `@@unique([courseId, userId])` не покрывает, userId не
@@ -85,15 +88,18 @@
 - `GroupMembership @@index([userId])` — членство ученика в группах
   (`memberships { some { userId } }`; та же причина).
 - `Course @@index([status, publishedAt])` — каталог
-  (`where { status } orderBy publishedAt`). Опционально `@@index([updatedAt])`
-  для админ-списка.
+  (`where { status } orderBy publishedAt`).
+
+Остаётся на PG (недоступно на SQLite):
+
 - Поиск: `contains: q` → `contains: q, mode: "insensitive"` в местах поиска
   курсов/пользователей (`courses/_views/*`, HR-фильтры, users-groups).
 
 Обоснование волны D — там же: значимого N+1 в кодовой базе нет (страницы
 используют `Promise.all`, lib-агрегации — `include` + in-memory циклы,
-outbox-цикл — намеренный claim). Индексы дают эффект именно на PG/масштабе,
-поэтому вносятся в переезд, а не отдельной SQLite-миграцией.
+outbox-цикл — намеренный claim; сырого SQL в `src/` — 0, всё через Prisma-API →
+код провайдер-независим). Индексы дают эффект именно на PG/масштабе, но
+безвредны на SQLite и вносятся заранее.
 
 ### Шаг 3. Инфраструктура (compose)
 
