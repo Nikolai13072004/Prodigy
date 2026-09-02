@@ -57,13 +57,31 @@
 
 ## План переезда (пошагово, каждый шаг — отдельный MR, зелёный CI)
 
-### Шаг 0. Подготовка (без прод-эффекта)
+### Шаг 0. Подготовка (без прод-эффекта) — ВЫПОЛНЕНО ✓
 
-- Поднять локальный PostgreSQL (dev-контейнер) для проверки схемы и тестов.
-- Прогнать `npm run test:infra` против PG — убедиться, что инфра-репозитории
-  провайдер-независимы (все запросы идут через Prisma; сырого SQL в `src/`
-  нет — проверено). Тестовый скрипт `scripts/run-infra-tests.mjs` сейчас
-  поднимает временную SQLite; добавить вариант с PG.
+**Провайдер-независимость подтверждена эмпирически (2026-09-02):** все **118
+инфра-тестов прошли против настоящего PostgreSQL 16** (fail 0) без единого
+изменения кода. Проверено, что весь слой репозиториев (транзакции, перехват
+P2002/уникальных нарушений, upsert, каскады, аудит в одной транзакции)
+работает на PG идентично SQLite. Сырого SQL в `src/` — 0, всё через Prisma-API.
+
+Процедура (воспроизводима локально при запущенном Docker):
+
+```bash
+docker run -d --name lms-pg-test -e POSTGRES_PASSWORD=test -e POSTGRES_USER=lms \
+  -e POSTGRES_DB=lmstest -p 55432:5432 postgres:16
+# временная копия схемы с provider = "postgresql"
+sed 's/provider = "sqlite"/provider = "postgresql"/' prisma/schema.prisma > /tmp/schema.pg.prisma
+export DATABASE_URL="postgresql://lms:test@localhost:55432/lmstest?schema=public"
+npx prisma db push --schema=/tmp/schema.pg.prisma --skip-generate --accept-data-loss
+npx prisma generate --schema=/tmp/schema.pg.prisma          # клиент под postgres
+TSX_TSCONFIG_PATH=tsconfig.infra.json node_modules/.bin/tsx --test --test-concurrency=1 \
+  $(find src -name '*.infra.test.ts' | sort)                # 118/118
+npx prisma generate && docker rm -f lms-pg-test             # вернуть клиент под sqlite
+```
+
+TODO: завести это в `scripts/run-infra-tests.mjs` через `INFRA_DATABASE_URL`,
+чтобы PG-прогон стал штатной командой (сейчас процедура ручная).
 
 ### Шаг 1. Провайдер и schema
 
