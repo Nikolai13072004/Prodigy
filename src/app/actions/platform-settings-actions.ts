@@ -15,8 +15,8 @@ import {
   isSupportedPlatformTimeZone,
 } from "@/lib/platform-localization";
 import { saveEmailPlatformSettingsFromForm } from "@/lib/platform-email-settings-save";
-import prisma from "@/lib/prisma";
 import { DEFAULT_PLATFORM_SETTINGS, pruneExpiredLoginEvents } from "@/lib/platform-settings";
+import { platformSettingsStore } from "@/modules/platform/server/platform-settings";
 
 function asString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -127,15 +127,7 @@ export async function saveGeneralPlatformSettings(
     return withError(message);
   }
 
-  const currentUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      login: true,
-      name: true,
-      passwordHash: true,
-    },
-  });
+  const currentUser = await platformSettingsStore.findAdminCredentials(session.user.id);
 
   if (!currentUser) {
     return withError("Не удалось подтвердить текущего администратора.");
@@ -150,33 +142,17 @@ export async function saveGeneralPlatformSettings(
     return withError("Неверный пароль подтверждения.");
   }
 
-  await prisma.platformSettings.upsert({
-    where: { id: DEFAULT_PLATFORM_SETTINGS.id },
-    create: {
-      id: DEFAULT_PLATFORM_SETTINGS.id,
-      siteName,
-      siteDescription,
-      supportEmail,
-      feedbackEnabled,
-      feedbackModerationEnabled,
-      logoUrl,
-      faviconUrl,
-      timeZone,
-      dateFormat,
-      timeFormat,
-    },
-    update: {
-      siteName,
-      siteDescription,
-      supportEmail,
-      feedbackEnabled,
-      feedbackModerationEnabled,
-      logoUrl,
-      faviconUrl,
-      timeZone,
-      dateFormat,
-      timeFormat,
-    },
+  await platformSettingsStore.upsertSettings({
+    siteName,
+    siteDescription,
+    supportEmail,
+    feedbackEnabled,
+    feedbackModerationEnabled,
+    logoUrl,
+    faviconUrl,
+    timeZone,
+    dateFormat,
+    timeFormat,
   });
 
   await recordAuditEvent({
@@ -301,39 +277,20 @@ export async function saveSecurityPlatformSettings(formData: FormData) {
   const passwordRequireSpecialChar = asChecked(formData, "passwordRequireSpecialChar");
   const adminTotpRequired = asChecked(formData, "adminTotpRequired");
 
-  await prisma.platformSettings.upsert({
-    where: { id: DEFAULT_PLATFORM_SETTINGS.id },
-    create: {
-      id: DEFAULT_PLATFORM_SETTINGS.id,
-      passwordMinLength,
-      passwordRequireNumber,
-      passwordRequireUppercase,
-      passwordRequireSpecialChar,
-      sessionMaxAgeMinutes,
-      sessionIdleTimeoutMinutes,
-      maxFailedLoginAttempts,
-      loginLockoutMinutes,
-      loginEventRetentionDays,
-      auditLogRetentionDays,
-      adminTotpRequired,
-      userActivationInviteTtlDays,
-      courseInviteTtlDays,
-    },
-    update: {
-      passwordMinLength,
-      passwordRequireNumber,
-      passwordRequireUppercase,
-      passwordRequireSpecialChar,
-      sessionMaxAgeMinutes,
-      sessionIdleTimeoutMinutes,
-      maxFailedLoginAttempts,
-      loginLockoutMinutes,
-      loginEventRetentionDays,
-      auditLogRetentionDays,
-      adminTotpRequired,
-      userActivationInviteTtlDays,
-      courseInviteTtlDays,
-    },
+  await platformSettingsStore.upsertSettings({
+    passwordMinLength,
+    passwordRequireNumber,
+    passwordRequireUppercase,
+    passwordRequireSpecialChar,
+    sessionMaxAgeMinutes,
+    sessionIdleTimeoutMinutes,
+    maxFailedLoginAttempts,
+    loginLockoutMinutes,
+    loginEventRetentionDays,
+    auditLogRetentionDays,
+    adminTotpRequired,
+    userActivationInviteTtlDays,
+    courseInviteTtlDays,
   });
 
   await pruneExpiredLoginEvents(loginEventRetentionDays);
@@ -376,17 +333,9 @@ export async function saveMaintenancePlatformSettings(formData: FormData) {
   const maintenanceMode = asChecked(formData, "maintenanceMode");
   const maintenanceMessage = asNullableString(formData, "maintenanceMessage");
 
-  await prisma.platformSettings.upsert({
-    where: { id: DEFAULT_PLATFORM_SETTINGS.id },
-    create: {
-      id: DEFAULT_PLATFORM_SETTINGS.id,
-      maintenanceMode,
-      maintenanceMessage,
-    },
-    update: {
-      maintenanceMode,
-      maintenanceMessage,
-    },
+  await platformSettingsStore.upsertSettings({
+    maintenanceMode,
+    maintenanceMessage,
   });
 
   await recordAuditEvent({
@@ -431,25 +380,13 @@ export async function saveReminderPlatformSettings(formData: FormData) {
   const courseReminderExpiredEnabled = asChecked(formData, "courseReminderExpiredEnabled");
   const courseReminderQuizFailedEnabled = asChecked(formData, "courseReminderQuizFailedEnabled");
 
-  await prisma.platformSettings.upsert({
-    where: { id: DEFAULT_PLATFORM_SETTINGS.id },
-    create: {
-      id: DEFAULT_PLATFORM_SETTINGS.id,
-      courseRemindersEnabled,
-      courseReminderNotStartedEnabled,
-      courseReminderExpiringEnabled,
-      courseReminderExpiredEnabled,
-      courseReminderQuizFailedEnabled,
-      courseReminderExpiringDays,
-    },
-    update: {
-      courseRemindersEnabled,
-      courseReminderNotStartedEnabled,
-      courseReminderExpiringEnabled,
-      courseReminderExpiredEnabled,
-      courseReminderQuizFailedEnabled,
-      courseReminderExpiringDays,
-    },
+  await platformSettingsStore.upsertSettings({
+    courseRemindersEnabled,
+    courseReminderNotStartedEnabled,
+    courseReminderExpiringEnabled,
+    courseReminderExpiredEnabled,
+    courseReminderQuizFailedEnabled,
+    courseReminderExpiringDays,
   });
 
   await recordAuditEvent({
