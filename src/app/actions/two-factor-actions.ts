@@ -2,14 +2,8 @@
 
 import { auth } from "@/auth";
 import { auditActorFromSessionUser, recordAuditEvent } from "@/lib/audit-log";
-import prisma from "@/lib/prisma";
 import { isPlatformAdminRole } from "@/lib/roles";
-import {
-  encryptTotpSecret,
-  generateRecoveryCodes,
-  hashRecoveryCode,
-  verifyTotpCode,
-} from "@/lib/two-factor";
+import { adminTotpSetup } from "@/modules/user/server/two-factor";
 
 type CompleteAdminTotpSetupResult = {
   error?: string;
@@ -39,24 +33,15 @@ export async function completeAdminTotpSetup(formData: FormData): Promise<Comple
   }
 
   try {
-    if (!verifyTotpCode(secret, twoFactorCode)) {
+    const result = await adminTotpSetup({
+      userId: session.user.id,
+      secret,
+      code: twoFactorCode,
+    });
+
+    if (!result.ok) {
       return { error: "Код подтверждения не подошел. Проверьте время на устройстве и попробуйте снова." };
     }
-
-    const recoveryCodes = generateRecoveryCodes();
-
-    await prisma.userTotpCredential.upsert({
-      where: { userId: session.user.id },
-      create: {
-        userId: session.user.id,
-        secretCiphertext: encryptTotpSecret(secret),
-        recoveryCodesJson: JSON.stringify(recoveryCodes.map((code) => hashRecoveryCode(code))),
-      },
-      update: {
-        secretCiphertext: encryptTotpSecret(secret),
-        recoveryCodesJson: JSON.stringify(recoveryCodes.map((code) => hashRecoveryCode(code))),
-      },
-    });
 
     await recordAuditEvent({
       actor: auditActorFromSessionUser(session.user),
@@ -65,11 +50,11 @@ export async function completeAdminTotpSetup(formData: FormData): Promise<Comple
       objectId: session.user.id,
       objectLabel: session.user.name ?? session.user.email ?? session.user.id,
       metadata: {
-        recoveryCodesCount: recoveryCodes.length,
+        recoveryCodesCount: result.recoveryCodes.length,
       },
     });
 
-    return { recoveryCodes };
+    return { recoveryCodes: result.recoveryCodes };
   } catch (error) {
     console.error("Failed to complete admin TOTP setup", error);
     return { error: "Не удалось подключить 2FA. Попробуйте еще раз." };
