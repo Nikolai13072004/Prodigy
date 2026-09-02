@@ -9,7 +9,6 @@ import {
 import { extractBulkAccessSkipDetails } from "@/modules/enrollment/application/update-course-learners-access-bulk";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
 import {
   asOptionalPositiveInt,
   asPositiveInt,
@@ -38,6 +37,7 @@ import {
 import { EnrollmentApplicationError } from "@/modules/enrollment/application/errors";
 import { changeCourseAssignments } from "@/modules/enrollment/server/change-course-assignments";
 import { planInviteRecipients } from "@/modules/enrollment/domain/invite-recipient-plan";
+import { loadInviteCandidateUsers, loadLearnerContact } from "@/modules/enrollment/server/enrollment-directory";
 import {
   enqueueCourseAccessExtendedEmails,
   enqueueCourseBroadcastEmails,
@@ -331,34 +331,12 @@ export async function setCourseAssignments(courseId: string, formData: FormData)
   const accessLabel = accessRequest.accessLabel;
 
   const existingUsersWithEmail = inviteEmailsFromForm.length
-    ? await prisma.user.findMany({
-        where: { email: { not: null } },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          status: true,
-          firstName: true,
-          role: true,
-          userRoles: {
-            include: {
-              roleProfile: {
-                select: { name: true },
-              },
-            },
-          },
-        },
-      })
+    ? await loadInviteCandidateUsers()
     : [];
 
   const invitePlan = planInviteRecipients({
     inviteEmails: inviteEmailsFromForm,
-    existingUsers: existingUsersWithEmail.map((user) => ({
-      id: user.id,
-      email: user.email,
-      status: user.status,
-      roleNames: [user.role, ...user.userRoles.map((item) => item.roleProfile.name)].filter(Boolean),
-    })),
+    existingUsers: existingUsersWithEmail,
     activeStatus: USER_STATUSES.ACTIVE,
     studentRoleName: STANDARD_ROLE_NAMES.STUDENT,
   });
@@ -626,10 +604,7 @@ export async function updateCourseLearnerAccess(courseId: string, learnerId: str
   const actor = auditActorFromSessionUser(session.user);
 
   // Пред-загрузка учителя нужна для отправки письма после use-case.
-  const learnerRow = await prisma.user.findUnique({
-    where: { id: learnerId },
-    select: { name: true, email: true, firstName: true },
-  });
+  const learnerRow = await loadLearnerContact(learnerId);
   const learnerEmail = learnerRow?.email?.trim() || null;
   const accessEmailQueued = Boolean(learnerEmail);
 

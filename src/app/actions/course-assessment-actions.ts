@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
 import { requireManageCourse, requireSession } from "@/lib/auth-guards";
 import { auditActorFromSessionUser, recordAuditEvent } from "@/lib/audit-log";
 import { canOpenQuizPage } from "@/lib/access";
@@ -15,6 +14,7 @@ import { isAssessmentTimeLimitExpired } from "@/modules/assessment/domain/assess
 import { normalizeFileAnswer } from "@/modules/assessment/domain/file-answer";
 import { loadQuizDeliveryContext } from "@/modules/assessment/server/quiz-delivery-context";
 import { assertQuizUnlockedByRequiredLessons } from "@/modules/assessment/server/quiz-unlock-gate";
+import { loadQuizAttemptForReview } from "@/modules/assessment/server/quiz-attempt-review-context";
 import { reviewAssessmentAttempt } from "@/modules/assessment/server/review-assessment-attempt";
 import { saveAssessmentDraft } from "@/modules/assessment/server/save-assessment-draft";
 import { startAssessmentAttempt } from "@/modules/assessment/server/start-assessment-attempt";
@@ -334,48 +334,7 @@ export async function reviewQuizAttempt(courseId: string, attemptId: string, for
     reviewStatus: reviewStatus === "all" ? undefined : reviewStatus,
     attempt: attemptId,
   } satisfies Record<string, string | undefined>;
-  const attempt = await prisma.quizAttempt.findUnique({
-    where: { id: attemptId },
-    select: {
-      id: true,
-      quizId: true,
-      userId: true,
-      attemptNumber: true,
-      answers: true,
-      questionSnapshot: true,
-      outcome: true,
-      manualReviewJson: true,
-      reviewComment: true,
-      reviewedAt: true,
-      quiz: {
-        select: {
-          id: true,
-          minCorrectAnswers: true,
-          maxAttempts: true,
-          courseItem: {
-            select: {
-              title: true,
-              courseId: true,
-              course: {
-                select: {
-                  title: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      user: {
-        select: {
-          id: true,
-          name: true,
-          login: true,
-          email: true,
-          firstName: true,
-        },
-      },
-    },
-  });
+  const attempt = await loadQuizAttemptForReview(attemptId);
 
   if (!attempt || attempt.quiz.courseItem.courseId !== courseId) {
     redirect(manageCourseUrl(courseId, { ...returnParams, reviewError: "Работа не найдена." }));
