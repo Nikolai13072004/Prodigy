@@ -227,7 +227,11 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
 
   if (q) {
     filters.push({
-      OR: [{ name: { contains: q } }, { login: { contains: q } }, { email: { contains: q } }],
+      OR: [
+        { name: { contains: q, mode: "insensitive" as const } },
+        { login: { contains: q, mode: "insensitive" as const } },
+        { email: { contains: q, mode: "insensitive" as const } },
+      ],
     });
   }
 

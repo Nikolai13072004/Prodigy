@@ -2,10 +2,17 @@
 
 ## Статус
 
-Предложено (2026-09-02). Закрывает открытый вопрос волны E из
-[ADR-013](013-target-architecture-and-backlog.md) и задаёт замену временному
-решению [ADR-010](010-database-migration-strategy.md). Требует решения владельца
-продукта до начала работ; сам переезд — отдельными MR по шагам ниже.
+Принято (2026-09-02). Закрывает открытый вопрос волны E из
+[ADR-013](013-target-architecture-and-backlog.md) и заменяет временное
+решение [ADR-010](010-database-migration-strategy.md).
+
+**Кодовая часть переезда выполнена (2026-09-03):** провайдер `postgresql`,
+baseline `*_init_postgres` (старые SQLite-миграции в `prisma/migrations-sqlite-archive/`),
+`Dockerfile` на `migrate deploy`, `postgres:16` в обоих compose, CI на PG,
+`deploy-guard` снят, регистронезависимый поиск. Проверено на реальном PG 16
+локально: drift — нет, lint чисто, unit 685, build ok, infra 169/169.
+**Остаётся владельцу — боевое переключение** (перенос прод-данных в окно
+обслуживания, см. runbook в шаге 5); это единственный прод-влияющий шаг.
 
 ## Контекст
 
@@ -93,7 +100,7 @@ INFRA_DATABASE_URL="postgresql://lms:test@localhost:55432/lmstest?schema=public"
   npm run test:infra            # 118/118, клиент возвращается под sqlite
 ```
 
-### Шаг 1. Провайдер и schema
+### Шаг 1. Провайдер и schema — ВЫПОЛНЕНО ✓
 
 - `datasource db { provider = "postgresql" }`.
 - `DATABASE_URL` — формат `postgresql://user:pass@host:5432/db?schema=public&connection_limit=...`.
@@ -129,7 +136,7 @@ outbox-цикл — намеренный claim; сырого SQL в `src/` — 0
 код провайдер-независим). Индексы дают эффект именно на PG/масштабе, но
 безвредны на SQLite и вносятся заранее.
 
-### Шаг 3. Инфраструктура (compose)
+### Шаг 3. Инфраструктура (compose) — ВЫПОЛНЕНО ✓
 
 - Добавить сервис `postgres:16` в `docker-compose.yml` и `deploy/compose.yml`
   с healthcheck (`pg_isready`) и именованным томом `pgdata` (заменяет
@@ -141,7 +148,7 @@ outbox-цикл — намеренный claim; сырого SQL в `src/` — 0
   процесс) или ввести PgBouncer. Посчитать: сумма ≤ `max_connections − запас`.
 - Убрать `npm run db:wal` из CMD (это SQLite-специфично).
 
-### Шаг 4. Миграции на выкатке (снятие ADR-010)
+### Шаг 4. Миграции на выкатке (снятие ADR-010) — ВЫПОЛНЕНО ✓
 
 - `Dockerfile` CMD: `prisma db push` → `prisma migrate deploy` (на свежей PG
   с baseline это валидно; P3005 не возникает — база пустая, история с нуля).
@@ -166,9 +173,39 @@ TARGET_DATABASE_URL="postgresql://user:pass@host:5432/db?schema=public" \
   node scripts/migrate-sqlite-to-postgres.mjs        # прод: схема уже накачена migrate deploy
 ```
 
-В окно обслуживания: maintenance-режим (`/maintenance` есть) → запустить скрипт →
-сверка count → переключить стек на PG. Для очень большого объёма — альтернатива
-`pgloader`, но Prisma-копия проще по контролю FK/типов.
+#### Runbook боевого переключения (владелец, в окно обслуживания)
+
+Новые переменные окружения деплоя (в `.env`, генерируется CI/CD):
+`POSTGRES_PASSWORD` (обязателен), опционально `POSTGRES_USER` (деф. `lms`),
+`POSTGRES_DB` (деф. `lms`), `DB_CONNECTION_LIMIT` (деф. 10). Строку `DATABASE_URL`
+compose собирает сам из них — вручную задавать не нужно.
+
+1. **Бэкап SQLite (до всего).** Снять копию тома с `dev.db` и `pg_dump`-совместимый
+   снимок не нужен — достаточно файла БД: `docker run --rm -v learning_lms_data:/d
+   -v "$PWD":/out alpine cp /d/dev.db /out/dev.db.bak`. Сохранить до подтверждённой
+   стабильности PG.
+2. **Maintenance.** Включить `/maintenance` (страница есть), чтобы прекратить запись
+   из старого стека.
+3. **Поднять только postgres из нового стека** (образ ещё старый): выкатить compose
+   так, чтобы поднялся сервис `postgres` и прошёл healthcheck. Схему на него
+   накатит приложение при старте (`migrate deploy`), но на шаге переноса удобнее
+   накатить заранее: `DATABASE_URL=<pg> npx prisma migrate deploy`.
+4. **Перенос данных.** С доступом к старому `dev.db` и новой PG:
+   `TARGET_DATABASE_URL="postgresql://lms:<pass>@<host>:5432/lms?schema=public"
+   node scripts/migrate-sqlite-to-postgres.mjs`. Скрипт сверяет `count()` по всем
+   моделям и падает при расхождении.
+5. **Переключить стек на новый образ** (`migrate deploy` на старте — no-op, схема
+   уже есть; данные на месте). Дождаться healthcheck веб-сервиса и воркеров.
+6. **Снять maintenance.** Прогнать смоук: вход, список курсов, прохождение,
+   поиск по кириллице (`бюджет`/`Бюджет` — теперь регистронезависимо).
+
+**Откат:** вернуть предыдущий `IMAGE_TAG`, `DATABASE_URL` на SQLite и том
+`learning_lms_data`. Данные, записанные в PG за окно, при откате теряются —
+поэтому окно записи держать коротким. Том SQLite и бэкап не удалять до
+подтверждённой стабильности PG.
+
+Для очень большого объёма — альтернатива `pgloader`, но Prisma-копия проще по
+контролю FK/типов.
 
 ### Шаг 6. Follow-up (после стабилизации, необязательно к cutover)
 

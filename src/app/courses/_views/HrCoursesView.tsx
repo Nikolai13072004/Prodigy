@@ -30,7 +30,7 @@ export async function HrCoursesView({
         status: "PUBLISHED",
         ...(q
           ? {
-              title: { contains: q },
+              title: { contains: q, mode: "insensitive" as const },
             }
           : {}),
         ...(hrCategory ? { category: hrCategory } : {}),

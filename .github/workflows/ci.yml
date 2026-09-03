@@ -20,10 +20,26 @@ jobs:
   check:
     runs-on: ubuntu-latest
 
+    # База PostgreSQL нужна здесь по-настоящему: после переезда (ADR-014)
+    # `migrate diff --from-migrations` заводит shadow-БД на сервере, а
+    # `migrate deploy` накатывает baseline перед сборкой.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: lms
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: lms
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lms -d lms"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
-      # Реальная база здесь не нужна: `prisma generate`, `migrate diff` и
-      # `next build` только резолвят переменную, подключения не открывают.
-      DATABASE_URL: file:./ci.db
+      DATABASE_URL: postgresql://lms:test@localhost:5432/lms?schema=public
       AUTH_SECRET: ci-only-secret-never-used-at-runtime
 
     steps:
@@ -40,16 +56,9 @@ jobs:
       - name: Установка зависимостей
         run: npm ci
 
-      - name: deploy-guard — схема накатывается через db push
-        # Возврат к `migrate deploy` роняет прод в рестарт-луп (P3005) и следом
-        # все воркеры. Обоснование: docs/architecture/010-database-migration-strategy.md
-        run: node scripts/deploy-guard.mjs
-
       - name: Расхождение миграций и schema.prisma
-        # На проде схема применяется через `db push`, а миграции продолжают
-        # вестись — без этой проверки они молча расходятся со схемой.
-        # Команда намеренно совпадает с той, что описана в CLAUDE.md, — чтобы
-        # локальная проверка и CI не разъехались.
+        # Миграции ведутся отдельно от схемы — без этой проверки они молча
+        # расходятся. Команда намеренно совпадает с той, что в CLAUDE.md.
         run: >
           npx prisma migrate diff
           --from-migrations prisma/migrations
@@ -63,10 +72,10 @@ jobs:
         run: npm run test:unit
 
       - name: Схема для сборки
-        # На пустой базе сборка проходит, но засыпает лог `prisma:error` от
-        # platformSettings — настоящая ошибка в этом шуме потерялась бы.
-        # Схема накатывается тем же `db push`, что и на проде.
-        run: npx prisma db push --skip-generate
+        # На пустой базе сборка засыпает лог `prisma:error` от platformSettings —
+        # настоящая ошибка в этом шуме потерялась бы. Накатываем baseline тем же
+        # `migrate deploy`, что и на проде.
+        run: npx prisma migrate deploy
 
       - name: Production-сборка
         run: npm run build

@@ -30,7 +30,10 @@ export async function AdminCoursesView({
     const rawCourses = await prisma.course.findMany({
       where: q
         ? {
-            OR: [{ title: { contains: q } }, { description: { contains: q } }],
+            OR: [
+              { title: { contains: q, mode: "insensitive" as const } },
+              { description: { contains: q, mode: "insensitive" as const } },
+            ],
           }
         : undefined,
       orderBy: { updatedAt: "desc" },

@@ -47,7 +47,6 @@ pip install python-pptx python-docx
 | `hr-notification-worker.ts` | воркер HR-уведомлений | `npm run hr:notifications[:loop]` |
 | `course-reminder-worker.ts` | напоминания о курсах | `npm run course:reminders[:loop]` |
 | `hr-report-schedule-worker.ts` | запланированные HR-отчёты | `npm run hr:report-schedules[:loop]` |
-| `deploy-guard.mjs` | CI-guard стратегии применения схемы БД | `node scripts/deploy-guard.mjs` |
 | `db-check.mjs` | проверка рабочей БД и обязательных колонок | `npm run db:check` |
 | `sqlite-wal.mjs` | включение WAL для SQLite | `npm run db:wal` |
 | `storage-index.ts` | переиндексация файлового хранилища | `npm run storage:index` |

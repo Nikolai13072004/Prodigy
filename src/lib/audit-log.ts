@@ -234,15 +234,15 @@ function buildAuditLogWhere(filters: AuditLogFilterState): Prisma.AuditLogEventW
   if (filters.q) {
     clauses.push({
       OR: [
-        { actorName: { contains: filters.q } },
-        { actorLogin: { contains: filters.q } },
-        { action: { contains: filters.q } },
-        { objectType: { contains: filters.q } },
-        { objectId: { contains: filters.q } },
-        { objectLabel: { contains: filters.q } },
-        { ipAddress: { contains: filters.q } },
-        { userAgent: { contains: filters.q } },
-        { metadataJson: { contains: filters.q } },
+        { actorName: { contains: filters.q, mode: "insensitive" as const } },
+        { actorLogin: { contains: filters.q, mode: "insensitive" as const } },
+        { action: { contains: filters.q, mode: "insensitive" as const } },
+        { objectType: { contains: filters.q, mode: "insensitive" as const } },
+        { objectId: { contains: filters.q, mode: "insensitive" as const } },
+        { objectLabel: { contains: filters.q, mode: "insensitive" as const } },
+        { ipAddress: { contains: filters.q, mode: "insensitive" as const } },
+        { userAgent: { contains: filters.q, mode: "insensitive" as const } },
+        { metadataJson: { contains: filters.q, mode: "insensitive" as const } },
       ],
     });
   }

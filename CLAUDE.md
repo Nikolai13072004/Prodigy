@@ -27,28 +27,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Локального знания стека здесь недостаточно: то же изменение может уже быть сделано
 в параллельной ветке, и это выясняется только через GitHub.
 
-## Схема БД: `db push`, не `migrate deploy`
+## Схема БД: PostgreSQL + `migrate deploy`
 
-**Не заменяйте `prisma db push` на `prisma migrate deploy` в `Dockerfile`.**
+База — **PostgreSQL** (`provider = "postgresql"`), переезд с SQLite выполнен по
+@docs/architecture/014-postgres-migration-plan.md. Схема применяется через
+`prisma migrate deploy` поверх чистой истории миграций с baseline
+`*_init_postgres`. Прежний запрет на `migrate deploy` (ADR-010, `db push` +
+`deploy-guard`) **снят** — он относился к старой SQLite-базе без таблицы
+`_prisma_migrations`; P3005 на свежей PG-истории не возникает. Старые
+SQLite-миграции лежат в `prisma/migrations-sqlite-archive/` как исторический след,
+на PG не применяются.
 
-Прод-база исторически накатывалась через `db push` и не имеет таблицы
-`_prisma_migrations`, поэтому `migrate deploy` падает с `P3005`. `CMD` собран через
-`&&` — приложение не стартует вообще, контейнер уходит в рестарт-луп, следом не
-поднимаются оба воркера (`depends_on: condition: service_healthy`).
-
-При 62 миграциях в `prisma/migrations/` это выглядит как очевидная ошибка, поэтому
-соблазн «починить» возникает регулярно. Обоснование и процедура перехода:
-@docs/architecture/010-database-migration-strategy.md. Попытка вернуть `migrate deploy`
-блокируется проверкой `scripts/deploy-guard.mjs` — она запускается локально и в CI
-(`.github/workflows/ci.yml`).
-
-Миграции при этом продолжают вестись. После любого изменения `schema.prisma`
-добавляйте миграцию и проверяйте расхождение — то же самое делает CI отдельным шагом:
+После любого изменения `schema.prisma` добавляйте миграцию (`prisma migrate dev`)
+и проверяйте расхождение — то же самое делает CI отдельным шагом:
 
 ```bash
 npx prisma migrate diff --from-migrations prisma/migrations \
   --to-schema-datamodel prisma/schema.prisma --exit-code
 ```
+
+Локальная разработка и тесты тоже требуют PostgreSQL: поднимите контейнер
+`postgres:16` и укажите `DATABASE_URL=postgresql://…` (инфра-тесты — через
+`INFRA_DATABASE_URL`, см. `scripts/run-infra-tests.mjs`).
 
 ## Команды
 
