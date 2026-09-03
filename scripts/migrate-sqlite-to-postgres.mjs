@@ -3,13 +3,14 @@
 // Читает из SQLite (SOURCE_DATABASE_URL, по умолчанию file:./prisma/dev.db) и
 // пишет в PostgreSQL (TARGET_DATABASE_URL, обязателен). Порядок копирования
 // выводится топологически из DMMF (родители по FK — раньше детей), поэтому
-// хардкод порядка 49 моделей не нужен и он не разъедется со схемой.
+// хардкод порядка моделей не нужен и он не разъедется со схемой.
 //
-// Prisma-клиент привязан к провайдеру, поэтому PG-клиент генерируется в
-// ОТДЕЛЬНЫЙ output (node_modules/.prisma-migrate-pg/client) и живёт рядом с
-// дефолтным sqlite-клиентом — оба доступны в одном процессе.
+// После переезда (schema.prisma уже `provider = "postgresql"`) ДЕФОЛТНЫЙ
+// @prisma/client — это PostgreSQL-приёмник. Источник-SQLite генерируется в
+// ОТДЕЛЬНЫЙ output (node_modules/.prisma-migrate-sqlite/client) из временной
+// копии схемы с `provider = "sqlite"` — оба клиента живут в одном процессе.
 //
-// Запуск (при поднятом целевом PG):
+// Запуск (при поднятом целевом PG со схемой, накатанной migrate deploy):
 //   TARGET_DATABASE_URL="postgresql://user:pass@host:5432/db?schema=public" \
 //     node scripts/migrate-sqlite-to-postgres.mjs [--push] [--truncate]
 //
@@ -42,29 +43,35 @@ if (!TARGET || !/^postgres(?:ql)?:\/\//i.test(TARGET)) {
   console.error("migrate: нужен TARGET_DATABASE_URL=postgresql://...");
   process.exit(1);
 }
+if (!/^file:/i.test(SOURCE)) {
+  console.error("migrate: SOURCE_DATABASE_URL должен быть file:... (SQLite-источник)");
+  process.exit(1);
+}
 
-const PG_OUTPUT = path.resolve("node_modules/.prisma-migrate-pg/client");
-const PG_SCHEMA = path.join("prisma", "schema.migrate-pg.prisma");
+const SQLITE_OUTPUT = path.resolve("node_modules/.prisma-migrate-sqlite/client");
+const SQLITE_SCHEMA = path.join("prisma", "schema.migrate-sqlite.prisma");
 
-function generatePgClient() {
+// Источник — SQLite-клиент в отдельный output из копии схемы с provider = "sqlite".
+function generateSqliteClient() {
   const base = readFileSync("prisma/schema.prisma", "utf8")
-    .replace(/provider = "sqlite"/, 'provider = "postgresql"')
+    .replace(/provider = "postgresql"/, 'provider = "sqlite"')
     .replace(
       /generator client \{[\s\S]*?\}/,
-      `generator client {\n  provider = "prisma-client-js"\n  output   = "${PG_OUTPUT.replace(/\\/g, "/")}"\n}`,
+      `generator client {\n  provider = "prisma-client-js"\n  output   = "${SQLITE_OUTPUT.replace(/\\/g, "/")}"\n}`,
     );
-  writeFileSync(PG_SCHEMA, base);
-  const gen = spawnSync(bin("prisma"), ["generate", "--schema", PG_SCHEMA], {
+  writeFileSync(SQLITE_SCHEMA, base);
+  const gen = spawnSync(bin("prisma"), ["generate", "--schema", SQLITE_SCHEMA], {
     stdio: "inherit",
     shell: isWindows,
   });
-  if (gen.status !== 0) throw new Error("prisma generate (postgres) упал");
+  if (gen.status !== 0) throw new Error("prisma generate (sqlite) упал");
 }
 
+// Приёмник — целевая PG-схема (дефолтная schema.prisma, provider = postgresql).
 function pushTargetSchema() {
   const push = spawnSync(
     bin("prisma"),
-    ["db", "push", "--schema", PG_SCHEMA, "--accept-data-loss", "--skip-generate"],
+    ["db", "push", "--accept-data-loss", "--skip-generate"],
     { stdio: "inherit", shell: isWindows, env: { ...process.env, DATABASE_URL: TARGET } },
   );
   if (push.status !== 0) throw new Error("prisma db push (postgres) упал");
@@ -107,15 +114,16 @@ function topoOrder(models) {
 const delegateName = (modelName) => modelName.charAt(0).toLowerCase() + modelName.slice(1);
 
 async function main() {
-  console.log("migrate: генерирую PG-клиент…");
-  generatePgClient();
+  console.log("migrate: генерирую SQLite-клиент источника…");
+  generateSqliteClient();
   if (DO_PUSH) {
     console.log("migrate: db push целевой схемы…");
     pushTargetSchema();
   }
 
-  const { PrismaClient: SqliteClient, Prisma } = require("@prisma/client");
-  const { PrismaClient: PgClient } = require(PG_OUTPUT);
+  // Дефолтный клиент — PostgreSQL-приёмник; источник — сгенерированный SQLite.
+  const { PrismaClient: PgClient, Prisma } = require("@prisma/client");
+  const { PrismaClient: SqliteClient } = require(SQLITE_OUTPUT);
 
   const src = new SqliteClient({ datasources: { db: { url: SOURCE } } });
   const dst = new PgClient({ datasources: { db: { url: TARGET } } });
@@ -168,7 +176,7 @@ main()
   })
   .finally(() => {
     try {
-      rmSync(PG_SCHEMA, { force: true });
+      rmSync(SQLITE_SCHEMA, { force: true });
     } catch {
       /* ignore */
     }

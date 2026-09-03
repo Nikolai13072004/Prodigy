@@ -18,10 +18,10 @@ export async function selectCertificatesRegistry(search: string): Promise<Certif
   const where = query
     ? {
         OR: [
-          { serial: { contains: query } },
-          { user: { name: { contains: query } } },
-          { user: { login: { contains: query } } },
-          { course: { title: { contains: query } } },
+          { serial: { contains: query, mode: "insensitive" as const } },
+          { user: { name: { contains: query, mode: "insensitive" as const } } },
+          { user: { login: { contains: query, mode: "insensitive" as const } } },
+          { course: { title: { contains: query, mode: "insensitive" as const } } },
         ],
       }
     : {};

@@ -130,7 +130,10 @@ export async function LearnerCoursesView({
             status: "PUBLISHED",
             ...(q
               ? {
-                  OR: [{ title: { contains: q } }, { description: { contains: q } }],
+                  OR: [
+                    { title: { contains: q, mode: "insensitive" as const } },
+                    { description: { contains: q, mode: "insensitive" as const } },
+                  ],
                 }
               : {}),
             ...(hrCategory ? { category: hrCategory } : {}),

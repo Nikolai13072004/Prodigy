@@ -12,11 +12,9 @@
 - Ветка и PR могут измениться во время ревью. Перед правками по ревью, финальной проверкой или разрешением конфликта снова сделайте `git fetch` и проверьте текущий PR/remote branch; не опирайтесь на старый локальный diff.
 - Не делайте commit, push, rebase или merge, если пользователь этого явно не просил. Не удаляйте и не откатывайте чужие изменения ради «чистого» worktree.
 
-## Критическое правило production-схемы
+## Production-схема: PostgreSQL + `migrate deploy`
 
-В `Dockerfile` намеренно используется `npx prisma db push`. **Не заменяйте его на `prisma migrate deploy`.** Прод-база исторически создана через `db push` и не имеет таблицы `_prisma_migrations`; `migrate deploy` падает с `P3005`. Поскольку `CMD` соединён через `&&`, приложение после этого не стартует, контейнер уходит в restart loop, healthcheck не проходит и зависимые `email-worker` и `hr-notification-worker` не поднимаются.
-
-Переход на `migrate deploy` возможен только отдельной согласованной задачей после baseline существующей прод-базы. Полное обоснование и процедура: `docs/architecture/010-database-migration-strategy.md`. Проверка `scripts/deploy-guard.mjs` обязана блокировать преждевременный возврат `migrate deploy`; не ослабляйте и не удаляйте её.
+База — **PostgreSQL**. В `Dockerfile` схема применяется через `npx prisma migrate deploy` поверх чистой истории миграций (baseline `*_init_postgres`). Прежнее правило «только `db push`, не `migrate deploy`» (ADR-010, `deploy-guard`) **снято** — оно относилось к старой SQLite-базе без `_prisma_migrations` (P3005). Обоснование и процедура переезда: `docs/architecture/014-postgres-migration-plan.md`. Старые SQLite-миграции — в `prisma/migrations-sqlite-archive/` (на PG не применяются).
 
 При изменении Prisma-схемы поддерживайте в согласованном состоянии `prisma/schema.prisma` и `prisma/migrations/` и проверяйте drift:
 

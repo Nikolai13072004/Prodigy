@@ -26,19 +26,43 @@
 #                                 на проде — локальный Traefik (websecure/true).
 #                                 Дефолты выбраны в пользу защищённого варианта.
 #
-# Схема БД применяется на старте контейнера командой из Dockerfile (prisma db push).
-# Это инвариант, защищённый deploy-guard: база исторически накатывалась db push и не
-# имеет таблицы _prisma_migrations, поэтому migrate deploy падает с P3005 и уводит
-# контейнер в рестарт-луп, а следом не поднимаются воркеры.
+# База — PostgreSQL (ADR-014). Схема применяется на старте контейнера командой из
+# Dockerfile (prisma migrate deploy) поверх чистой истории миграций (baseline
+# *_init_postgres). Сам postgres поднимается сервисом ниже, приложение и воркеры
+# ждут его healthcheck и подключаются по строке DATABASE_URL (хост postgres).
 
 services:
+  postgres:
+    image: postgres:16
+    container_name: lms-course3-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD обязателен}
+      POSTGRES_DB: ${POSTGRES_DB:-lms}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lms} -d ${POSTGRES_DB:-lms}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    mem_limit: "${LMS_PG_MEM_LIMIT:-1024m}"
+    # Только внутренняя сеть — база наружу и в traefik-public не выставляется.
+    networks:
+      - lms-internal
+
   lms:
     image: "${IMAGE}:${IMAGE_TAG}"
     container_name: lms-course3-app
     restart: unless-stopped
     env_file: [.env]
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
-      DATABASE_URL: file:/app/data/dev.db
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-lms}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD обязателен}@postgres:5432/${POSTGRES_DB:-lms}?schema=public&connection_limit=${DB_CONNECTION_LIMIT:-10}"
       AUTH_TRUST_HOST: "true"
       NODE_ENV: production
       APP_BASE_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
@@ -63,11 +87,12 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-      # Не занижать: на старте контейнер выполняет prisma db push и включает WAL,
+      # Не занижать: на старте контейнер выполняет prisma migrate deploy,
       # до этого приложение не отвечает.
       start_period: 45s
     networks:
       - traefik-public
+      - lms-internal
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-public"
@@ -84,7 +109,7 @@ services:
     command: ["npm", "run", "email:worker:loop"]
     env_file: [.env]
     environment:
-      DATABASE_URL: file:/app/data/dev.db
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-lms}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD обязателен}@postgres:5432/${POSTGRES_DB:-lms}?schema=public&connection_limit=${DB_CONNECTION_LIMIT:-10}"
       AUTH_TRUST_HOST: "true"
       NODE_ENV: production
       APP_BASE_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
@@ -103,6 +128,7 @@ services:
         condition: service_healthy
     networks:
       - traefik-public
+      - lms-internal
     labels:
       - "traefik.enable=false"
 
@@ -113,7 +139,7 @@ services:
     command: ["npm", "run", "hr:notifications:loop"]
     env_file: [.env]
     environment:
-      DATABASE_URL: file:/app/data/dev.db
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-lms}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD обязателен}@postgres:5432/${POSTGRES_DB:-lms}?schema=public&connection_limit=${DB_CONNECTION_LIMIT:-10}"
       AUTH_TRUST_HOST: "true"
       NODE_ENV: production
       APP_BASE_URL: "https://${APP_HOST:?APP_HOST обязателен: имя, под которым приложение публикуется}"
@@ -130,12 +156,16 @@ services:
         condition: service_healthy
     networks:
       - traefik-public
+      - lms-internal
     labels:
       - "traefik.enable=false"
 
 networks:
   traefik-public:
     external: true
+  # Приватная сеть стека: приложение/воркеры ↔ postgres, наружу не публикуется.
+  lms-internal:
+    driver: bridge
 
 # Физические имена томов зафиксированы намеренно.
 #
@@ -147,6 +177,11 @@ networks:
 # зелёным, а в интерфейсе не окажется ни одного курса: данные останутся в старых
 # томах, но выглядеть это будет как полная их потеря — в момент выкатки на прод.
 volumes:
+  # Данные PostgreSQL. Имя зафиксировано по той же причине, что и остальные тома
+  # (иначе project-scoped имя разъедется между контурами и Docker молча создаст
+  # пустой том — потеря данных в момент выкатки).
+  pgdata:
+    name: learning_pgdata
   lms_data:
     name: learning_lms_data
   lms_uploads:

@@ -95,12 +95,12 @@ export default async function AdminEmailQueuePage({ searchParams }: Props) {
     ...(q
       ? {
           OR: [
-            { toEmail: { contains: q } },
-            { toName: { contains: q } },
-            { subject: { contains: q } },
-            { template: { contains: q } },
-            { payloadJson: { contains: q } },
-            { lastError: { contains: q } },
+            { toEmail: { contains: q, mode: "insensitive" as const } },
+            { toName: { contains: q, mode: "insensitive" as const } },
+            { subject: { contains: q, mode: "insensitive" as const } },
+            { template: { contains: q, mode: "insensitive" as const } },
+            { payloadJson: { contains: q, mode: "insensitive" as const } },
+            { lastError: { contains: q, mode: "insensitive" as const } },
           ],
         }
       : {}),

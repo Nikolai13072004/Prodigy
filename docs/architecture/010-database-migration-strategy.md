@@ -2,9 +2,12 @@
 
 ## Статус
 
-Принято (2026-08-15). Временное решение — пересматривается после baseline прод-базы.
-Намечен к замене [ADR-014](014-postgres-migration-plan.md): переезд на PostgreSQL
-делает baseline «с нуля» и возвращает `migrate deploy`, снимая guard тем же MR.
+**Заменён [ADR-014](014-postgres-migration-plan.md) (2026-09-03).** Переезд на
+PostgreSQL сделал baseline «с нуля» и вернул `migrate deploy`; guard
+(`scripts/deploy-guard.mjs`) снят, `db push` из `Dockerfile` убран. Документ ниже
+сохранён как исторический контекст того, почему запрет существовал.
+
+Принято (2026-08-15) как временное решение для SQLite-базы без `_prisma_migrations`.
 
 ## Контекст
 
