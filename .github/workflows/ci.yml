@@ -56,6 +56,13 @@ jobs:
       - name: Установка зависимостей
         run: npm ci
 
+      - name: Shadow-БД для drift-проверки
+        # `migrate diff --from-migrations` на PostgreSQL реплеит миграции в
+        # отдельную (shadow) БД, поэтому её надо создать заранее.
+        env:
+          PGPASSWORD: test
+        run: psql -h localhost -U lms -d lms -c 'CREATE DATABASE shadow'
+
       - name: Расхождение миграций и schema.prisma
         # Миграции ведутся отдельно от схемы — без этой проверки они молча
         # расходятся. Команда намеренно совпадает с той, что в CLAUDE.md.
@@ -63,6 +70,7 @@ jobs:
           npx prisma migrate diff
           --from-migrations prisma/migrations
           --to-schema-datamodel prisma/schema.prisma
+          --shadow-database-url postgresql://lms:test@localhost:5432/shadow?schema=public
           --exit-code
 
       - name: Линтер

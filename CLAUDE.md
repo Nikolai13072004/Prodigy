@@ -42,8 +42,10 @@ SQLite-миграции лежат в `prisma/migrations-sqlite-archive/` как
 и проверяйте расхождение — то же самое делает CI отдельным шагом:
 
 ```bash
+# на PostgreSQL --from-migrations реплеит миграции в shadow-БД (её надо создать):
 npx prisma migrate diff --from-migrations prisma/migrations \
-  --to-schema-datamodel prisma/schema.prisma --exit-code
+  --to-schema-datamodel prisma/schema.prisma \
+  --shadow-database-url postgresql://…/shadow --exit-code
 ```
 
 Локальная разработка и тесты тоже требуют PostgreSQL: поднимите контейнер
