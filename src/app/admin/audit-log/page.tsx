@@ -6,7 +6,7 @@ import {
   formatAuditLogDateTime,
   getAuditLogOverview,
 } from "@/lib/audit-log";
-import { Badge } from "@/components/ui";
+import { Badge, Select } from "@/components/ui";
 
 type Props = {
   searchParams: Promise<{
@@ -122,11 +122,11 @@ export default async function AuditLogPage({ searchParams }: Props) {
             <label htmlFor="actorId" className="block text-sm font-medium text-[var(--ink)]">
               Пользователь
             </label>
-            <select
+            <Select
               id="actorId"
               name="actorId"
               defaultValue={overview.filters.actorId}
-              className="mt-2 h-11 w-full rounded-xl border border-[var(--line)] px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+              className="mt-2 w-full"
             >
               <option value="">Все</option>
               {overview.actorOptions.map((actor) => (
@@ -134,18 +134,18 @@ export default async function AuditLogPage({ searchParams }: Props) {
                   {actor.name} ({actor.login})
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
             <label htmlFor="action" className="block text-sm font-medium text-[var(--ink)]">
               Действие
             </label>
-            <select
+            <Select
               id="action"
               name="action"
               defaultValue={overview.filters.action}
-              className="mt-2 h-11 w-full rounded-xl border border-[var(--line)] px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+              className="mt-2 w-full"
             >
               <option value="">Все</option>
               {overview.actionOptions.map((action) => (
@@ -153,7 +153,7 @@ export default async function AuditLogPage({ searchParams }: Props) {
                   {action}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
@@ -186,16 +186,16 @@ export default async function AuditLogPage({ searchParams }: Props) {
             <label htmlFor="pageSize" className="block text-sm font-medium text-[var(--ink)]">
               На странице
             </label>
-            <select
+            <Select
               id="pageSize"
               name="pageSize"
               defaultValue={String(overview.filters.pageSize)}
-              className="mt-2 h-11 w-full rounded-xl border border-[var(--line)] px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+              className="mt-2 w-full"
             >
               <option value="25">25</option>
               <option value="50">50</option>
               <option value="100">100</option>
-            </select>
+            </Select>
           </div>
 
           <div className="lg:col-span-6 flex justify-end">

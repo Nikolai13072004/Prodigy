@@ -191,12 +191,21 @@ textarea::placeholder {
   color: var(--ink-muted) !important;
 }
 
-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
 textarea:focus,
 select:focus {
   outline: none;
   border-color: rgba(0, 127, 168, 0.58) !important;
   box-shadow: 0 0 0 2px rgba(0, 127, 168, 0.2);
+}
+
+/* Чекбоксы/радио: рамка-фокус только при навигации с клавиатуры, а не при
+   клике мышью (иначе бирюзовый квадрат «залипает» вокруг галочки до клика в
+   стороне). accent-color красит саму галочку в цвет темы (правило ниже). */
+input[type="checkbox"]:focus:not(:focus-visible),
+input[type="radio"]:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
 }
 
 input[type="checkbox"],
@@ -274,18 +283,30 @@ table {
 }
 
 .app-sidebar {
-  background:
-    radial-gradient(
-      500px 250px at 0% 0%,
-      rgba(23, 111, 116, 0.3) 0%,
-      transparent 70%
-    ),
-    linear-gradient(180deg, #123a3c 0%, var(--aurora-sidebar) 100%) !important;
+  background: var(--aurora-sidebar) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .app-main {
   background: transparent;
+}
+
+/* Курсор-«пальчик» для всего кликабельного. Tailwind v4 больше не ставит
+   cursor:pointer на <button> по умолчанию, из-за чего у части кнопок была
+   обычная стрелка. Отключённые элементы — «запрещено». */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[role="button"],
+label[for],
+summary,
+select:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 .hr-target-panel:target {

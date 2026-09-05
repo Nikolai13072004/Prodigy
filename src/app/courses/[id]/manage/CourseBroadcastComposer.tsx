@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Select } from "@/components/ui";
 import type {
   CourseBroadcastAudienceGroup,
   CourseBroadcastAudienceRecipient,
@@ -66,7 +67,7 @@ export function CourseBroadcastComposer({ action, recipients, groups, summary }:
             <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
               <label className="block text-sm font-medium text-[var(--ink)]">
                 Получатели
-                <select
+                <Select
                   value={messageScope}
                   onChange={(event) => {
                     const nextScope = event.target.value === "group" ? "group" : "course";
@@ -75,22 +76,22 @@ export function CourseBroadcastComposer({ action, recipients, groups, summary }:
                       setMessageGroupId(groups[0].id);
                     }
                   }}
-                  className="mt-2 h-11 w-full rounded-xl border border-[var(--line)] px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+                  className="mt-2 w-full"
                 >
                   <option value="course">Все ученики курса</option>
                   <option value="group" disabled={groups.length === 0}>
                     Только ученики выбранной группы
                   </option>
-                </select>
+                </Select>
               </label>
 
               <label className="block text-sm font-medium text-[var(--ink)]">
                 Группа
-                <select
+                <Select
                   value={messageGroupId}
                   onChange={(event) => setMessageGroupId(event.target.value)}
                   disabled={messageScope !== "group" || groups.length === 0}
-                  className="mt-2 h-11 w-full rounded-xl border border-[var(--line)] px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2 disabled:cursor-default disabled:bg-[var(--surface)]"
+                  className="mt-2 w-full"
                 >
                   {groups.length === 0 ? (
                     <option value="">Нет назначенных групп</option>
@@ -101,7 +102,7 @@ export function CourseBroadcastComposer({ action, recipients, groups, summary }:
                       </option>
                     ))
                   )}
-                </select>
+                </Select>
               </label>
             </div>
 

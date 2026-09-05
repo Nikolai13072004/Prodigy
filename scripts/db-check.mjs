@@ -1,14 +1,9 @@
 import "dotenv/config";
 
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { PrismaClient } from "@prisma/client";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const schemaDir = path.join(rootDir, "prisma");
 const databaseUrl = process.env.DATABASE_URL?.trim();
-const requiredLogin = process.env.DB_CHECK_REQUIRED_LOGIN ?? "student123";
+const requiredLogin = process.env.DB_CHECK_REQUIRED_LOGIN ?? "admin";
 const minUsers = Number(process.env.DB_CHECK_MIN_USERS ?? "1");
 const minCourses = Number(process.env.DB_CHECK_MIN_COURSES ?? "1");
 
@@ -17,31 +12,13 @@ function fail(message) {
   process.exitCode = 1;
 }
 
-function resolveSqlitePath(url) {
-  if (!url?.startsWith("file:")) return null;
-
-  const rawPath = url.slice("file:".length).split("?")[0];
-  if (!rawPath || rawPath === ":memory:") return null;
-
-  const decodedPath = decodeURIComponent(rawPath);
-  return path.isAbsolute(decodedPath) ? decodedPath : path.resolve(schemaDir, decodedPath);
-}
-
-const dbPath = resolveSqlitePath(databaseUrl);
-
-if (!dbPath) {
-  fail(`DB check failed: DATABASE_URL must point to a SQLite file, got ${databaseUrl || "<empty>"}`);
+if (!databaseUrl) {
+  fail("DB check failed: DATABASE_URL is empty");
   process.exit();
 }
 
-if (!fs.existsSync(dbPath)) {
-  fail(`DB check failed: database file does not exist: ${dbPath}`);
-  process.exit();
-}
-
-const dbStat = fs.statSync(dbPath);
-if (dbStat.size === 0) {
-  fail(`DB check failed: database file is empty: ${dbPath}`);
+if (!/^postgres(?:ql)?:\/\//i.test(databaseUrl)) {
+  fail(`DB check failed: DATABASE_URL must be a PostgreSQL URL, got ${databaseUrl}`);
   process.exit();
 }
 
@@ -57,10 +34,12 @@ try {
           select: { login: true },
         })
       : Promise.resolve(null),
-    prisma.$queryRawUnsafe(`PRAGMA table_info("Course")`),
+    prisma.$queryRawUnsafe(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = 'Course'`,
+    ),
   ]);
 
-  const columnNames = new Set(courseColumns.map((column) => String(column.name)));
+  const columnNames = new Set(courseColumns.map((column) => String(column.column_name)));
   const problems = [];
 
   if (usersCount < minUsers) {
@@ -79,10 +58,12 @@ try {
     problems.push(`Course.tagsJson column is missing`);
   }
 
-  console.log(`DB: ${dbPath}`);
+  console.log(`DB: ${databaseUrl.replace(/:\/\/[^@]*@/, "://***@")}`);
   console.log(`Users: ${usersCount}`);
   console.log(`Courses: ${coursesCount}`);
-  console.log(`Required user: ${requiredLogin ? (requiredUser ? `${requiredLogin} exists` : `${requiredLogin} missing`) : "disabled"}`);
+  console.log(
+    `Required user: ${requiredLogin ? (requiredUser ? `${requiredLogin} exists` : `${requiredLogin} missing`) : "disabled"}`,
+  );
 
   if (problems.length > 0) {
     fail(`DB check failed:\n- ${problems.join("\n- ")}`);

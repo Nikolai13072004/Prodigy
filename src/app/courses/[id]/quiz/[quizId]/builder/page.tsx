@@ -12,6 +12,7 @@ import {
 } from "@/app/actions/quiz-builder-actions";
 import { CourseModalAutoClose } from "@/app/courses/[id]/manage/CourseModalAutoClose";
 import { BuilderActionToast } from "@/components/quiz-builder/BuilderActionToast";
+import { Select } from "@/components/ui";
 import {
   CreateQuestionForm,
   EditQuestionForm,
@@ -307,17 +308,17 @@ export default async function QuizBuilderPage({ params, searchParams }: Props) {
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium">Режим показа результата</label>
-                <select
+                <Select
                   name="resultViewMode"
                   defaultValue={quiz.courseItem.course.resultViewMode}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                  className="mt-1 w-full"
                 >
                   {Object.entries(RESULT_VIEW_MODE_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
                     </option>
                   ))}
-                </select>
+                </Select>
                 <p className="mt-1 text-xs text-zinc-500">
                   Настройка общая для курса: можно показать только итог, итог с ответами ученика или полный разбор.
                 </p>

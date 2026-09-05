@@ -10,7 +10,7 @@ import {
 } from "@/lib/feedback-report";
 import prisma from "@/lib/prisma";
 import { PERMISSIONS } from "@/lib/roles";
-import { Badge } from "@/components/ui";
+import { Badge, Select } from "@/components/ui";
 
 const REPORT_PATH = "/admin/reports/feedback";
 const EXPORT_PATH = "/admin/reports/feedback/export";
@@ -82,10 +82,10 @@ export default async function FeedbackReportPage({ searchParams }: Props) {
 
           <label>
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Курс</span>
-            <select
+            <Select
               name="courseId"
               defaultValue={filters.courseId}
-              className="h-11 w-full rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+              className="w-full"
             >
               <option value="">Все курсы</option>
               {courses.map((course) => (
@@ -93,7 +93,7 @@ export default async function FeedbackReportPage({ searchParams }: Props) {
                   {course.title}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <ToolbarSelect label="Статус" name="status" defaultValue={status} options={STATUS_OPTIONS} />
@@ -275,17 +275,17 @@ function ToolbarSelect<TValue extends string>({
   return (
     <label>
       <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{label}</span>
-      <select
+      <Select
         name={name}
         defaultValue={defaultValue}
-        className="h-11 w-full rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+        className="w-full"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}
-      </select>
+      </Select>
     </label>
   );
 }

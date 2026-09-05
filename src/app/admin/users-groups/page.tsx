@@ -911,10 +911,10 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                           <input type="hidden" name="groupQuery" value={groupQuery} />
                           <label className="block">
                             <span className="mb-1 block text-xs text-[var(--ink-muted)]">Курс</span>
-                            <select
+                            <Select
                               name="groupCourseId"
                               defaultValue={groupProgressData.courseFilter.selectedCourseId}
-                              className="h-10 min-w-[260px] rounded-md border border-[var(--line)] px-3 text-sm"
+                              className="min-w-[260px]"
                             >
                               <option value="">Все назначенные курсы</option>
                               {groupProgressData.courseFilter.options.map((course) => (
@@ -922,7 +922,7 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                                   {course.title}
                                 </option>
                               ))}
-                            </select>
+                            </Select>
                           </label>
                           <Button variant="secondary" type="submit">
                             Применить фильтр

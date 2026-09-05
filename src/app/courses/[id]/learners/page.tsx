@@ -6,6 +6,7 @@ import {
   updateCourseLearnersAccessBulk,
 } from "@/app/actions/course-enrollment-actions";
 import { CourseLearnerUnenrollDialog } from "@/components/CourseLearnerUnenrollDialog";
+import { Select } from "@/components/ui";
 import { toCourseAccessDateInputValue } from "@/lib/course-access-window";
 import {
   formatDateTimeRu,
@@ -230,14 +231,14 @@ export default async function CourseLearnersPage({ params, searchParams }: Props
             <div className="grid gap-3">
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Применить к</span>
-                <select
+                <Select
                   name="bulkScope"
                   defaultValue="selected"
-                  className="h-10 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+                  className="w-full"
                 >
                   <option value="selected">Только выбранные ученики</option>
                   <option value="filtered">Все ученики из текущего фильтра ({data.filteredLearners.length})</option>
-                </select>
+                </Select>
               </label>
 
               <p className="text-xs text-[var(--ink-muted)]">

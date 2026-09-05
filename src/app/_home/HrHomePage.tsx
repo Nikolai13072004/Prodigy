@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { dismissHrNotification, restoreHrNotification } from "@/app/actions/hr-notification-actions";
+import { Select } from "@/components/ui";
 import {
   type HrNotificationItem,
   type HrNotificationType,
@@ -633,24 +634,24 @@ export async function HrHomePage({ userId, searchParams }: { userId: string; sea
             {filters.priority === "urgent" ? <input type="hidden" name="priority" value="urgent" /> : null}
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Тип события</span>
-              <select
+              <Select
                 name="eventType"
                 defaultValue={filters.eventType}
-                className="h-10 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+                className="w-full"
               >
                 <option value="all">Все события</option>
                 <option value="course_completed">Завершения</option>
                 <option value="low_activity">Низкая активность</option>
                 <option value="access_expiring">Истекает доступ</option>
-              </select>
+              </Select>
             </label>
 
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Курс</span>
-              <select
+              <Select
                 name="courseId"
                 defaultValue={filters.courseId}
-                className="h-10 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+                className="w-full"
               >
                 <option value="">Все курсы</option>
                 {courseOptions.map((course) => (
@@ -658,15 +659,15 @@ export async function HrHomePage({ userId, searchParams }: { userId: string; sea
                     {course.title}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Группа</span>
-              <select
+              <Select
                 name="groupId"
                 defaultValue={filters.groupId}
-                className="h-10 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+                className="w-full"
               >
                 <option value="">Все группы</option>
                 {groupOptions.map((group) => (
@@ -674,20 +675,20 @@ export async function HrHomePage({ userId, searchParams }: { userId: string; sea
                     {group.name} ({group._count.memberships})
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Статус</span>
-              <select
+              <Select
                 name="status"
                 defaultValue={filters.status}
-                className="h-10 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+                className="w-full"
               >
                 <option value="active">Активные</option>
                 <option value="processed">Обработанные</option>
                 <option value="all">Все</option>
-              </select>
+              </Select>
             </label>
 
             <div className="flex items-end gap-2">

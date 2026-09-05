@@ -4,7 +4,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QuizQuestionMediaViewer } from "@/components/QuizQuestionMediaViewer";
-import { Badge, Button, Progress, buttonStyles } from "@/components/ui";
+import { Badge, Button, Progress, Select, buttonStyles } from "@/components/ui";
 import { QUESTION_LABELS } from "@/lib/constants";
 import { parseQuizQuestionMediaFromConfig } from "@/lib/quiz-question-media";
 
@@ -401,10 +401,10 @@ function MatchingField({
       {config.left.map((leftLabel, index) => (
         <div key={`${question.id}-${index}`} className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <span className="min-w-[180px] text-sm text-[var(--ink)]">{leftLabel}</span>
-          <select
+          <Select
             value={value?.[index] ?? ""}
             onChange={(event) => onChange(index, event.target.value)}
-            className="w-full max-w-xs rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--ink)]"
+            className="w-full max-w-xs"
           >
             <option value="">Выберите вариант</option>
             {config.right.map((rightLabel, rightIndex) => (
@@ -412,7 +412,7 @@ function MatchingField({
                 {rightLabel}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       ))}
     </div>

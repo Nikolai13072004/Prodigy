@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Button, Select } from "@/components/ui";
 import {
   COURSE_SURVEY_QUESTION_TYPE_LABELS,
   type CourseSurveyQuestionDraft,
@@ -288,21 +288,20 @@ function QuestionEditor({
           <div className="grid min-w-0 content-start gap-4">
             <label className="grid gap-2 text-sm text-[var(--ink)]">
               <span>Тип ответа</span>
-              <select
+              <Select
                 value={question.type}
                 onChange={(event) =>
                   onUpdate({
                     type: event.target.value as CourseSurveyQuestionType,
                   })
                 }
-                className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]"
               >
                 {Object.entries(COURSE_SURVEY_QUESTION_TYPE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="flex items-center gap-2 text-sm text-[var(--ink)]">

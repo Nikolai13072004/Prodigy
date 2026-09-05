@@ -2,6 +2,7 @@
 
 import { Check, Clock3, Search, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Select } from "@/components/ui";
 
 type AssignmentUser = {
   id: string;
@@ -690,16 +691,15 @@ export function AssignmentsManager({
 
             <div className="grid gap-3 border-t border-[var(--line)] bg-[var(--surface-raised)] px-6 py-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
               <div className="grid gap-2 md:grid-cols-[minmax(220px,1fr)_auto]">
-                <select
+                <Select
                   name="assignmentMode"
                   value={assignmentMode}
                   onChange={(event) => handleAssignmentModeChange(event.target.value)}
-                  className="h-10 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
                 >
                   <option value="ADD">Дополнить текущие</option>
                   <option value="REPLACE">Заменить весь список</option>
                   <option value="CLEAR">Снять все назначения</option>
-                </select>
+                </Select>
 
                 <details className="relative">
                   <summary className="inline-flex h-10 w-full cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] [&::-webkit-details-marker]:hidden md:w-auto">
@@ -709,7 +709,7 @@ export function AssignmentsManager({
                   <div className="absolute bottom-12 right-0 z-20 grid w-72 gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4 shadow-xl">
                     <label className="flex flex-col gap-1">
                       <span className="text-xs font-medium text-[var(--ink-muted)]">Быстрый срок</span>
-                      <select
+                      <Select
                         name="accessDurationDays"
                         value={accessDurationDays}
                         onChange={(event) => {
@@ -718,13 +718,12 @@ export function AssignmentsManager({
                           if (value) setAccessExpiresOn("");
                         }}
                         disabled={disabled}
-                        className="h-10 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
                       >
                         <option value="">Без срока</option>
                         <option value="30">30 дней</option>
                         <option value="60">60 дней</option>
                         <option value="90">90 дней</option>
-                      </select>
+                      </Select>
                     </label>
                     <label className="flex flex-col gap-1">
                       <span className="text-xs font-medium text-[var(--ink-muted)]">Точная дата</span>

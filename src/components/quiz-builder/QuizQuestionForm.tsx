@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronDown, ChevronUp, GripVertical, ImagePlus, Plus, Trash2 } from "lucide-react";
 import { type ChangeEvent, type FormEvent, useMemo, useRef, useState } from "react";
 import { QuizQuestionMediaViewer } from "@/components/QuizQuestionMediaViewer";
+import { Select } from "@/components/ui";
 import type { QuizQuestionMedia } from "@/lib/quiz-question-media";
 
 export type QuizQuestionType = "SINGLE_CHOICE" | "OPEN" | "MATCHING" | "FILE";
@@ -508,15 +509,15 @@ function QuestionForm({
         <section className="space-y-4 rounded-xl border border-[var(--line)] p-4">
           <div>
             <label className="block text-sm font-medium">Режим проверки</label>
-            <select
+            <Select
               name="reviewMode"
               value={openReviewMode}
               onChange={(event) => setOpenReviewMode(event.target.value === "MANUAL" ? "MANUAL" : "AUTO")}
-              className="mt-1 w-full rounded-md border border-[var(--line)] px-3 py-2 text-sm"
+              className="mt-1 w-full"
             >
               <option value="AUTO">Автоматически по эталону</option>
               <option value="MANUAL">Ручная проверка преподавателем</option>
-            </select>
+            </Select>
           </div>
           <div>
             <label className="block text-sm font-medium">Эталонный ответ</label>
@@ -657,11 +658,10 @@ function QuestionForm({
                     readOnly
                     className="rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)]"
                   />
-                  <select
+                  <Select
                     name="pairValues"
                     value={matchingPairs[index] >= 0 ? String(matchingPairs[index] + 1) : ""}
                     onChange={(event) => updatePair(index, event.target.value)}
-                    className="rounded-md border border-[var(--line)] px-3 py-2 text-sm"
                   >
                     <option value="">Выберите соответствие</option>
                     {matchingRight.map((rightValue, rightIndex) => (
@@ -669,7 +669,7 @@ function QuestionForm({
                         {rightValue || `Элемент ${rightIndex + 1}`}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               ))}
             </div>

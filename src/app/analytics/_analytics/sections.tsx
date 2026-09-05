@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Select } from "@/components/ui";
 import type {
   HrCourseAnalyticsStatusFilter,
   HrCourseSummaryRow,
@@ -355,15 +356,15 @@ export function HrCoursesSection({
 
           <label>
             <span className="mb-1 block text-xs text-[var(--ink-muted)]">Статус</span>
-            <select
+            <Select
               name="status"
               defaultValue={statusFilter}
-              className="h-10 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+              className="w-full"
             >
               <option value="all">Все курсы</option>
               <option value="published">Только опубликованные</option>
               <option value="draft">Черновики</option>
-            </select>
+            </Select>
           </label>
 
           <button
