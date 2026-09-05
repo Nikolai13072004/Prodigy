@@ -3,7 +3,7 @@ import { RefreshCw } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { cancelEmailJob, retryEmailJob } from "@/app/admin/reports/email-queue/actions";
 import { EmailQueueManualActions } from "@/app/admin/reports/email-queue/EmailQueueManualActions";
-import { Badge, type BadgeTone } from "@/components/ui";
+import { Badge, Select, type BadgeTone } from "@/components/ui";
 import { requirePermission } from "@/lib/auth-guards";
 import prisma from "@/lib/prisma";
 import { PERMISSIONS } from "@/lib/roles";
@@ -182,17 +182,17 @@ export default async function AdminEmailQueuePage({ searchParams }: Props) {
       <form className="mt-6 grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4 shadow-sm md:grid-cols-[220px_minmax(0,1fr)_auto]">
         <label className="block text-sm font-medium text-[var(--ink)]">
           Статус
-          <select
+          <Select
             name="status"
             defaultValue={status}
-            className="mt-2 h-11 w-full rounded-xl border border-[var(--line)] px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+            className="mt-2 w-full"
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <label className="block text-sm font-medium text-[var(--ink)]">

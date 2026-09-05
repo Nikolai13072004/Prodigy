@@ -26,6 +26,7 @@ import { CourseStructureAddMenu } from "./CourseStructureAddMenu";
 import { CourseItemPresentationFields } from "./CourseItemCreateFields";
 import { FileUrlInput } from "@/components/FileUrlInput";
 import { RichTextEditorField } from "@/components/RichTextEditorField";
+import { Select } from "@/components/ui";
 import {
   COURSE_ITEM_LABELS,
   normalizePresentationViewMode,
@@ -192,9 +193,9 @@ function ItemDialog(props: Parameters<typeof CourseStructureSection>[0] & { item
         </div>
         <form action={updateCourseItem.bind(null, courseId, item.id)} className="grid gap-3 md:grid-cols-2">
           <input name="title" defaultValue={item.title} className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm outline-none ring-[var(--accent)] focus:ring-2" />
-          <select name="moduleId" defaultValue={item.moduleId ?? ""} className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm outline-none ring-[var(--accent)] focus:ring-2"><option value="">Без раздела</option>{course.modules.map((courseModule) => <option key={courseModule.id} value={courseModule.id}>{courseModule.title}</option>)}</select>
+          <Select name="moduleId" defaultValue={item.moduleId ?? ""}><option value="">Без раздела</option>{course.modules.map((courseModule) => <option key={courseModule.id} value={courseModule.id}>{courseModule.title}</option>)}</Select>
           {item.type === "TEXT" ? <div className="md:col-span-2"><RichTextEditorField name="content" label="Содержание материала" initialValue={item.content ?? ""} placeholder="Обновите текст, форматирование и ссылки" /></div> : item.type === "PDF" ? <div className="md:col-span-2"><CourseItemPresentationFields initialFileUrl={item.fileUrl ?? ""} initialSlides={item.totalSlides} initialPreviewUrl={props.presentationPreviewUrls.get(item.id) ?? null} initialPresentationViewMode={item.presentationViewMode} initialCoverUrl={course.coverUrl} initialThumbnailUrl={course.thumbnailUrl} coverInputName="courseCoverUrl" thumbnailInputName="courseThumbnailUrl" /></div> : item.type === "VIDEO" ? <div className="md:col-span-2"><FileUrlInput name="fileUrl" label="Видео" hint="Поддерживаемые форматы: MP4, WebM" accept=".mp4,.webm,video/mp4,video/webm" initialValue={item.fileUrl ?? ""} /></div> : null}
-          <select name="isRequired" defaultValue={item.isRequired ? "1" : "0"} className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm outline-none ring-[var(--accent)] focus:ring-2"><option value="1">Обязательный материал</option><option value="0">Необязательный материал</option></select>
+          <Select name="isRequired" defaultValue={item.isRequired ? "1" : "0"}><option value="1">Обязательный материал</option><option value="0">Необязательный материал</option></Select>
           <div className="flex items-center gap-3"><button type="submit" className="rounded-xl border border-[var(--line)] px-4 py-2 text-sm hover:bg-[var(--accent-soft)]">Сохранить материал</button></div>
         </form>
         <form action={deleteCourseItem.bind(null, courseId, item.id)} className="mt-3"><button type="submit" className="text-sm text-[var(--danger)] underline">Удалить материал</button></form>

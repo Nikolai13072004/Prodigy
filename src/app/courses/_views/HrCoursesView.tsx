@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getUniqueEnrolledLearnersCount } from "@/lib/course-enrollment";
+import { Select } from "@/components/ui";
 import {
   COURSE_CATEGORY_OPTIONS,
   COURSE_DIFFICULTY_OPTIONS,
@@ -105,10 +106,10 @@ export async function HrCoursesView({
 
             <label>
               <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Категория курса</span>
-              <select
+              <Select
                 name="category"
                 defaultValue={hrCategory ?? ""}
-                className="h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+                className="w-full"
               >
                 <option value="">Все категории</option>
                 {COURSE_CATEGORY_OPTIONS.map((option) => (
@@ -116,15 +117,15 @@ export async function HrCoursesView({
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label>
               <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Уровень сложности</span>
-              <select
+              <Select
                 name="difficulty"
                 defaultValue={hrDifficulty ?? ""}
-                className="h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+                className="w-full"
               >
                 <option value="">Любой уровень</option>
                 {COURSE_DIFFICULTY_OPTIONS.map((option) => (
@@ -132,7 +133,7 @@ export async function HrCoursesView({
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <button

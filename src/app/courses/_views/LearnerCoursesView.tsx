@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LearnerCourseSearch } from "@/components/LearnerCourseSearch";
+import { Select } from "@/components/ui";
 import {
   COURSE_CATEGORY_OPTIONS,
   COURSE_DIFFICULTY_OPTIONS,
@@ -390,10 +391,10 @@ export async function LearnerCoursesView({
 
               <label>
                 <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Категория</span>
-                <select
+                <Select
                   name="category"
                   defaultValue={hrCategory ?? ""}
-                  className="h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+                  className="w-full"
                 >
                   <option value="">Все категории</option>
                   {COURSE_CATEGORY_OPTIONS.map((option) => (
@@ -401,15 +402,15 @@ export async function LearnerCoursesView({
                       {option.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
 
               <label>
                 <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Уровень</span>
-                <select
+                <Select
                   name="difficulty"
                   defaultValue={hrDifficulty ?? ""}
-                  className="h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+                  className="w-full"
                 >
                   <option value="">Любой уровень</option>
                   {COURSE_DIFFICULTY_OPTIONS.map((option) => (
@@ -417,35 +418,35 @@ export async function LearnerCoursesView({
                       {option.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
 
               <label>
                 <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Длительность</span>
-                <select
+                <Select
                   name="duration"
                   defaultValue={learnerDuration}
-                  className="h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+                  className="w-full"
                 >
                   <option value="all">Любая</option>
                   <option value="short">До 1 часа</option>
                   <option value="medium">1-3 часа</option>
                   <option value="long">Более 3 часов</option>
-                </select>
+                </Select>
               </label>
 
               {feedbackEnabled ? (
                 <label>
                   <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">Рейтинг</span>
-                  <select
+                  <Select
                     name="rating"
                     defaultValue={learnerRating}
-                    className="h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+                    className="w-full"
                   >
                     <option value="all">Любой</option>
                     <option value="4plus">От 4.0</option>
                     <option value="3plus">От 3.0</option>
-                  </select>
+                  </Select>
                 </label>
               ) : null}
 

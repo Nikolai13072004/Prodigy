@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Select } from "@/components/ui";
 import {
   queueMyHrNotificationEmails,
   saveHrNotificationPreferences,
@@ -350,23 +351,23 @@ export default async function AdminReportsPage({ searchParams }: Props) {
           <form action={createHrReportSchedule} className="mt-5 space-y-4">
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-[var(--ink)]">Тип отчета</span>
-              <select
+              <Select
                 name="reportType"
                 defaultValue={HR_REPORT_SCHEDULE_TYPES.COURSE_SUMMARY}
-                className="h-11 w-full rounded-xl border border-[var(--line)] px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+                className="w-full"
               >
                 <option value={HR_REPORT_SCHEDULE_TYPES.COURSE_SUMMARY}>Сводный отчет по курсам</option>
                 <option value={HR_REPORT_SCHEDULE_TYPES.COURSE_RESULTS}>Отчет по конкретному курсу</option>
                 <option value={HR_REPORT_SCHEDULE_TYPES.ANSWERS_ANALYSIS}>Анализ ответов по курсу</option>
-              </select>
+              </Select>
             </label>
 
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-[var(--ink)]">Курс</span>
-              <select
+              <Select
                 name="courseId"
                 defaultValue=""
-                className="h-11 w-full rounded-xl border border-[var(--line)] px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+                className="w-full"
               >
                 <option value="">Не нужен для сводного отчета</option>
                 {publishedCourses.map((course) => (
@@ -374,7 +375,7 @@ export default async function AdminReportsPage({ searchParams }: Props) {
                     {course.title}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block">

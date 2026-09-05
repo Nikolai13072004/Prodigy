@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { createCourseItem, createCourseModule } from "@/app/actions/course-content-actions";
+import { Select } from "@/components/ui";
 import {
   CourseItemCreateFields,
   type CourseItemType,
@@ -493,10 +494,10 @@ function ModeButton({
 
 function ModuleSelect({ modules }: { modules: Array<{ id: string; title: string }> }) {
   return (
-    <select
+    <Select
       name="moduleId"
       defaultValue={modules[0]?.id ?? ""}
-      className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+      className="w-full"
     >
       <option value="">Без раздела</option>
       {modules.map((module) => (
@@ -504,6 +505,6 @@ function ModuleSelect({ modules }: { modules: Array<{ id: string; title: string 
           {module.title}
         </option>
       ))}
-    </select>
+    </Select>
   );
 }

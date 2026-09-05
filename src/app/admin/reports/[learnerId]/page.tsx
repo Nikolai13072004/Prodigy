@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { blockLearnerAsHr } from "@/app/actions/hr-learner-actions";
+import { Select } from "@/components/ui";
 import { requirePermission } from "@/lib/auth-guards";
 import {
   LEARNER_COMMUNICATION_TYPE_OPTIONS,
@@ -443,17 +444,17 @@ function LearnerCommunicationsSection({
 
         <label className="block text-sm font-medium text-[var(--ink)]">
           Тип
-          <select
+          <Select
             name="communicationType"
             defaultValue={filters.type}
-            className="mt-2 h-11 w-full rounded-xl border border-[var(--line)] px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
+            className="mt-2 w-full"
           >
             {LEARNER_COMMUNICATION_TYPE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <label className="block text-sm font-medium text-[var(--ink)]">

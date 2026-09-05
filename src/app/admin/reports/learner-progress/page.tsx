@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth-guards";
+import { Select } from "@/components/ui";
 import {
   getLearnerReportSortParam,
   getLearnerReportStatusParam,
@@ -138,27 +139,27 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
                   <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                     Статус пользователя
                   </span>
-                  <select
+                  <Select
                     name="userStatus"
                     defaultValue={userStatusFilter}
-                    className="h-11 w-full rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+                    className="w-full"
                   >
                     {USER_STATUS_FILTER_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
 
                 <label className="block">
                   <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                     Группа
                   </span>
-                  <select
+                  <Select
                     name="groupId"
                     defaultValue={sp.groupId ?? ""}
-                    className="h-11 w-full rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+                    className="w-full"
                   >
                     <option value="">Все группы</option>
                     {groups.map((group) => (
@@ -166,17 +167,17 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
                         {group.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
 
                 <label className="block">
                   <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                     Подразделение
                   </span>
-                  <select
+                  <Select
                     name="departmentId"
                     defaultValue={sp.departmentId ?? ""}
-                    className="h-11 w-full rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+                    className="w-full"
                   >
                     <option value="">Все подразделения</option>
                     {departments.map((department) => (
@@ -184,7 +185,7 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
                         {department.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
 
                 <label className="block">
@@ -444,21 +445,18 @@ function ToolbarSelect({
   return (
     <label className="relative block">
       <span className="sr-only">{label}</span>
-      <select
+      <Select
         aria-label={label}
         name={name}
         defaultValue={defaultValue}
-        className="h-12 min-w-[200px] appearance-none rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 pr-10 text-sm font-medium text-[var(--ink-muted)] shadow-sm outline-none ring-[var(--accent)] transition focus:ring-2"
+        className="min-w-[200px]"
       >
         {options.map((option) => (
           <option key={`${name}:${option.value || "empty"}`} value={option.value}>
             {label}: {option.label}
           </option>
         ))}
-      </select>
-      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]">
-        <ChevronDownIcon />
-      </span>
+      </Select>
     </label>
   );
 }

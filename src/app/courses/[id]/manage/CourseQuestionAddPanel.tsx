@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import { Select } from "@/components/ui";
 
 type QuestionType = "SINGLE_CHOICE" | "OPEN" | "MATCHING";
 type QuestionAction = (formData: FormData) => void | Promise<void>;
@@ -288,20 +289,19 @@ export function CourseQuestionAddPanel({ actions }: Props) {
                     <label className="flex items-center gap-2 text-sm text-[var(--ink-muted)]">
                       <span className="sr-only">Тип вопроса</span>
                       <span aria-hidden="true" className="h-3 w-3 rounded-full border-2 border-[var(--ink-muted)]" />
-                      <select
+                      <Select
                         value={selectedType}
                         onChange={(event) => {
                           setSelectedType(event.target.value as QuestionType);
                           setError(null);
                         }}
-                        className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm outline-none ring-[var(--accent)] focus:ring-2"
                       >
                         {QUESTION_TYPES.map((item) => (
                           <option key={item.type} value={item.type}>
                             {item.title}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                   </div>
 

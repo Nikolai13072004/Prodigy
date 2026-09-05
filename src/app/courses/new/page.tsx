@@ -7,6 +7,7 @@ import {
 } from "@/app/actions/course-creation-actions";
 import { CourseCoverInput } from "@/components/CourseCoverInput";
 import { PresentationCourseAssetsFields } from "@/components/PresentationCourseAssetsFields";
+import { Select } from "@/components/ui";
 import {
   COURSE_CREATION_MODE_OPTIONS,
   COURSE_TEMPLATE_OPTIONS,
@@ -225,18 +226,18 @@ function TemplateCourseForm({ sp }: { sp: SearchParams }) {
           <label htmlFor="templateKey" className="block text-sm font-medium text-[var(--ink)]">
             Тип структуры
           </label>
-          <select
+          <Select
             id="templateKey"
             name="templateKey"
             defaultValue={sp.templateKey ?? COURSE_TEMPLATE_OPTIONS[0].value}
-            className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full"
           >
             {COURSE_TEMPLATE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label} — {option.description}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </section>
       <CourseBasicsFields sp={sp} />
@@ -269,12 +270,12 @@ function CopyCourseForm({
             <label htmlFor="sourceCourseId" className="block text-sm font-medium text-[var(--ink)]">
               Курс для копирования
             </label>
-            <select
+            <Select
               id="sourceCourseId"
               name="sourceCourseId"
               required
               defaultValue={sp.sourceCourseId ?? ""}
-              className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
+              className="mt-1 w-full"
             >
               <option value="">Выберите курс</option>
               {sourceCourses.map((course) => (
@@ -282,7 +283,7 @@ function CopyCourseForm({
                   {course.title} · {course._count.modules} мод. · {course._count.items} ур.
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <label htmlFor="copyTitle" className="block text-sm font-medium text-[var(--ink)]">
@@ -372,11 +373,11 @@ function AdditionalCourseFields({
           <label htmlFor="category" className="block text-sm font-medium text-[var(--ink)]">
             Категория
           </label>
-          <select
+          <Select
             id="category"
             name="category"
             defaultValue={sp.category ?? ""}
-            className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full"
           >
             <option value="">Не выбрана</option>
             {COURSE_CATEGORY_OPTIONS.map((option) => (
@@ -384,18 +385,18 @@ function AdditionalCourseFields({
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
           <label htmlFor="difficultyLevel" className="block text-sm font-medium text-[var(--ink)]">
             Уровень сложности
           </label>
-          <select
+          <Select
             id="difficultyLevel"
             name="difficultyLevel"
             defaultValue={sp.difficultyLevel ?? ""}
-            className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full"
           >
             <option value="">Не выбран</option>
             {COURSE_DIFFICULTY_OPTIONS.map((option) => (
@@ -403,7 +404,7 @@ function AdditionalCourseFields({
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
