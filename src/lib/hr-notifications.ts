@@ -1,3 +1,4 @@
+import { appBaseUrl } from "@/lib/app-base-url";
 import { getCourseProgress } from "@/lib/course-progress";
 import { resolveEffectiveCourseAccessWindow } from "@/lib/course-access-window";
 import prisma from "@/lib/prisma";
@@ -632,15 +633,6 @@ function formatDateRu(value: Date) {
     month: "2-digit",
     year: "numeric",
   }).format(value);
-}
-
-function appBaseUrl() {
-  return (
-    process.env.APP_BASE_URL?.trim() ||
-    process.env.NEXTAUTH_URL?.trim() ||
-    process.env.AUTH_URL?.trim() ||
-    "http://127.0.0.1:3002"
-  );
 }
 
 function toAbsoluteUrl(baseUrl: string, href: string) {

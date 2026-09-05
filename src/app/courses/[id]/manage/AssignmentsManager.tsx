@@ -2,6 +2,7 @@
 
 import { Check, Clock3, Search, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Select } from "@/components/ui";
 
 type AssignmentUser = {
   id: string;
@@ -97,12 +98,12 @@ function groupStatusLabel(checked: boolean, assigned: boolean, mode: AssignmentM
 }
 
 function statusClasses(checked: boolean, assigned: boolean, mode: AssignmentMode) {
-  if (mode === "CLEAR" && assigned) return "border-rose-200 bg-rose-50 text-rose-700";
-  if (mode === "REPLACE" && assigned && !checked) return "border-amber-200 bg-amber-50 text-amber-700";
-  if (checked && !assigned) return "border-sky-200 bg-sky-50 text-sky-700";
-  if (checked && assigned) return "border-emerald-300 bg-emerald-100 text-emerald-800";
-  if (assigned) return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  return "border-zinc-200 bg-zinc-50 text-zinc-600";
+  if (mode === "CLEAR" && assigned) return "border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger)]";
+  if (mode === "REPLACE" && assigned && !checked) return "border-[var(--warning)] bg-[var(--warning-soft)] text-[var(--warning)]";
+  if (checked && !assigned) return "border-[var(--info)] bg-[var(--info-soft)] text-[var(--info)]";
+  if (checked && assigned) return "border-[var(--success)] bg-[var(--success-soft)] text-[var(--success)]";
+  if (assigned) return "border-[var(--line)] bg-[var(--success-soft)] text-[var(--success)]";
+  return "border-[var(--line)] bg-[var(--surface)] text-[var(--ink-muted)]";
 }
 
 export function AssignmentsManager({
@@ -276,34 +277,34 @@ export function AssignmentsManager({
 
   return (
     <form action={action} className="space-y-4">
-      <section className="overflow-visible rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      <section className="overflow-visible rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
         <div className="grid gap-4 p-5 lg:grid-cols-[minmax(260px,0.85fr)_minmax(360px,1.15fr)] lg:items-stretch">
-          <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Назначения курса</p>
-            <h3 className="mt-1 text-lg font-semibold text-zinc-950">Кому доступен курс</h3>
+          <div className="rounded-2xl bg-[var(--surface)] px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Назначения курса</p>
+            <h3 className="mt-1 text-lg font-semibold text-[var(--ink)]">Кому доступен курс</h3>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 font-medium text-zinc-700">
+              <span className="rounded-full border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1 font-medium text-[var(--ink)]">
                 {listSummary(initiallyAssignedUsers.size, "сотрудник", "сотрудника", "сотрудников")}
               </span>
-              <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 font-medium text-zinc-700">
+              <span className="rounded-full border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1 font-medium text-[var(--ink)]">
                 {listSummary(initiallyAssignedGroups.size, "группа", "группы", "групп")}
               </span>
               {pendingInviteEmails.length > 0 ? (
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-medium text-amber-700">
+                <span className="rounded-full border border-[var(--warning)] bg-[var(--warning-soft)] px-3 py-1 font-medium text-[var(--warning)]">
                   {listSummary(pendingInviteEmails.length, "приглашение", "приглашения", "приглашений")} ждут
                 </span>
               ) : null}
-              <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 font-medium text-sky-700">
+              <span className="rounded-full border border-[var(--info)] bg-[var(--info-soft)] px-3 py-1 font-medium text-[var(--info)]">
                 Срок: {currentAccessLabel}
               </span>
             </div>
           </div>
 
-          <div className="flex rounded-2xl border border-zinc-200 bg-white p-3">
+          <div className="flex rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-3">
             <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Получатели</div>
-                <p className="mt-1 text-xs text-zinc-500">
+                <div className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Получатели</div>
+                <p className="mt-1 text-xs text-[var(--ink-muted)]">
                   Выбрано: {selectedGroups.size} групп · {selectedUsers.size} сотрудников · {inviteCount} email
                 </p>
               </div>
@@ -313,7 +314,7 @@ export function AssignmentsManager({
                   setRecipientModalOpen(true);
                   setActiveRecipientTab("groups");
                 }}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
               >
                 <Users className="h-4 w-4" aria-hidden="true" />
                 Выбрать получателей
@@ -323,8 +324,8 @@ export function AssignmentsManager({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <h3 className="text-base font-semibold text-zinc-950">Текущие назначения</h3>
+      <section className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-[var(--ink)]">Текущие назначения</h3>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
           <CompactAssignmentList
@@ -352,7 +353,7 @@ export function AssignmentsManager({
         <div className="admin-content-modal fixed z-50 flex items-center justify-center p-4">
           <button
             type="button"
-            className="absolute inset-0 bg-zinc-950/45"
+            className="absolute inset-0 bg-black/45"
             aria-label="Закрыть выбор получателей"
             onClick={() => setRecipientModalOpen(false)}
           />
@@ -360,19 +361,19 @@ export function AssignmentsManager({
             role="dialog"
             aria-modal="true"
             aria-labelledby="assignmentRecipientDialogTitle"
-            className="relative z-10 flex h-[min(640px,calc(100vh-2rem))] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl"
+            className="relative z-10 flex h-[min(640px,calc(100vh-2rem))] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-2xl"
           >
-            <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-6 py-5">
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] px-6 py-5">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Назначения</p>
-                <h3 id="assignmentRecipientDialogTitle" className="mt-1 text-xl font-semibold text-zinc-950">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--success)]">Назначения</p>
+                <h3 id="assignmentRecipientDialogTitle" className="mt-1 text-xl font-semibold text-[var(--ink)]">
                   Выбрать получателей
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setRecipientModalOpen(false)}
-                className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
                 Закрыть
@@ -380,7 +381,7 @@ export function AssignmentsManager({
             </div>
 
             <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)_300px]">
-              <aside className="min-h-0 border-b border-zinc-200 bg-zinc-50 p-4 lg:border-b-0 lg:border-r">
+              <aside className="min-h-0 border-b border-[var(--line)] bg-[var(--surface)] p-4 lg:border-b-0 lg:border-r">
                 <div className="space-y-2">
                   <RecipientTabButton
                     active={activeRecipientTab === "groups"}
@@ -405,8 +406,8 @@ export function AssignmentsManager({
                   <div>
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <h4 className="text-base font-semibold text-zinc-950">Группы</h4>
-                        <p className="mt-1 text-sm text-zinc-600">
+                        <h4 className="text-base font-semibold text-[var(--ink)]">Группы</h4>
+                        <p className="mt-1 text-sm text-[var(--ink-muted)]">
                           {filteredGroups.length} найдено · {selectedGroups.size} выбрано
                         </p>
                       </div>
@@ -415,7 +416,7 @@ export function AssignmentsManager({
                           type="button"
                           onClick={selectAllFilteredGroups}
                           disabled={disabled || filteredGroups.length === 0}
-                          className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-default disabled:opacity-60"
+                          className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] disabled:cursor-default disabled:opacity-60"
                         >
                           Выбрать найденные
                         </button>
@@ -423,7 +424,7 @@ export function AssignmentsManager({
                           type="button"
                           onClick={clearFilteredGroups}
                           disabled={disabled || filteredGroups.length === 0}
-                          className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-default disabled:opacity-60"
+                          className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] disabled:cursor-default disabled:opacity-60"
                         >
                           Снять найденные
                         </button>
@@ -439,7 +440,7 @@ export function AssignmentsManager({
                         value={groupQuery}
                         onChange={(event) => setGroupQuery(event.target.value)}
                         placeholder="Поиск группы"
-                        className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm outline-none ring-emerald-500 focus:ring-2"
+                        className="h-11 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
                       />
                       <FilterToggle checked={showSelectedGroups} onChange={setShowSelectedGroups} label="Выбранные" />
                       <FilterToggle checked={showAssignedGroups} onChange={setShowAssignedGroups} label="Назначенные" />
@@ -448,7 +449,7 @@ export function AssignmentsManager({
 
                     <div className="mt-4 space-y-2">
                       {filteredGroups.length === 0 ? (
-                        <p className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-8 text-sm text-zinc-600">
+                        <p className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] px-4 py-8 text-sm text-[var(--ink-muted)]">
                           Группы не найдены.
                         </p>
                       ) : (
@@ -462,8 +463,8 @@ export function AssignmentsManager({
                               key={group.id}
                               className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition ${
                                 checked
-                                  ? "border-emerald-300 bg-emerald-50/40"
-                                  : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
+                                  ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                                  : "border-[var(--line)] bg-[var(--surface-raised)] hover:border-[var(--line)] hover:bg-[var(--accent-soft)]"
                               } ${disabled ? "opacity-70" : ""}`}
                             >
                               <input
@@ -473,7 +474,7 @@ export function AssignmentsManager({
                                 onChange={() => setSelectedGroups((prev) => toggleInSet(prev, group.id))}
                                 disabled={disabled}
                               />
-                              <span className="min-w-0 flex-1 text-sm font-medium text-zinc-950">{group.name}</span>
+                              <span className="min-w-0 flex-1 text-sm font-medium text-[var(--ink)]">{group.name}</span>
                               {label ? (
                                 <span
                                   className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${statusClasses(
@@ -495,10 +496,10 @@ export function AssignmentsManager({
 
                 {activeRecipientTab === "users" ? (
                   <div>
-                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4">
+                    <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h4 className="text-base font-semibold text-zinc-950">Сотрудники</h4>
-                        <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-600">
+                        <h4 className="text-base font-semibold text-[var(--ink)]">Сотрудники</h4>
+                        <span className="rounded-full border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium text-[var(--ink-muted)]">
                           {shouldShowUsers ? `${filteredUsers.length} найдено` : "Поиск от 2 символов"} · {selectedUsers.size} выбрано
                         </span>
                       </div>
@@ -509,7 +510,7 @@ export function AssignmentsManager({
                         </label>
                         <div className="relative">
                           <Search
-                            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-muted)]"
                             aria-hidden="true"
                           />
                           <input
@@ -517,7 +518,7 @@ export function AssignmentsManager({
                             value={userQuery}
                             onChange={(event) => setUserQuery(event.target.value)}
                             placeholder="Найти по имени, логину, отделу или группе"
-                            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-3 text-sm outline-none ring-emerald-500 focus:ring-2"
+                            className="h-11 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] pl-10 pr-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
                           />
                         </div>
                       </div>
@@ -531,7 +532,7 @@ export function AssignmentsManager({
                     </div>
 
                     {shouldShowUsers ? (
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--ink-muted)]">
                         <span>
                           {filteredUsers.length === 0
                             ? "Нет подходящих сотрудников"
@@ -542,16 +543,16 @@ export function AssignmentsManager({
                             type="button"
                             onClick={selectAllFilteredUsers}
                             disabled={disabled || filteredUsers.length === 0}
-                            className="font-medium text-teal-700 hover:text-teal-900 disabled:cursor-default disabled:text-zinc-400"
+                            className="font-medium text-[var(--accent)] hover:text-[var(--accent-strong)] disabled:cursor-default disabled:text-[var(--ink-muted)]"
                           >
                             Выбрать показанных
                           </button>
-                          <span className="text-zinc-300">·</span>
+                          <span className="text-[var(--ink-muted)]">·</span>
                           <button
                             type="button"
                             onClick={clearFilteredUsers}
                             disabled={disabled || filteredUsers.length === 0}
-                            className="font-medium text-zinc-600 hover:text-zinc-900 disabled:cursor-default disabled:text-zinc-400"
+                            className="font-medium text-[var(--ink-muted)] hover:text-[var(--ink)] disabled:cursor-default disabled:text-[var(--ink-muted)]"
                           >
                             Снять показанных
                           </button>
@@ -559,15 +560,15 @@ export function AssignmentsManager({
                       </div>
                     ) : null}
 
-                    <div className="mt-4 rounded-xl border border-zinc-200 bg-white">
+                    <div className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)]">
                       {!shouldShowUsers ? (
-                        <div className="px-5 py-8 text-center text-sm text-zinc-600">
+                        <div className="px-5 py-8 text-center text-sm text-[var(--ink-muted)]">
                           Введите часть имени или включите фильтр выше.
                         </div>
                       ) : filteredUsers.length === 0 ? (
-                        <div className="px-5 py-8 text-center text-sm text-zinc-600">Ничего не найдено.</div>
+                        <div className="px-5 py-8 text-center text-sm text-[var(--ink-muted)]">Ничего не найдено.</div>
                       ) : (
-                        <div className="max-h-[52vh] divide-y divide-zinc-200 overflow-y-auto">
+                        <div className="max-h-[52vh] divide-y divide-[var(--line)] overflow-y-auto">
                           {filteredUsers.map((user) => {
                             const checked = selectedUsers.has(user.id);
                             const assigned = initiallyAssignedUsers.has(user.id);
@@ -580,7 +581,7 @@ export function AssignmentsManager({
                                   user.groups.length > 0 ? user.groups.join(", ") : "Без групп"
                                 }`}
                                 className={`flex items-center gap-3 px-4 py-3 transition ${
-                                  checked ? "bg-emerald-50/50" : "bg-white hover:bg-zinc-50"
+                                  checked ? "bg-[var(--accent-soft)]" : "bg-[var(--surface-raised)] hover:bg-[var(--accent-soft)]"
                                 } ${disabled ? "opacity-70" : ""}`}
                               >
                                 <input
@@ -590,12 +591,12 @@ export function AssignmentsManager({
                                   onChange={() => setSelectedUsers((prev) => toggleInSet(prev, user.id))}
                                   disabled={disabled}
                                 />
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-[11px] font-semibold text-white">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--accent-strong)] text-[11px] font-semibold text-white">
                                   {initials(user.name)}
                                 </span>
                                 <span className="min-w-0 flex-1">
-                                  <span className="block truncate text-sm font-medium text-zinc-950">{user.name}</span>
-                                  <span className="block truncate text-xs text-zinc-500">
+                                  <span className="block truncate text-sm font-medium text-[var(--ink)]">{user.name}</span>
+                                  <span className="block truncate text-xs text-[var(--ink-muted)]">
                                     {user.department !== "Без подразделения" ? user.department : user.login}
                                   </span>
                                 </span>
@@ -621,9 +622,9 @@ export function AssignmentsManager({
 
                 {activeRecipientTab === "email" ? (
                   <div>
-                    <h4 className="text-base font-semibold text-zinc-950">Новые ученики по email</h4>
+                    <h4 className="text-base font-semibold text-[var(--ink)]">Новые ученики по email</h4>
 
-                    <label htmlFor="assignment-invite-emails" className="mt-4 block text-sm font-medium text-zinc-700">
+                    <label htmlFor="assignment-invite-emails" className="mt-4 block text-sm font-medium text-[var(--ink)]">
                       Email учеников
                     </label>
                     <textarea
@@ -633,17 +634,17 @@ export function AssignmentsManager({
                       disabled={disabled}
                       rows={8}
                       placeholder={"test1@example.com\ntest2@example.com, test3@example.com"}
-                      className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none ring-emerald-500 focus:ring-2 disabled:cursor-default disabled:bg-zinc-100"
+                      className="mt-1.5 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-3 text-sm outline-none ring-[var(--accent)] focus:ring-2 disabled:cursor-default disabled:bg-[var(--surface)]"
                     />
 
                     {pendingInviteEmails.length > 0 ? (
-                      <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-                        <p className="text-xs font-medium text-amber-800">Уже ожидают регистрации</p>
+                      <div className="mt-4 rounded-xl border border-[var(--warning)] bg-[var(--warning-soft)] p-3">
+                        <p className="text-xs font-medium text-[var(--warning)]">Уже ожидают регистрации</p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {pendingInviteEmails.map((email) => (
                             <span
                               key={email}
-                              className="inline-flex rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-medium text-amber-700"
+                              className="inline-flex rounded-full border border-[var(--warning)] bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium text-[var(--warning)]"
                             >
                               {email}
                             </span>
@@ -655,15 +656,15 @@ export function AssignmentsManager({
                 ) : null}
               </div>
 
-              <aside className="min-h-0 overflow-y-auto border-t border-zinc-200 bg-zinc-50 p-5 lg:border-l lg:border-t-0">
-                <h4 className="text-sm font-semibold text-zinc-950">Выбрано</h4>
-                <div className="mt-3 grid gap-2 text-sm text-zinc-700">
+              <aside className="min-h-0 overflow-y-auto border-t border-[var(--line)] bg-[var(--surface)] p-5 lg:border-l lg:border-t-0">
+                <h4 className="text-sm font-semibold text-[var(--ink)]">Выбрано</h4>
+                <div className="mt-3 grid gap-2 text-sm text-[var(--ink)]">
                   <SummaryLine label="Группы" value={selectedGroups.size} />
                   <SummaryLine label="Сотрудники" value={selectedUsers.size} />
                   <SummaryLine label="Email" value={inviteCount} />
                 </div>
 
-                <div className="mt-5 rounded-xl border border-zinc-200 bg-white p-3 text-xs text-zinc-600">
+                <div className="mt-5 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-3 text-xs text-[var(--ink-muted)]">
                   {assignmentMode === "CLEAR" ? (
                     <p>Будут сняты все текущие назначения курса.</p>
                   ) : assignmentMode === "REPLACE" ? (
@@ -681,35 +682,34 @@ export function AssignmentsManager({
                   type="button"
                   onClick={clearSelections}
                   disabled={disabled || (selectedUsers.size === 0 && selectedGroups.size === 0 && inviteEmails.trim() === "")}
-                  className="mt-5 w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-default disabled:opacity-60"
+                  className="mt-5 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] disabled:cursor-default disabled:opacity-60"
                 >
                   Очистить выбор
                 </button>
               </aside>
             </div>
 
-            <div className="grid gap-3 border-t border-zinc-200 bg-white px-6 py-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+            <div className="grid gap-3 border-t border-[var(--line)] bg-[var(--surface-raised)] px-6 py-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
               <div className="grid gap-2 md:grid-cols-[minmax(220px,1fr)_auto]">
-                <select
+                <Select
                   name="assignmentMode"
                   value={assignmentMode}
                   onChange={(event) => handleAssignmentModeChange(event.target.value)}
-                  className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-700 outline-none ring-emerald-500 focus:ring-2"
                 >
                   <option value="ADD">Дополнить текущие</option>
                   <option value="REPLACE">Заменить весь список</option>
                   <option value="CLEAR">Снять все назначения</option>
-                </select>
+                </Select>
 
                 <details className="relative">
-                  <summary className="inline-flex h-10 w-full cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50 [&::-webkit-details-marker]:hidden md:w-auto">
+                  <summary className="inline-flex h-10 w-full cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] [&::-webkit-details-marker]:hidden md:w-auto">
                     <Clock3 className="h-4 w-4" aria-hidden="true" />
                     {accessLabel}
                   </summary>
-                  <div className="absolute bottom-12 right-0 z-20 grid w-72 gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl">
+                  <div className="absolute bottom-12 right-0 z-20 grid w-72 gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4 shadow-xl">
                     <label className="flex flex-col gap-1">
-                      <span className="text-xs font-medium text-zinc-500">Быстрый срок</span>
-                      <select
+                      <span className="text-xs font-medium text-[var(--ink-muted)]">Быстрый срок</span>
+                      <Select
                         name="accessDurationDays"
                         value={accessDurationDays}
                         onChange={(event) => {
@@ -718,16 +718,15 @@ export function AssignmentsManager({
                           if (value) setAccessExpiresOn("");
                         }}
                         disabled={disabled}
-                        className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-700 outline-none ring-emerald-500 focus:ring-2"
                       >
                         <option value="">Без срока</option>
                         <option value="30">30 дней</option>
                         <option value="60">60 дней</option>
                         <option value="90">90 дней</option>
-                      </select>
+                      </Select>
                     </label>
                     <label className="flex flex-col gap-1">
-                      <span className="text-xs font-medium text-zinc-500">Точная дата</span>
+                      <span className="text-xs font-medium text-[var(--ink-muted)]">Точная дата</span>
                       <input
                         type="date"
                         name="accessExpiresOn"
@@ -739,7 +738,7 @@ export function AssignmentsManager({
                           if (value) setAccessDurationDays("");
                         }}
                         disabled={disabled}
-                        className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-700 outline-none ring-emerald-500 focus:ring-2"
+                        className="h-10 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
                       />
                     </label>
                   </div>
@@ -750,7 +749,7 @@ export function AssignmentsManager({
                 <button
                   type="submit"
                   className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white ${
-                    assignmentMode === "CLEAR" ? "bg-rose-600 hover:bg-rose-700" : "bg-emerald-600 hover:bg-emerald-700"
+                    assignmentMode === "CLEAR" ? "bg-[var(--danger)] hover:opacity-90" : "bg-[var(--accent)] hover:bg-[var(--accent-strong)]"
                   }`}
                 >
                   <Check className="h-4 w-4" aria-hidden="true" />
@@ -789,19 +788,19 @@ function CompactAssignmentList({
   const hiddenCount = Math.max(0, items.length - visibleItems.length);
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-4">
-      <h4 className="text-sm font-semibold text-zinc-950">{title}</h4>
+    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+      <h4 className="text-sm font-semibold text-[var(--ink)]">{title}</h4>
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-zinc-500">{empty}</p>
+        <p className="mt-3 text-sm text-[var(--ink-muted)]">{empty}</p>
       ) : (
         <div className="mt-3 flex flex-wrap gap-2">
           {visibleItems.map((item) => (
-            <span key={item} className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700">
+            <span key={item} className="rounded-full border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium text-[var(--ink)]">
               {item}
             </span>
           ))}
           {hiddenCount > 0 ? (
-            <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-500">
+            <span className="rounded-full border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium text-[var(--ink-muted)]">
               {moreLabel(hiddenCount)}
             </span>
           ) : null}
@@ -827,18 +826,18 @@ function RecipientTabButton({
       type="button"
       onClick={onClick}
       className={`w-full rounded-xl border px-3 py-3 text-left transition ${
-        active ? "border-emerald-300 bg-emerald-50 text-zinc-950" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+        active ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--ink)]" : "border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink)] hover:bg-[var(--accent-soft)]"
       }`}
     >
       <span className="block text-sm font-semibold">{title}</span>
-      {description ? <span className="mt-1 block text-xs leading-relaxed text-zinc-500">{description}</span> : null}
+      {description ? <span className="mt-1 block text-xs leading-relaxed text-[var(--ink-muted)]">{description}</span> : null}
     </button>
   );
 }
 
 function FilterToggle({ checked, onChange, label }: { checked: boolean; onChange: (value: boolean) => void; label: string }) {
   return (
-    <label className="inline-flex h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-600">
+    <label className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 text-xs text-[var(--ink-muted)]">
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
       {label}
     </label>
@@ -858,8 +857,8 @@ function CompactFilterToggle({
     <label
       className={`inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs font-medium transition ${
         checked
-          ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-          : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+          ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+          : "border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink-muted)] hover:bg-[var(--accent-soft)]"
       }`}
     >
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
@@ -870,9 +869,9 @@ function CompactFilterToggle({
 
 function SummaryLine({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2">
+    <div className="flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2">
       <span>{label}</span>
-      <span className="font-semibold text-zinc-950">{value}</span>
+      <span className="font-semibold text-[var(--ink)]">{value}</span>
     </div>
   );
 }

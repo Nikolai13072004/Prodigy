@@ -3,6 +3,7 @@ import { activateUserAccount } from "@/app/actions/user-activation-actions";
 import { buildPasswordPolicyHint, getPlatformSecuritySettings } from "@/lib/platform-settings";
 import prisma from "@/lib/prisma";
 import { hashUserActivationToken } from "@/lib/user-activations";
+import { Button, Field, Input, buttonStyles } from "@/components/ui";
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -34,9 +35,9 @@ export default async function UserActivationPage({ params, searchParams }: Props
   const passwordHint = buildPasswordPolicyHint(securitySettings);
 
   return (
-    <main className="flex min-h-screen items-center bg-[#dfeaf7] px-4 py-10">
-      <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-3xl border border-[#c7d8ec] bg-white shadow-[0_24px_60px_rgba(12,42,82,0.16)] lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="bg-[#0c2a52] px-8 py-10 text-white sm:px-10">
+    <main className="flex min-h-screen items-center bg-[var(--canvas)] px-4 py-10">
+      <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-[var(--shadow-2)] lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="bg-[var(--aurora-sidebar)] px-8 py-10 text-white sm:px-10">
           <p className="text-sm uppercase tracking-[0.24em] text-white/70">Активация доступа</p>
           <h1 className="mt-4 text-3xl font-semibold leading-tight">
             {invite ? "Завершите активацию аккаунта" : "Ссылка активации"}
@@ -59,14 +60,14 @@ export default async function UserActivationPage({ params, searchParams }: Props
           {isAvailable ? (
             <>
               <div>
-                <h2 className="text-2xl font-semibold text-zinc-950">Задайте пароль</h2>
-                <p className="mt-2 text-sm text-zinc-600">
+                <h2 className="text-2xl font-semibold text-[var(--ink)]">Задайте пароль</h2>
+                <p className="mt-2 text-sm text-[var(--ink-muted)]">
                   После сохранения пароль будет установлен для вашего первого входа, а аккаунт станет активным.
                 </p>
               </div>
 
               {sp.error ? (
-                <p className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <p className="mt-6 rounded-2xl border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
                   {sp.error}
                 </p>
               ) : null}
@@ -74,33 +75,25 @@ export default async function UserActivationPage({ params, searchParams }: Props
               <form action={activateUserAccount} className="mt-8 space-y-4">
                 <input type="hidden" name="token" value={token} />
 
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
-                    Новый пароль
-                  </label>
-                  <input
+                <Field label="Новый пароль" htmlFor="password" hint={passwordHint}>
+                  <Input
                     id="password"
                     name="password"
                     type="password"
                     required
                     minLength={securitySettings.passwordMinLength}
-                    className="mt-1.5 w-full rounded-2xl border border-[#bfd2e8] px-4 py-3 text-sm outline-none ring-[#008db3] focus:ring-2"
                   />
-                  <p className="mt-1.5 text-xs text-zinc-500">{passwordHint}</p>
-                </div>
+                </Field>
 
-                <button
-                  type="submit"
-                  className="w-full rounded-2xl bg-[#008db3] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#007fa8]"
-                >
+                <Button type="submit" className="w-full">
                   Активировать аккаунт
-                </button>
+                </Button>
               </form>
             </>
           ) : (
             <div>
-              <h2 className="text-2xl font-semibold text-zinc-950">Ссылка недоступна</h2>
-              <p className="mt-3 text-sm leading-6 text-zinc-600">
+              <h2 className="text-2xl font-semibold text-[var(--ink)]">Ссылка недоступна</h2>
+              <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
                 {!invite
                   ? "Мы не нашли это приглашение. Возможно, ссылка была заменена новой или удалена."
                   : invite.status === "ACCEPTED"
@@ -111,16 +104,10 @@ export default async function UserActivationPage({ params, searchParams }: Props
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <Link
-                  href="/login"
-                  className="inline-flex rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-medium text-white hover:bg-zinc-800"
-                >
+                <Link href="/login" className={buttonStyles("primary")}>
                   Перейти ко входу
                 </Link>
-                <Link
-                  href="/"
-                  className="inline-flex rounded-2xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-                >
+                <Link href="/" className={buttonStyles("secondary")}>
                   На портал
                 </Link>
               </div>

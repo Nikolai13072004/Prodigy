@@ -7,6 +7,7 @@ import {
 } from "@/app/actions/course-creation-actions";
 import { CourseCoverInput } from "@/components/CourseCoverInput";
 import { PresentationCourseAssetsFields } from "@/components/PresentationCourseAssetsFields";
+import { Select } from "@/components/ui";
 import {
   COURSE_CREATION_MODE_OPTIONS,
   COURSE_TEMPLATE_OPTIONS,
@@ -67,14 +68,14 @@ export default async function NewCoursePage({ searchParams }: Props) {
     <main className="mx-auto max-w-5xl px-4 py-10">
       <Link
         href="/courses"
-        className="text-sm text-zinc-600 underline hover:text-zinc-900 dark:text-zinc-400"
+        className="text-sm text-[var(--ink-muted)] underline hover:text-[var(--ink)]"
       >
         ← К списку курсов
       </Link>
 
       <div className="mt-6 max-w-2xl">
         <h1 className="text-2xl font-semibold">Новый курс</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-sm text-[var(--ink-muted)]">
           Начните с рабочего материала. Остальную структуру можно настроить после создания.
         </p>
       </div>
@@ -92,7 +93,7 @@ export default async function NewCoursePage({ searchParams }: Props) {
       </nav>
 
       {sp.error ? (
-        <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <p className="mt-6 rounded-xl border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
           {sp.error}
         </p>
       ) : null}
@@ -127,12 +128,12 @@ function ModeLink({
       className={[
         "rounded-xl border px-4 py-3 text-left text-sm transition",
         active
-          ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
+          ? "border-[var(--accent)] bg-[var(--accent)] text-white shadow-sm"
+          : "border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--line)]",
       ].join(" ")}
     >
       <span className="block font-medium">{label}</span>
-      <span className={active ? "mt-1 block text-xs text-zinc-200" : "mt-1 block text-xs text-zinc-500"}>
+      <span className={active ? "mt-1 block text-xs text-white/80" : "mt-1 block text-xs text-[var(--ink-muted)]"}>
         {description}
       </span>
     </Link>
@@ -157,11 +158,11 @@ function PresentationCourseForm({ sp }: { sp: SearchParams }) {
 
   return (
     <form action={createCourseFromPresentation} className="mt-8 space-y-6">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Курс из презентации</h2>
+      <section className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-[var(--ink)]">Курс из презентации</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
-            <label htmlFor="title" className="block text-sm font-medium text-zinc-900">
+            <label htmlFor="title" className="block text-sm font-medium text-[var(--ink)]">
               Название курса
             </label>
             <input
@@ -169,11 +170,11 @@ function PresentationCourseForm({ sp }: { sp: SearchParams }) {
               name="title"
               required
               defaultValue={sp.title ?? ""}
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
             />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="description" className="block text-sm font-medium text-zinc-900">
+            <label htmlFor="description" className="block text-sm font-medium text-[var(--ink)]">
               Описание
             </label>
             <textarea
@@ -182,7 +183,7 @@ function PresentationCourseForm({ sp }: { sp: SearchParams }) {
               rows={4}
               required
               defaultValue={sp.description ?? ""}
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
             />
           </div>
           <div className="md:col-span-2">
@@ -194,7 +195,7 @@ function PresentationCourseForm({ sp }: { sp: SearchParams }) {
               initialCoverUrl={sp.coverUrl ?? null}
             />
           </div>
-          <label className="md:col-span-2 flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+          <label className="md:col-span-2 flex items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--ink)]">
             <input type="hidden" name="includeQuiz" value="0" />
             <input
               type="checkbox"
@@ -219,24 +220,24 @@ function PresentationCourseForm({ sp }: { sp: SearchParams }) {
 function TemplateCourseForm({ sp }: { sp: SearchParams }) {
   return (
     <form action={createCourseFromTemplate} className="mt-8 space-y-6">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Шаблон</h2>
+      <section className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-[var(--ink)]">Шаблон</h2>
         <div className="mt-5">
-          <label htmlFor="templateKey" className="block text-sm font-medium text-zinc-900">
+          <label htmlFor="templateKey" className="block text-sm font-medium text-[var(--ink)]">
             Тип структуры
           </label>
-          <select
+          <Select
             id="templateKey"
             name="templateKey"
             defaultValue={sp.templateKey ?? COURSE_TEMPLATE_OPTIONS[0].value}
-            className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full"
           >
             {COURSE_TEMPLATE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label} — {option.description}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </section>
       <CourseBasicsFields sp={sp} />
@@ -262,19 +263,19 @@ function CopyCourseForm({
 }) {
   return (
     <form action={copyCourse} className="mt-8 space-y-6">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Исходный курс</h2>
+      <section className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-[var(--ink)]">Исходный курс</h2>
         <div className="mt-5 grid gap-4">
           <div>
-            <label htmlFor="sourceCourseId" className="block text-sm font-medium text-zinc-900">
+            <label htmlFor="sourceCourseId" className="block text-sm font-medium text-[var(--ink)]">
               Курс для копирования
             </label>
-            <select
+            <Select
               id="sourceCourseId"
               name="sourceCourseId"
               required
               defaultValue={sp.sourceCourseId ?? ""}
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+              className="mt-1 w-full"
             >
               <option value="">Выберите курс</option>
               {sourceCourses.map((course) => (
@@ -282,10 +283,10 @@ function CopyCourseForm({
                   {course.title} · {course._count.modules} мод. · {course._count.items} ур.
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
-            <label htmlFor="copyTitle" className="block text-sm font-medium text-zinc-900">
+            <label htmlFor="copyTitle" className="block text-sm font-medium text-[var(--ink)]">
               Название нового курса
             </label>
             <input
@@ -293,11 +294,11 @@ function CopyCourseForm({
               name="title"
               defaultValue={sp.title ?? ""}
               placeholder="Если оставить пустым, добавится «— копия»"
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label htmlFor="copyDescription" className="block text-sm font-medium text-zinc-900">
+            <label htmlFor="copyDescription" className="block text-sm font-medium text-[var(--ink)]">
               Описание нового курса
             </label>
             <textarea
@@ -306,7 +307,7 @@ function CopyCourseForm({
               rows={4}
               defaultValue={sp.description ?? ""}
               placeholder="Если оставить пустым, скопируется описание исходного курса"
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
             />
           </div>
         </div>
@@ -321,11 +322,11 @@ function CopyCourseForm({
 
 function CourseBasicsFields({ sp }: { sp: SearchParams }) {
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-zinc-950">Карточка курса</h2>
+    <section className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-[var(--ink)]">Карточка курса</h2>
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <label htmlFor="title" className="block text-sm font-medium text-zinc-900">
+          <label htmlFor="title" className="block text-sm font-medium text-[var(--ink)]">
             Название
           </label>
           <input
@@ -333,12 +334,12 @@ function CourseBasicsFields({ sp }: { sp: SearchParams }) {
             name="title"
             required
             defaultValue={sp.title ?? ""}
-            className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
           />
         </div>
 
         <div className="md:col-span-2">
-          <label htmlFor="description" className="block text-sm font-medium text-zinc-900">
+          <label htmlFor="description" className="block text-sm font-medium text-[var(--ink)]">
             Описание
           </label>
           <textarea
@@ -347,7 +348,7 @@ function CourseBasicsFields({ sp }: { sp: SearchParams }) {
             rows={5}
             required
             defaultValue={sp.description ?? ""}
-            className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
           />
         </div>
       </div>
@@ -363,20 +364,20 @@ function AdditionalCourseFields({
   showCoverInput?: boolean;
 }) {
   return (
-    <details className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-      <summary className="cursor-pointer text-sm font-medium text-zinc-900">
+    <details className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm">
+      <summary className="cursor-pointer text-sm font-medium text-[var(--ink)]">
         Дополнительно
       </summary>
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <div>
-          <label htmlFor="category" className="block text-sm font-medium text-zinc-900">
+          <label htmlFor="category" className="block text-sm font-medium text-[var(--ink)]">
             Категория
           </label>
-          <select
+          <Select
             id="category"
             name="category"
             defaultValue={sp.category ?? ""}
-            className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full"
           >
             <option value="">Не выбрана</option>
             {COURSE_CATEGORY_OPTIONS.map((option) => (
@@ -384,18 +385,18 @@ function AdditionalCourseFields({
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
-          <label htmlFor="difficultyLevel" className="block text-sm font-medium text-zinc-900">
+          <label htmlFor="difficultyLevel" className="block text-sm font-medium text-[var(--ink)]">
             Уровень сложности
           </label>
-          <select
+          <Select
             id="difficultyLevel"
             name="difficultyLevel"
             defaultValue={sp.difficultyLevel ?? ""}
-            className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full"
           >
             <option value="">Не выбран</option>
             {COURSE_DIFFICULTY_OPTIONS.map((option) => (
@@ -403,11 +404,11 @@ function AdditionalCourseFields({
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
-          <label htmlFor="durationHours" className="block text-sm font-medium text-zinc-900">
+          <label htmlFor="durationHours" className="block text-sm font-medium text-[var(--ink)]">
             Длительность, часы
           </label>
           <input
@@ -417,12 +418,12 @@ function AdditionalCourseFields({
             min={0}
             max={999}
             defaultValue={sp.durationHours ?? ""}
-            className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
           />
         </div>
 
         <div>
-          <label htmlFor="durationMinutes" className="block text-sm font-medium text-zinc-900">
+          <label htmlFor="durationMinutes" className="block text-sm font-medium text-[var(--ink)]">
             Длительность, минуты
           </label>
           <input
@@ -432,7 +433,7 @@ function AdditionalCourseFields({
             min={0}
             max={59}
             defaultValue={sp.durationMinutes ?? ""}
-            className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
           />
         </div>
         {showCoverInput ? (
@@ -450,11 +451,11 @@ function SubmitRow({ label, hint }: { label: string; hint: string }) {
     <div className="flex flex-wrap items-center gap-3">
       <button
         type="submit"
-        className="rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
+        className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--accent-strong)]"
       >
         {label}
       </button>
-      <p className="text-sm text-zinc-500">{hint}</p>
+      <p className="text-sm text-[var(--ink-muted)]">{hint}</p>
     </div>
   );
 }

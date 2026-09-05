@@ -1,0 +1,132 @@
+name: CI
+
+# Проверки, которые до этого запускались руками и поэтому регулярно
+# пропускались. Порядок шагов — от самого дешёвого к самому долгому, чтобы
+# очевидная поломка была видна за секунды, а не через сборку.
+#
+# E2E сюда намеренно не входит: Playwright требует установленного Chromium,
+# прогон живёт локально (`npm run test:e2e`).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    # База PostgreSQL нужна здесь по-настоящему: после переезда (ADR-014)
+    # `migrate diff --from-migrations` заводит shadow-БД на сервере, а
+    # `migrate deploy` накатывает baseline перед сборкой.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: lms
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: lms
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lms -d lms"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://lms:test@localhost:5432/lms?schema=public
+      AUTH_SECRET: ci-only-secret-never-used-at-runtime
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Мажорная версия та же, что в Dockerfile (node:20.20-bookworm-slim).
+          # Расхождение с прод-рантаймом означало бы, что CI проверяет не то,
+          # что выкатывается.
+          node-version: '20'
+          cache: npm
+
+      - name: Установка зависимостей
+        run: npm ci
+
+      - name: Shadow-БД для drift-проверки
+        # `migrate diff --from-migrations` на PostgreSQL реплеит миграции в
+        # отдельную (shadow) БД, поэтому её надо создать заранее.
+        env:
+          PGPASSWORD: test
+        run: psql -h localhost -U lms -d lms -c 'CREATE DATABASE shadow'
+
+      - name: Расхождение миграций и schema.prisma
+        # Миграции ведутся отдельно от схемы — без этой проверки они молча
+        # расходятся. Команда намеренно совпадает с той, что в CLAUDE.md.
+        run: >
+          npx prisma migrate diff
+          --from-migrations prisma/migrations
+          --to-schema-datamodel prisma/schema.prisma
+          --shadow-database-url postgresql://lms:test@localhost:5432/shadow?schema=public
+          --exit-code
+
+      - name: Линтер
+        run: npm run lint
+
+      - name: Unit-тесты
+        run: npm run test:unit
+
+      - name: Схема для сборки
+        # На пустой базе сборка засыпает лог `prisma:error` от platformSettings —
+        # настоящая ошибка в этом шуме потерялась бы. Накатываем baseline тем же
+        # `migrate deploy`, что и на проде.
+        run: npx prisma migrate deploy
+
+      - name: Production-сборка
+        run: npm run build
+
+  # Инфра-тесты репозиториев против НАСТОЯЩЕГО PostgreSQL. Отдельный job:
+  # (1) закрывает пробел — в `check` инфра-слой не покрыт вовсе;
+  # (2) непрерывно проверяет провайдер-независимость до переезда на PG (ADR-014).
+  # Раннер сам генерирует клиент под postgres и db push --force-reset в сервис
+  # (режим INFRA_DATABASE_URL). Пока прод на SQLite — job информационный сигнал,
+  # но зелёный на PG означает, что cutover не принесёт сюрпризов.
+  infra-postgres:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: lms
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: lmstest
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lms -d lmstest"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      AUTH_SECRET: ci-only-secret-never-used-at-runtime
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Установка зависимостей
+        run: npm ci
+
+      - name: Инфра-тесты на PostgreSQL
+        env:
+          INFRA_DATABASE_URL: postgresql://lms:test@localhost:5432/lmstest?schema=public
+        run: npm run test:infra

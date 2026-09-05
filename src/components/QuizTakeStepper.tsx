@@ -4,6 +4,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QuizQuestionMediaViewer } from "@/components/QuizQuestionMediaViewer";
+import { Badge, Button, Progress, Select, buttonStyles } from "@/components/ui";
 import { QUESTION_LABELS } from "@/lib/constants";
 import { parseQuizQuestionMediaFromConfig } from "@/lib/quiz-question-media";
 
@@ -192,44 +193,37 @@ export function QuizTakeStepper({
 
   return (
     <form ref={formRef} action={submitAction} onSubmit={onSubmit} className="mt-8 space-y-5">
-      <div className="rounded-lg border border-black bg-white p-4">
+      <div className="rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-raised)] p-4">
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-          <span className="font-medium text-zinc-700">
+          <span className="font-medium text-[var(--ink)]">
             Вопрос {currentIndex + 1} из {questions.length}
           </span>
-          <div className="flex flex-wrap items-center gap-2 text-zinc-600">
+          <div className="flex flex-wrap items-center gap-2 text-[var(--ink-muted)]">
             {timerLabel ? (
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  isExpired ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
-                }`}
-              >
-                {timerLabel}
-              </span>
+              <Badge tone={isExpired ? "danger" : "warning"}>{timerLabel}</Badge>
             ) : timeLimitMinutes ? (
-              <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-600">
-                Лимит: {timeLimitMinutes} мин.
-              </span>
+              <Badge tone="neutral">Лимит: {timeLimitMinutes} мин.</Badge>
             ) : null}
             <span>
               {statusLabel} · отвечено: {answeredCount}/{questions.length}
             </span>
           </div>
         </div>
-        <div className="mt-3 h-2 rounded-full bg-zinc-200">
-          <div
-            className="h-2 rounded-full bg-teal-600 transition-all"
-            style={{ width: `${Math.round(((currentIndex + 1) / questions.length) * 100)}%` }}
-          />
-        </div>
+        <Progress
+          value={Math.round(((currentIndex + 1) / questions.length) * 100)}
+          className="mt-3 h-2"
+        />
       </div>
 
-      <fieldset disabled={isExpired} className="rounded-lg border border-black bg-white p-4 disabled:opacity-70">
-        <legend className="px-1 text-xs font-medium text-zinc-500">
+      <fieldset
+        disabled={isExpired}
+        className="rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-raised)] p-4 disabled:opacity-70"
+      >
+        <legend className="px-1 text-xs font-medium text-[var(--ink-muted)]">
           {QUESTION_LABELS[currentQuestion.type as keyof typeof QUESTION_LABELS] ?? currentQuestion.type} (
           {currentQuestion.points} б.)
         </legend>
-        <p className="mt-2 text-sm font-medium text-zinc-900">{currentQuestion.prompt}</p>
+        <p className="mt-2 text-sm font-medium text-[var(--ink)]">{currentQuestion.prompt}</p>
         <QuizQuestionMediaViewer
           media={parseQuizQuestionMediaFromConfig(currentQuestion.config)}
           className="mt-4"
@@ -298,39 +292,24 @@ export function QuizTakeStepper({
       </fieldset>
 
       {isExpired ? (
-        <p className="text-sm text-amber-700">Время на тест вышло. Отправляем текущие ответы.</p>
+        <p className="text-sm text-[var(--warning)]">Время на тест вышло. Отправляем текущие ответы.</p>
       ) : error ? (
-        <p className="text-sm text-red-700">{error}</p>
+        <p className="text-sm text-[var(--danger)]">{error}</p>
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={goPrev}
-          disabled={currentIndex === 0 || isExpired}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <Button type="button" variant="secondary" onClick={goPrev} disabled={currentIndex === 0 || isExpired}>
           Назад
-        </button>
+        </Button>
 
         {!isLastQuestion && (
-          <button
-            type="button"
-            onClick={goNext}
-            disabled={isExpired}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <Button type="button" onClick={goNext} disabled={isExpired}>
             Далее
-          </button>
+          </Button>
         )}
 
         {isLastQuestion && (
-          <button
-            type="submit"
-            className="rounded-md bg-teal-700 px-6 py-2.5 text-sm font-medium text-white hover:bg-teal-800"
-          >
-            {isExpired ? "Отправить результат" : "Закончить тест"}
-          </button>
+          <Button type="submit">{isExpired ? "Отправить результат" : "Закончить тест"}</Button>
         )}
       </div>
 
@@ -363,9 +342,9 @@ function OpenField({
         rows={4}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+        className="w-full rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]"
       />
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-[var(--ink-muted)]">
         {isManualReview
           ? "Этот ответ проверит преподаватель. После отправки тест получит статус «На проверке»."
           : "Ответ будет проверен автоматически по эталону."}
@@ -421,11 +400,11 @@ function MatchingField({
     <div className="mt-3 space-y-3">
       {config.left.map((leftLabel, index) => (
         <div key={`${question.id}-${index}`} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <span className="min-w-[180px] text-sm text-zinc-800">{leftLabel}</span>
-          <select
+          <span className="min-w-[180px] text-sm text-[var(--ink)]">{leftLabel}</span>
+          <Select
             value={value?.[index] ?? ""}
             onChange={(event) => onChange(index, event.target.value)}
-            className="w-full max-w-xs rounded-md border border-zinc-300 px-3 py-2 text-sm"
+            className="w-full max-w-xs"
           >
             <option value="">Выберите вариант</option>
             {config.right.map((rightLabel, rightIndex) => (
@@ -433,7 +412,7 @@ function MatchingField({
                 {rightLabel}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       ))}
     </div>
@@ -515,15 +494,15 @@ function FileField({
 
   return (
     <div className="mt-3 space-y-3">
-      <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-4">
-        <p className="text-sm text-zinc-700">
+      <div className="rounded-[var(--radius-panel)] border border-dashed border-[var(--line)] bg-[var(--surface)] p-4">
+        <p className="text-sm text-[var(--ink-muted)]">
           Допустимые форматы: {allowedExtensions.length ? allowedExtensions.map((ext) => ext.toUpperCase()).join(", ") : "по настройке вопроса"}.
         </p>
-        <p className="mt-1 text-sm text-zinc-700">Максимальный размер: {maxFileSizeMb} МБ.</p>
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">Максимальный размер: {maxFileSizeMb} МБ.</p>
       </div>
 
       {uploadedFile ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <div className="rounded-[var(--radius-panel)] bg-[var(--success-soft)] p-4 text-sm text-[var(--success)]">
           <p className="font-medium">Файл прикреплен</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <a
@@ -537,7 +516,7 @@ function FileField({
             <span>· {formatFileSize(uploadedFile.size)}</span>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm hover:bg-zinc-50">
+            <label className={`${buttonStyles("secondary", "sm")} cursor-pointer`}>
               {busy ? "Загрузка..." : "Заменить файл"}
               <input
                 type="file"
@@ -547,20 +526,21 @@ function FileField({
                 disabled={busy}
               />
             </label>
-            <button
+            <Button
               type="button"
+              variant="danger"
+              size="sm"
               onClick={() => {
                 setError(null);
                 onChange("");
               }}
-              className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm text-red-700 hover:bg-red-50"
             >
               Удалить файл
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
-        <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-black px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100">
+        <label className={`${buttonStyles("secondary")} cursor-pointer`}>
           {busy ? "Загрузка..." : "Загрузить файл"}
           <input
             type="file"
@@ -572,11 +552,11 @@ function FileField({
         </label>
       )}
 
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-[var(--ink-muted)]">
         После отправки ответ будет ждать проверки преподавателя.
       </p>
 
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Button, Label } from "@/components/ui";
 
 type Props = {
   action: (formData: FormData) => Promise<void>;
@@ -25,24 +26,18 @@ export function AdminCreateDepartmentModal({ action }: Props) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-md bg-[#2dbf6e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#27a860]"
-      >
-        Новое подразделение
-      </button>
+      <Button onClick={() => setOpen(true)}>Новое подразделение</Button>
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white shadow-xl dark:bg-zinc-900">
-            <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
-              <h3 className="text-xl font-medium text-zinc-800 dark:text-zinc-100">Новое подразделение</h3>
+          <div className="w-full max-w-md rounded-lg bg-[var(--surface-raised)] shadow-xl">
+            <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-3">
+              <h3 className="text-xl font-medium text-[var(--ink)]">Новое подразделение</h3>
               <button
                 type="button"
                 aria-label="Закрыть"
                 onClick={() => setOpen(false)}
-                className="text-xl leading-none text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                className="text-xl leading-none text-[var(--ink-muted)] hover:text-[var(--ink)]"
               >
                 ×
               </button>
@@ -55,9 +50,9 @@ export function AdminCreateDepartmentModal({ action }: Props) {
                 if (!validateName()) event.preventDefault();
               }}
             >
-              <label htmlFor="new-department-name" className="mb-2 block text-sm text-zinc-600 dark:text-zinc-300">
+              <Label htmlFor="new-department-name" className="mb-2 block">
                 Название
-              </label>
+              </Label>
               <input
                 id="new-department-name"
                 name="name"
@@ -69,23 +64,14 @@ export function AdminCreateDepartmentModal({ action }: Props) {
                   if (!input) return;
                   if (input.value.trim().length > 0) input.setCustomValidity("");
                 }}
-                className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                className="h-10 w-full rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] px-3 text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)] disabled:opacity-50"
               />
 
-              <div className="mt-8 flex justify-end gap-2 border-t border-zinc-200 pt-3 dark:border-zinc-800">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded-md bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-                >
+              <div className="mt-8 flex justify-end gap-2 border-t border-[var(--line)] pt-3">
+                <Button variant="secondary" onClick={() => setOpen(false)}>
                   Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-md bg-[#2dbf6e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#27a860]"
-                >
-                  Создать
-                </button>
+                </Button>
+                <Button type="submit">Создать</Button>
               </div>
             </form>
           </div>

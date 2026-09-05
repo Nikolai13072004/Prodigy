@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createUser } from "@/app/actions/user-actions";
 import { AdminUsersSubtabs } from "@/components/AdminUsersSubtabs";
 import { SystemRoleMarker } from "@/components/SystemRoleMarker";
+import { Button, Input, Select, buttonStyles } from "@/components/ui";
 import { requirePermission } from "@/lib/auth-guards";
 import { buildPasswordPolicyHint, getPlatformSecuritySettings } from "@/lib/platform-settings";
 import prisma from "@/lib/prisma";
@@ -85,99 +86,72 @@ export default async function NewUserPage({ searchParams }: Props) {
       <h1 className="text-2xl font-semibold tracking-tight">
         {canEditAccessLevel ? "Управление пользователями" : "Управление учениками"}
       </h1>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mt-1 text-sm text-[var(--ink-muted)]">
         {canEditAccessLevel
           ? "Создание нового пользователя."
           : "Создание нового ученика с возможностью сразу отправить письмо с временным паролем."}
       </p>
       <AdminUsersSubtabs active="users" />
 
-      <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900/60">
+      <section className="mt-6 rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-raised)] p-6">
         <div className="mb-4 flex items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">{canEditAccessLevel ? "Новый пользователь" : "Новый ученик"}</h2>
-          <Link
-            href="/admin/users-groups#users-section"
-            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
-          >
+          <Link href="/admin/users-groups#users-section" className={buttonStyles("secondary", "sm")}>
             Назад к списку
           </Link>
         </div>
         {error ? (
           <div
             role="alert"
-            className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300"
+            className="mb-4 rounded-md border border-[var(--danger)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger)]"
           >
             {error}
           </div>
         ) : null}
 
-        <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
-          <span className="mr-1 text-red-600 dark:text-red-400" aria-hidden="true">*</span>
+        <p className="mb-4 text-xs text-[var(--ink-muted)]">
+          <span className="mr-1 text-[var(--danger)]" aria-hidden="true">*</span>
           Обязательные поля. Пароль обязателен при обычном создании без приглашения.
         </p>
         {!canEditAccessLevel ? (
-          <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <div className="mb-4 rounded-md border border-[var(--success)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)]">
             После сохранения система создаст ученика с ролью «Ученик». Письмо с временным паролем можно отправить сразу или позже.
           </div>
         ) : null}
 
         <form action={createUser} noValidate className="grid gap-4 md:grid-cols-2">
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200"><span className="mr-1 text-red-600 dark:text-red-400" aria-hidden="true">*</span>Имя пользователя</span>
-            <input
-              name="firstName"
-              required
-              defaultValue={firstNameValue}
-              autoComplete="given-name"
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            />
+            <span className="mb-1 block text-sm text-[var(--ink)]"><span className="mr-1 text-[var(--danger)]" aria-hidden="true">*</span>Имя пользователя</span>
+            <Input name="firstName" required defaultValue={firstNameValue} autoComplete="given-name" />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">Фамилия</span>
-            <input
-              name="lastName"
-              defaultValue={lastNameValue}
-              autoComplete="family-name"
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            />
+            <span className="mb-1 block text-sm text-[var(--ink)]">Фамилия</span>
+            <Input name="lastName" defaultValue={lastNameValue} autoComplete="family-name" />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200"><span className="mr-1 text-red-600 dark:text-red-400" aria-hidden="true">*</span>Логин</span>
-            <input
-              name="login"
-              required
-              defaultValue={loginValue}
-              autoComplete="off"
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            />
+            <span className="mb-1 block text-sm text-[var(--ink)]"><span className="mr-1 text-[var(--danger)]" aria-hidden="true">*</span>Логин</span>
+            <Input name="login" required defaultValue={loginValue} autoComplete="off" />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200"><span className="mr-1 text-red-600 dark:text-red-400" aria-hidden="true">*</span>Email</span>
-            <input
-              name="email"
-              type="email"
-              required
-              defaultValue={emailValue}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            />
+            <span className="mb-1 block text-sm text-[var(--ink)]"><span className="mr-1 text-[var(--danger)]" aria-hidden="true">*</span>Email</span>
+            <Input name="email" type="email" required defaultValue={emailValue} />
           </label>
 
           {canEditAccessLevel ? (
             <>
               <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200"><span className="mr-1 text-red-600 dark:text-red-400" aria-hidden="true">*</span>Пароль</span>
-                <input
+                <span className="mb-1 block text-sm text-[var(--ink)]"><span className="mr-1 text-[var(--danger)]" aria-hidden="true">*</span>Пароль</span>
+                <Input
                   name="password"
                   type="password"
                   minLength={securitySettings.passwordMinLength}
                   defaultValue=""
                   autoComplete="new-password"
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                 />
-                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="mt-2 text-xs text-[var(--ink-muted)]">
                   {passwordHint}{" "}
                   Для обычного создания пароль обязателен. Если нажать «Создать и отправить приглашение», система создаст
                   пользователя в статусе «Ожидает подтверждения» и отправит письмо со ссылкой для активации, где пользователь
@@ -186,8 +160,8 @@ export default async function NewUserPage({ searchParams }: Props) {
               </label>
 
               <fieldset className="block md:col-span-2">
-                <legend className="mb-2 block text-sm text-zinc-700 dark:text-zinc-200"><span className="mr-1 text-red-600 dark:text-red-400" aria-hidden="true">*</span>Роли</legend>
-                <div className="grid gap-2 rounded-md border border-zinc-300 px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900">
+                <legend className="mb-2 block text-sm text-[var(--ink)]"><span className="mr-1 text-[var(--danger)]" aria-hidden="true">*</span>Роли</legend>
+                <div className="grid gap-2 rounded-md border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-3 text-sm">
                   {roles.map((role) => (
                     <label key={role.id} className="flex items-center gap-2">
                       <input
@@ -203,85 +177,69 @@ export default async function NewUserPage({ searchParams }: Props) {
                     </label>
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="mt-2 text-xs text-[var(--ink-muted)]">
                   Можно выбрать несколько ролей. Первая выбранная роль станет основной для отображения.
                 </p>
               </fieldset>
 
               <label className="block md:col-span-2">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">Статус</span>
-                <select
-                  name="status"
-                  defaultValue={statusValue}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                >
+                <span className="mb-1 block text-sm text-[var(--ink)]">Статус</span>
+                <Select name="status" defaultValue={statusValue}>
                   <option value={USER_STATUSES.ACTIVE}>{USER_STATUS_LABELS[USER_STATUSES.ACTIVE]}</option>
                   <option value={USER_STATUSES.PENDING}>{USER_STATUS_LABELS[USER_STATUSES.PENDING]}</option>
                   <option value={USER_STATUSES.BLOCKED}>{USER_STATUS_LABELS[USER_STATUSES.BLOCKED]}</option>
-                </select>
-                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                </Select>
+                <p className="mt-2 text-xs text-[var(--ink-muted)]">
                   Статус «Ожидает подтверждения» автоматически сменится на «Активен» после первого успешного входа.
                 </p>
               </label>
             </>
           ) : (
-            <div className="rounded-md border border-zinc-300 px-3 py-3 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+            <div className="rounded-md border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-3 text-sm text-[var(--ink)]">
               Роль: <span className="font-medium">{ROLE_LABELS[STANDARD_ROLE_NAMES.STUDENT]}</span>
             </div>
           )}
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">Группа</span>
-            <select
-              name="groupId"
-              defaultValue={groupIdValue}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            >
+            <span className="mb-1 block text-sm text-[var(--ink)]">Группа</span>
+            <Select name="groupId" defaultValue={groupIdValue}>
               <option value="">Не выбрана</option>
               {groups.map((group) => (
                 <option key={group.id} value={group.id}>
                   {group.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">Подразделение</span>
-            <select
-              name="departmentId"
-              defaultValue={departmentIdValue}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            >
+            <span className="mb-1 block text-sm text-[var(--ink)]">Подразделение</span>
+            <Select name="departmentId" defaultValue={departmentIdValue}>
               <option value="">Не выбрано</option>
               {departments.map((department) => (
                 <option key={department.id} value={department.id}>
                   {department.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">Организация</span>
-            <select
-              name="organizationId"
-              defaultValue={organizationIdValue}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            >
+            <span className="mb-1 block text-sm text-[var(--ink)]">Организация</span>
+            <Select name="organizationId" defaultValue={organizationIdValue}>
               <option value="">Не выбрана</option>
               {organizations.map((organization) => (
                 <option key={organization.id} value={organization.id}>
                   {organization.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           {!canEditAccessLevel ? (
             <label className="block md:col-span-2">
               <input type="hidden" name="sendInvite" value="0" />
-              <span className="inline-flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
+              <span className="inline-flex items-center gap-2 text-sm text-[var(--ink)]">
                 <input type="checkbox" name="sendInvite" value="1" defaultChecked={sendInviteDefaultChecked} />
                 Отправить письмо с временным паролем сразу после создания
               </span>
@@ -291,30 +249,15 @@ export default async function NewUserPage({ searchParams }: Props) {
           <div className="md:col-span-2">
             {canEditAccessLevel ? (
               <div className="flex flex-wrap gap-3">
-                <button
-                  type="submit"
-                  name="submitMode"
-                  value="create"
-                  className="rounded-md bg-[#2dbf6e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#27a860]"
-                >
+                <Button type="submit" name="submitMode" value="create">
                   Создать пользователя
-                </button>
-                <button
-                  type="submit"
-                  name="submitMode"
-                  value="invite"
-                  className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                >
+                </Button>
+                <Button type="submit" name="submitMode" value="invite" variant="secondary">
                   Создать и отправить приглашение
-                </button>
+                </Button>
               </div>
             ) : (
-              <button
-                type="submit"
-                className="rounded-md bg-[#2dbf6e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#27a860]"
-              >
-                Создать ученика и отправить приглашение
-              </button>
+              <Button type="submit">Создать ученика и отправить приглашение</Button>
             )}
           </div>
         </form>

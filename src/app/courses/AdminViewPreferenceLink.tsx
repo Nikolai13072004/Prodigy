@@ -23,8 +23,8 @@ export function AdminViewPreferenceLink({
         type="submit"
         className={`rounded-md px-3 py-2 text-sm transition ${
           active
-            ? "bg-white font-medium text-[#0f315d] shadow-[inset_0_-3px_0_#0f315d]"
-            : "border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+            ? "bg-[var(--surface-raised)] font-medium text-[var(--accent)] shadow-[inset_0_-3px_0_var(--accent)]"
+            : "border border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink-muted)] hover:border-[var(--line)] hover:text-[var(--ink)]"
         }`}
       >
         {label}

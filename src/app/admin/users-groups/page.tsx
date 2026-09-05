@@ -4,6 +4,7 @@ import { bulkArchiveUsers } from "@/app/actions/user-actions";
 import { AdminUsersSubtabs } from "@/components/AdminUsersSubtabs";
 import { AdminCreateGroupModal } from "@/components/AdminCreateGroupModal";
 import { AdminUserInteractiveCell } from "@/components/AdminUserInteractiveCell";
+import { Button, buttonStyles, Input, Select } from "@/components/ui";
 import { requirePermission } from "@/lib/auth-guards";
 import { getGroupProgressReportData } from "@/lib/group-progress-report";
 import prisma from "@/lib/prisma";
@@ -226,7 +227,11 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
 
   if (q) {
     filters.push({
-      OR: [{ name: { contains: q } }, { login: { contains: q } }, { email: { contains: q } }],
+      OR: [
+        { name: { contains: q, mode: "insensitive" as const } },
+        { login: { contains: q, mode: "insensitive" as const } },
+        { email: { contains: q, mode: "insensitive" as const } },
+      ],
     });
   }
 
@@ -486,7 +491,7 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
       <h1 className="text-2xl font-semibold tracking-tight">
         {canEditAccessLevel ? "Управление пользователями" : "Управление учениками"}
       </h1>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mt-1 text-sm text-[var(--ink-muted)]">
         {canEditAccessLevel
           ? "Управление группами, составом групп и связью пользователей с группами."
           : "Список учеников, их статусы и быстрый переход к созданию нового приглашения."}
@@ -496,10 +501,10 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
       {tab === "users" ? (
         <section id="users-section" className="mt-6">
           <h2 className="text-lg font-semibold">{canEditAccessLevel ? "Пользователи" : "Ученики"}</h2>
-          <section className="mt-4 rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
-            <div className="border-b border-zinc-200 p-4 dark:border-zinc-800">
+          <section className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)]">
+            <div className="border-b border-[var(--line)] p-4">
               {sp.notice ? (
-                <div className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+                <div className="mb-4 rounded-md bg-[var(--success-soft)] px-3 py-2 text-sm text-[var(--success)]">
                   {sp.notice}
                 </div>
               ) : null}
@@ -510,107 +515,71 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                 <input type="hidden" name="page" value="1" />
 
                 <label className="md:col-span-2">
-                  <span className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Поиск</span>
-                  <input
-                    name="q"
-                    defaultValue={q}
-                    placeholder="Имя, логин, email"
-                    className="h-10 w-full rounded-md border border-zinc-300 px-3 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                  />
+                  <span className="mb-1 block text-xs text-[var(--ink-muted)]">Поиск</span>
+                  <Input name="q" defaultValue={q} placeholder="Имя, логин, email" />
                 </label>
 
                 <label>
-                  <span className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Роль</span>
-                  <select
-                    name="role"
-                    defaultValue={role}
-                    className="h-10 w-full rounded-md border border-zinc-300 px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                  >
+                  <span className="mb-1 block text-xs text-[var(--ink-muted)]">Роль</span>
+                  <Select name="role" defaultValue={role}>
                     <option value="">Все роли</option>
                     {visibleRoles.map((item) => (
                       <option key={item.id} value={item.name}>
                         {ROLE_LABELS[item.name] ?? item.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
 
                 <label>
-                  <span className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Статус</span>
-                  <select
-                    name="status"
-                    defaultValue={status}
-                    className="h-10 w-full rounded-md border border-zinc-300 px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                  >
+                  <span className="mb-1 block text-xs text-[var(--ink-muted)]">Статус</span>
+                  <Select name="status" defaultValue={status}>
                     <option value="">Все статусы</option>
                     <option value={USER_STATUSES.ACTIVE}>{USER_STATUS_LABELS[USER_STATUSES.ACTIVE]}</option>
                     <option value={USER_STATUSES.PENDING}>{USER_STATUS_LABELS[USER_STATUSES.PENDING]}</option>
                     <option value={USER_STATUSES.BLOCKED}>{USER_STATUS_LABELS[USER_STATUSES.BLOCKED]}</option>
                     <option value={USER_STATUSES.ARCHIVED}>{USER_STATUS_LABELS[USER_STATUSES.ARCHIVED]}</option>
-                  </select>
+                  </Select>
                 </label>
 
                 <label>
-                  <span className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Дата с</span>
-                  <input
-                    name="dateFrom"
-                    type="date"
-                    defaultValue={dateFrom}
-                    className="h-10 w-full rounded-md border border-zinc-300 px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                  />
+                  <span className="mb-1 block text-xs text-[var(--ink-muted)]">Дата с</span>
+                  <Input name="dateFrom" type="date" defaultValue={dateFrom} />
                 </label>
 
                 <label>
-                  <span className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Дата по</span>
-                  <input
-                    name="dateTo"
-                    type="date"
-                    defaultValue={dateTo}
-                    className="h-10 w-full rounded-md border border-zinc-300 px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                  />
+                  <span className="mb-1 block text-xs text-[var(--ink-muted)]">Дата по</span>
+                  <Input name="dateTo" type="date" defaultValue={dateTo} />
                 </label>
 
                 <label>
-                  <span className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">На странице</span>
-                  <select
-                    name="pageSize"
-                    defaultValue={String(pageSize)}
-                    className="h-10 w-full rounded-md border border-zinc-300 px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                  >
+                  <span className="mb-1 block text-xs text-[var(--ink-muted)]">На странице</span>
+                  <Select name="pageSize" defaultValue={String(pageSize)}>
                     {PAGE_SIZES.map((size) => (
                       <option key={size} value={size}>
                         {size}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
 
                 <div className="flex items-end gap-2 md:col-span-2">
-                  <button
-                    type="submit"
-                    className="h-10 rounded-md border border-zinc-300 px-3 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                  >
+                  <Button variant="secondary" type="submit">
                     Применить
-                  </button>
+                  </Button>
                   <Link
                     href="/admin/users-groups?tab=users#users-section"
-                    className="inline-flex h-10 items-center rounded-md border border-zinc-300 px-3 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    className={buttonStyles("secondary")}
                   >
                     Сбросить
                   </Link>
                 </div>
 
                 <div className="flex items-end justify-end gap-2 md:col-span-6">
-                  <Link
-                    href="/admin/users/import"
-                    className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                  >
+                  <Link href="/admin/users/import" className={buttonStyles("secondary")}>
                     Импорт CSV
                   </Link>
-                  <Link
-                    href="/admin/users/new"
-                    className="rounded-md bg-[#2dbf6e] px-3 py-2 text-sm font-semibold text-white hover:bg-[#27a860]"
-                  >
+                  <Link href="/admin/users/new" className={buttonStyles("primary")}>
                     {canEditAccessLevel ? "Новый пользователь" : "Новый ученик"}
                   </Link>
                 </div>
@@ -619,51 +588,48 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
 
             <form action={bulkArchiveUsers}>
               {canDeleteUsers ? (
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 text-sm dark:border-zinc-800">
-                  <p className="text-zinc-600 dark:text-zinc-400">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3 text-sm">
+                  <p className="text-[var(--ink-muted)]">
                     Отметьте неактуальных пользователей, чтобы архивировать их списком.
                   </p>
-                  <button
-                    type="submit"
-                    className="rounded-md border border-red-300 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
-                  >
+                  <Button variant="danger" type="submit">
                     Архивировать выбранных
-                  </button>
+                  </Button>
                 </div>
               ) : null}
 
               <div className="max-w-full overflow-x-auto">
                 <table className="w-full min-w-[900px] table-fixed border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                    <tr className="border-b border-[var(--line)]">
                       {canDeleteUsers ? (
-                        <th className="h-12 w-[4%] px-2 py-0 align-middle text-left text-xs font-semibold uppercase leading-4 tracking-wide text-zinc-500" />
+                        <th className="h-12 w-[4%] px-2 py-0 align-middle text-left text-xs font-semibold uppercase leading-4 tracking-wide text-[var(--ink-muted)]" />
                       ) : null}
-                      <th className="hidden px-2 py-2 text-left font-semibold text-zinc-700 dark:text-zinc-200">
+                      <th className="hidden px-2 py-2 text-left font-semibold text-[var(--ink)]">
                         {sortableHeader("ID", "id")}
                       </th>
-                      <th className="h-12 w-[20%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-zinc-700 dark:text-zinc-200">
+                      <th className="h-12 w-[20%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-[var(--ink)]">
                         {sortableHeader("Имя пользователя", "name")}
                       </th>
-                      <th className="h-12 w-[20%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-zinc-700 dark:text-zinc-200">
+                      <th className="h-12 w-[20%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-[var(--ink)]">
                         {sortableHeader("Email", "email")}
                       </th>
-                      <th className="h-12 w-[9%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-zinc-700 dark:text-zinc-200">
+                      <th className="h-12 w-[9%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-[var(--ink)]">
                         {sortableHeader("Статус", "status")}
                       </th>
-                      <th className="h-12 w-[12%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-zinc-700 dark:text-zinc-200">
+                      <th className="h-12 w-[12%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-[var(--ink)]">
                         {sortableHeader("Подразделение", "department")}
                       </th>
-                      <th className="h-12 w-[12%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-zinc-700 dark:text-zinc-200">
+                      <th className="h-12 w-[12%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-[var(--ink)]">
                         {sortableHeader("Организация", "organization")}
                       </th>
-                      <th className="h-12 w-[6%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-zinc-700 dark:text-zinc-200">
+                      <th className="h-12 w-[6%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-[var(--ink)]">
                         {sortableHeader("Группы", "groups")}
                       </th>
-                      <th className="h-12 w-[8%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-zinc-700 dark:text-zinc-200">
+                      <th className="h-12 w-[8%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-[var(--ink)]">
                         {sortableHeader("Дата создания", "createdAt")}
                       </th>
-                      <th className="h-12 w-[9%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-zinc-700 dark:text-zinc-200">
+                      <th className="h-12 w-[9%] px-2 py-0 align-middle text-left text-xs font-semibold leading-4 text-[var(--ink)]">
                         {sortableHeader("Последний вход", "lastLoginAt")}
                       </th>
                     </tr>
@@ -671,7 +637,7 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                   <tbody>
                     {users.map((user) => {
                       return (
-                        <tr key={user.id} className="border-b border-zinc-100 dark:border-zinc-800">
+                        <tr key={user.id} className="border-b border-[var(--line)]">
                           {canDeleteUsers ? (
                             <td className="px-2 py-3">
                               <input
@@ -682,7 +648,7 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                               />
                             </td>
                           ) : null}
-                          <td className="hidden px-2 py-3 font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                          <td className="hidden px-2 py-3 font-mono text-xs text-[var(--ink-muted)]">
                             {user.id}
                           </td>
                           <td className="px-2 py-3">
@@ -694,17 +660,17 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                               editLabel={canEditAccessLevel ? "Редактировать пользователя" : "Редактировать ученика"}
                             />
                           </td>
-                          <td className="break-all px-2 py-3 text-zinc-700 dark:text-zinc-200">
+                          <td className="break-all px-2 py-3 text-[var(--ink)]">
                             {user.email ?? "Не указан"}
                           </td>
-                          <td className="px-2 py-3 text-zinc-700 dark:text-zinc-200">{user.statusLabel}</td>
-                          <td className="px-2 py-3 text-zinc-700 dark:text-zinc-200">{user.departmentName}</td>
-                          <td className="px-2 py-3 text-zinc-700 dark:text-zinc-200">{user.organizationName}</td>
-                          <td className="px-2 py-3 text-zinc-700 dark:text-zinc-200">{user.groupsCount}</td>
-                          <td className="px-2 py-3 text-xs leading-4 text-zinc-700 dark:text-zinc-200">
+                          <td className="px-2 py-3 text-[var(--ink)]">{user.statusLabel}</td>
+                          <td className="px-2 py-3 text-[var(--ink)]">{user.departmentName}</td>
+                          <td className="px-2 py-3 text-[var(--ink)]">{user.organizationName}</td>
+                          <td className="px-2 py-3 text-[var(--ink)]">{user.groupsCount}</td>
+                          <td className="px-2 py-3 text-xs leading-4 text-[var(--ink)]">
                             {formatDate(user.createdAt)}
                           </td>
-                          <td className="px-2 py-3 text-xs leading-4 text-zinc-700 dark:text-zinc-200">
+                          <td className="px-2 py-3 text-xs leading-4 text-[var(--ink)]">
                             {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : "Не входил"}
                           </td>
                         </tr>
@@ -712,7 +678,7 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                     })}
                     {users.length === 0 && (
                       <tr>
-                        <td colSpan={canDeleteUsers ? 10 : 9} className="px-3 py-6 text-center text-zinc-500">
+                        <td colSpan={canDeleteUsers ? 10 : 9} className="px-3 py-6 text-center text-[var(--ink-muted)]">
                           Пользователи не найдены.
                         </td>
                       </tr>
@@ -722,32 +688,32 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
               </div>
             </form>
 
-            <div className="flex items-center justify-between gap-3 border-t border-zinc-200 px-4 py-3 text-sm dark:border-zinc-800">
-              <p className="text-zinc-600 dark:text-zinc-400">
+            <div className="flex items-center justify-between gap-3 border-t border-[var(--line)] px-4 py-3 text-sm">
+              <p className="text-[var(--ink-muted)]">
                 Показано {(page - 1) * pageSize + (users.length ? 1 : 0)}-{(page - 1) * pageSize + users.length} из {usersTotal}
               </p>
               <div className="flex items-center gap-1">
                 {page > 1 ? (
                   <Link
                     href={buildUsersHref({ page: String(page - 1) })}
-                    className="rounded-md border border-zinc-300 px-2 py-1 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    className="rounded-md border border-[var(--line)] px-2 py-1 hover:bg-[var(--accent-soft)]"
                   >
                     Назад
                   </Link>
                 ) : (
-                  <span className="rounded-md border border-zinc-200 px-2 py-1 text-zinc-400 dark:border-zinc-800">Назад</span>
+                  <span className="rounded-md border border-[var(--line)] px-2 py-1 text-[var(--ink-muted)]">Назад</span>
                 )}
 
                 {pageNumbers.map((p) =>
                   p === page ? (
-                    <span key={p} className="rounded-md bg-zinc-900 px-2 py-1 text-white dark:bg-zinc-100 dark:text-zinc-900">
+                    <span key={p} className="rounded-md bg-[var(--accent)] px-2 py-1 text-white">
                       {p}
                     </span>
                   ) : (
                     <Link
                       key={p}
                       href={buildUsersHref({ page: String(p) })}
-                      className="rounded-md border border-zinc-300 px-2 py-1 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                      className="rounded-md border border-[var(--line)] px-2 py-1 hover:bg-[var(--accent-soft)]"
                     >
                       {p}
                     </Link>
@@ -757,12 +723,12 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                 {page < totalPages ? (
                   <Link
                     href={buildUsersHref({ page: String(page + 1) })}
-                    className="rounded-md border border-zinc-300 px-2 py-1 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    className="rounded-md border border-[var(--line)] px-2 py-1 hover:bg-[var(--accent-soft)]"
                   >
                     Далее
                   </Link>
                 ) : (
-                  <span className="rounded-md border border-zinc-200 px-2 py-1 text-zinc-400 dark:border-zinc-800">Далее</span>
+                  <span className="rounded-md border border-[var(--line)] px-2 py-1 text-[var(--ink-muted)]">Далее</span>
                 )}
               </div>
             </div>
@@ -774,33 +740,33 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
         <section id="groups-section" className="mt-6">
           <h2 className="text-lg font-semibold">Группы</h2>
           <div className="mt-4 grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-            <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 p-4 dark:border-zinc-800">
-                <p className="max-w-xl text-sm text-zinc-600 dark:text-zinc-400">
+            <section className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-raised)]">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--line)] p-4">
+                <p className="max-w-xl text-sm text-[var(--ink-muted)]">
                   Объедините учеников в группы, чтобы массово назначать курсы по отделам и направлениям.
                 </p>
                 {canCreateGroups ? <AdminCreateGroupModal action={createGroup} /> : null}
               </div>
 
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <div className="divide-y divide-[var(--line)]">
                 {groups.map((group) => {
                   const isSelected = selectedGroup?.id === group.id;
                   return (
                     <Link
                       key={group.id}
                       href={buildGroupsHref({ groupId: group.id })}
-                      className={`block px-4 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
-                        isSelected ? "bg-emerald-50/70 dark:bg-emerald-950/20" : ""
+                      className={`block px-4 py-4 transition hover:bg-[var(--accent-soft)] ${
+                        isSelected ? "bg-[var(--accent-soft)]" : ""
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="font-medium text-zinc-950 dark:text-zinc-100">{group.name}</div>
-                          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                          <div className="font-medium text-[var(--ink)]">{group.name}</div>
+                          <p className="mt-1 text-sm text-[var(--ink-muted)]">
                             {group.description || "Описание пока не заполнено."}
                           </p>
                         </div>
-                        <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                        <span className="rounded-full border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium text-[var(--ink-muted)]">
                           {group._count.memberships}
                         </span>
                       </div>
@@ -808,19 +774,19 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                   );
                 })}
                 {groups.length === 0 ? (
-                  <div className="px-4 py-10 text-center text-sm text-zinc-500">Группы пока не созданы.</div>
+                  <div className="px-4 py-10 text-center text-sm text-[var(--ink-muted)]">Группы пока не созданы.</div>
                 ) : null}
               </div>
             </section>
 
-            <section className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900/60">
+            <section className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-6">
               {sp.groupNotice ? (
-                <div className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+                <div className="mb-4 rounded-md bg-[var(--success-soft)] px-3 py-2 text-sm text-[var(--success)]">
                   {sp.groupNotice}
                 </div>
               ) : null}
               {sp.groupError ? (
-                <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+                <div className="mb-4 rounded-md bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger)]">
                   {sp.groupError}
                 </div>
               ) : null}
@@ -829,12 +795,12 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                 <div className="space-y-6">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-xl font-semibold text-zinc-950 dark:text-zinc-100">{selectedGroup.name}</h3>
-                      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                      <h3 className="text-xl font-semibold text-[var(--ink)]">{selectedGroup.name}</h3>
+                      <p className="mt-2 text-sm text-[var(--ink-muted)]">
                         В этой карточке можно отредактировать описание группы и собрать список учеников для массовых назначений.
                       </p>
                     </div>
-                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                    <span className="rounded-full border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink-muted)]">
                       Участников: {selectedGroup.memberships.length}
                     </span>
                   </div>
@@ -842,43 +808,40 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                   <form action={updateGroup.bind(null, selectedGroup.id)} className="grid gap-4 md:grid-cols-2">
                     <input type="hidden" name="groupCourseId" value={selectedGroupCourseId} />
                     <label className="block">
-                      <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">Название группы</span>
+                      <span className="mb-1 block text-sm text-[var(--ink)]">Название группы</span>
                       <input
                         name="name"
                         required
                         defaultValue={selectedGroup.name}
                         disabled={!canEditGroups}
-                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-700 dark:bg-zinc-900"
+                        className="w-full rounded-md border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-70"
                       />
                     </label>
                     <label className="block md:col-span-2">
-                      <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">Описание</span>
+                      <span className="mb-1 block text-sm text-[var(--ink)]">Описание</span>
                       <textarea
                         name="description"
                         rows={3}
                         defaultValue={selectedGroup.description ?? ""}
                         disabled={!canEditGroups}
-                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-700 dark:bg-zinc-900"
+                        className="w-full rounded-md border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-70"
                       />
                     </label>
                     {canEditGroups ? (
                       <div className="md:col-span-2">
-                        <button
-                          type="submit"
-                          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                        >
+                        <Button variant="secondary" type="submit">
                           Сохранить группу
-                        </button>
+                        </Button>
                       </div>
                     ) : null}
                   </form>
 
                   {canViewGroupReports && groupProgressData ? (
-                    <section className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-5 dark:border-zinc-800 dark:bg-zinc-950/20">
+                    <section className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <h4 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Прогресс группы</h4>
-                          <p className="mt-1 max-w-3xl text-sm text-zinc-600 dark:text-zinc-400">
+                          <h4 className="text-lg font-semibold text-[var(--ink)]">Прогресс группы</h4>
+                          <p className="mt-1 max-w-3xl text-sm text-[var(--ink-muted)]">
                             Сводка по обязательным материалам назначенных курсов, сравнение со смежными группами и быстрый экспорт отчета.
                           </p>
                         </div>
@@ -886,13 +849,13 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                           <div className="flex flex-wrap gap-2">
                             <Link
                               href={buildGroupProgressExportHref("csv")}
-                              className="inline-flex h-10 items-center rounded-md border border-zinc-300 px-3 text-sm hover:bg-white dark:border-zinc-700 dark:hover:bg-zinc-900"
+                              className={buttonStyles("secondary")}
                             >
                               Экспорт CSV
                             </Link>
                             <Link
                               href={buildGroupProgressExportHref("xlsx")}
-                              className="inline-flex h-10 items-center rounded-md border border-zinc-300 px-3 text-sm hover:bg-white dark:border-zinc-700 dark:hover:bg-zinc-900"
+                              className={buttonStyles("secondary")}
                             >
                               Экспорт Excel
                             </Link>
@@ -901,33 +864,33 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                       </div>
 
                       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
-                          <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Активные ученики</div>
-                          <div className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100">
+                        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-4">
+                          <div className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">Активные ученики</div>
+                          <div className="mt-2 text-2xl font-semibold text-[var(--ink)]">
                             {groupProgressData.summary.learnersCount}
                           </div>
                         </div>
-                        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
-                          <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Курсы в отчете</div>
-                          <div className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100">
+                        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-4">
+                          <div className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">Курсы в отчете</div>
+                          <div className="mt-2 text-2xl font-semibold text-[var(--ink)]">
                             {groupProgressData.summary.assignedCoursesCount}
                           </div>
                         </div>
-                        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
-                          <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Завершили все</div>
-                          <div className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100">
+                        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-4">
+                          <div className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">Завершили все</div>
+                          <div className="mt-2 text-2xl font-semibold text-[var(--ink)]">
                             {groupProgressData.summary.completedLearnersCount}
                           </div>
                         </div>
-                        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
-                          <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Средний прогресс</div>
-                          <div className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100">
+                        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-4">
+                          <div className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">Средний прогресс</div>
+                          <div className="mt-2 text-2xl font-semibold text-[var(--ink)]">
                             {formatPercent(groupProgressData.summary.avgProgressPercent)}
                           </div>
                         </div>
                       </div>
 
-                      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+                      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-[var(--ink-muted)]">
                         <span>
                           Место в сравнении:{" "}
                           {groupProgressData.summary.comparisonRank
@@ -947,11 +910,11 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                           <input type="hidden" name="groupId" value={selectedGroup.id} />
                           <input type="hidden" name="groupQuery" value={groupQuery} />
                           <label className="block">
-                            <span className="mb-1 block text-xs text-zinc-500 dark:text-zinc-400">Курс</span>
-                            <select
+                            <span className="mb-1 block text-xs text-[var(--ink-muted)]">Курс</span>
+                            <Select
                               name="groupCourseId"
                               defaultValue={groupProgressData.courseFilter.selectedCourseId}
-                              className="h-10 min-w-[260px] rounded-md border border-zinc-300 px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                              className="min-w-[260px]"
                             >
                               <option value="">Все назначенные курсы</option>
                               {groupProgressData.courseFilter.options.map((course) => (
@@ -959,103 +922,100 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                                   {course.title}
                                 </option>
                               ))}
-                            </select>
+                            </Select>
                           </label>
-                          <button
-                            type="submit"
-                            className="h-10 rounded-md border border-zinc-300 px-3 text-sm hover:bg-white dark:border-zinc-700 dark:hover:bg-zinc-900"
-                          >
+                          <Button variant="secondary" type="submit">
                             Применить фильтр
-                          </button>
+                          </Button>
                           <Link
                             href={buildGroupsHref({ groupId: selectedGroup.id, groupCourseId: "" })}
-                            className="inline-flex h-10 items-center rounded-md border border-zinc-300 px-3 text-sm hover:bg-white dark:border-zinc-700 dark:hover:bg-zinc-900"
+                            className={buttonStyles("secondary")}
                           >
                             Все курсы
                           </Link>
                         </form>
                       ) : (
-                        <div className="mt-5 rounded-xl border border-dashed border-zinc-300 bg-white px-4 py-4 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-300">
+                        <div className="mt-5 rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface-raised)] px-4 py-4 text-sm text-[var(--ink-muted)]">
                           У группы пока нет опубликованных курсов в назначениях. Сводка и экспорт появятся после назначения хотя бы одного курса.
                         </div>
                       )}
 
                       <div className="mt-6 grid gap-6 2xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
-                        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
-                          <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-                            <h5 className="text-base font-semibold text-zinc-950 dark:text-zinc-100">Ученики группы</h5>
-                            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                        <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-raised)]">
+                          <div className="border-b border-[var(--line)] px-4 py-3">
+                            <h5 className="text-base font-semibold text-[var(--ink)]">Ученики группы</h5>
+                            <p className="mt-1 text-sm text-[var(--ink-muted)]">
                               {groupProgressData.courseFilter.selectedCourseId
                                 ? "Прогресс по выбранному курсу и последняя активность."
                                 : "Сводка по всем назначенным курсам с общим статусом прохождения."}
                             </p>
                           </div>
                           <div className="max-w-full overflow-x-auto">
-                            <table className="w-full min-w-[620px] table-fixed border-collapse text-sm md:min-w-0">
+                            <table className="w-full min-w-[720px] table-fixed border-collapse text-sm">
                               <thead>
-                                <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                                  <th className="w-[30%] px-3 py-3 text-left font-semibold text-zinc-700 dark:text-zinc-200">Ученик</th>
-                                  <th className="w-[16%] px-3 py-3 text-left font-semibold text-zinc-700 dark:text-zinc-200">
+                                <tr className="border-b border-[var(--line)]">
+                                  <th className="w-[30%] px-3 py-3 text-left font-semibold text-[var(--ink)]">Ученик</th>
+                                  <th className="w-[16%] px-3 py-3 text-left font-semibold text-[var(--ink)]">
                                     Подразделение
                                   </th>
                                   {groupProgressData.courseFilter.selectedCourseId ? (
                                     <>
-                                      <th className="w-[10%] px-3 py-3 text-left font-semibold text-zinc-700 dark:text-zinc-200">
+                                      <th className="w-[10%] px-3 py-3 text-left font-semibold text-[var(--ink)]">
                                         Прогресс
                                       </th>
-                                      <th className="w-[14%] px-3 py-3 text-left font-semibold text-zinc-700 dark:text-zinc-200">Статус</th>
+                                      <th className="w-[14%] px-3 py-3 text-left font-semibold text-[var(--ink)]">Статус</th>
                                     </>
                                   ) : (
                                     <>
-                                      <th className="w-[10%] px-3 py-3 text-left font-semibold text-zinc-700 dark:text-zinc-200">Курсы</th>
-                                      <th className="w-[14%] px-3 py-3 text-left font-semibold text-zinc-700 dark:text-zinc-200">
+                                      <th className="w-[10%] px-3 py-3 text-left font-semibold text-[var(--ink)]">Курсы</th>
+                                      <th className="w-[14%] px-3 py-3 text-left font-semibold text-[var(--ink)]">
                                         Средний прогресс
                                       </th>
-                                      <th className="w-[14%] px-3 py-3 text-left font-semibold text-zinc-700 dark:text-zinc-200">Статус</th>
+                                      <th className="w-[14%] px-3 py-3 text-left font-semibold text-[var(--ink)]">Статус</th>
                                     </>
                                   )}
-                                  <th className="w-[16%] px-3 py-3 text-left font-semibold text-zinc-700 dark:text-zinc-200">
+                                  <th className="w-[16%] px-3 py-3 text-left font-semibold text-[var(--ink)]">
                                     Последняя активность
                                   </th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {groupProgressData.learners.map((learner) => (
-                                  <tr key={learner.id} className="border-b border-zinc-100 dark:border-zinc-800">
+                                  <tr key={learner.id} className="border-b border-[var(--line)]">
                                     <td className="px-3 py-3">
-                                      <div className="font-medium text-zinc-950 dark:text-zinc-100">{learner.name}</div>
-                                      <div className="mt-1 text-xs leading-4 text-zinc-500 dark:text-zinc-400">
+                                      <div className="font-medium text-[var(--ink)]">{learner.name}</div>
+                                      <div className="mt-1 text-xs leading-4 text-[var(--ink-muted)]">
                                         {learner.login}
                                         {learner.email ? ` · ${learner.email}` : ""}
                                       </div>
                                       {!groupProgressData.courseFilter.selectedCourseId && learner.courseTitles.length > 0 ? (
-                                        <div className="mt-1 text-xs leading-4 text-zinc-500 dark:text-zinc-400">
+                                        <div className="mt-1 text-xs leading-4 text-[var(--ink-muted)]">
                                           Курсы: {learner.courseTitles.join(", ")}
                                         </div>
                                       ) : null}
                                     </td>
-                                    <td className="px-3 py-3 text-zinc-700 dark:text-zinc-200">{learner.departmentName}</td>
+                                    <td className="px-3 py-3 text-[var(--ink)]">{learner.departmentName}</td>
                                     {groupProgressData.courseFilter.selectedCourseId ? (
                                       <>
-                                        <td className="px-3 py-3 text-zinc-700 dark:text-zinc-200">
+                                        <td className="px-3 py-3 text-[var(--ink)]">
                                           {formatPercent(learner.selectedCourseProgressPercent ?? 0)}
                                         </td>
-                                        <td className="px-3 py-3 text-zinc-700 dark:text-zinc-200">
+                                        <td className="px-3 py-3 text-[var(--ink)]">
                                           {learner.selectedCourseStatusLabel ?? learner.statusLabel}
                                         </td>
                                       </>
                                     ) : (
                                       <>
-                                        <td className="px-3 py-3 text-zinc-700 dark:text-zinc-200">
+                                        <td className="px-3 py-3 text-[var(--ink)]">
                                           {learner.completedCoursesCount} / {learner.assignedCoursesCount}
                                         </td>
-                                        <td className="px-3 py-3 text-zinc-700 dark:text-zinc-200">
+                                        <td className="px-3 py-3 text-[var(--ink)]">
                                           {formatPercent(learner.averageProgressPercent)}
                                         </td>
-                                        <td className="px-3 py-3 text-zinc-700 dark:text-zinc-200">{learner.statusLabel}</td>
+                                        <td className="px-3 py-3 text-[var(--ink)]">{learner.statusLabel}</td>
                                       </>
                                     )}
-                                    <td className="px-3 py-3 text-xs leading-4 text-zinc-700 dark:text-zinc-200">
+                                    <td className="px-3 py-3 text-xs leading-4 text-[var(--ink)]">
                                       {learner.lastActivityAt ? formatDateTime(learner.lastActivityAt) : "Нет активности"}
                                     </td>
                                   </tr>
@@ -1064,7 +1024,7 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                                   <tr>
                                     <td
                                       colSpan={groupProgressData.courseFilter.selectedCourseId ? 5 : 6}
-                                      className="px-4 py-8 text-center text-sm text-zinc-500"
+                                      className="px-4 py-8 text-center text-sm text-[var(--ink-muted)]"
                                     >
                                       В группе нет активных учеников, подходящих для отчета.
                                     </td>
@@ -1075,9 +1035,9 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                           </div>
                         </div>
 
-                        <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/60">
-                          <h5 className="text-base font-semibold text-zinc-950 dark:text-zinc-100">Сравнение групп</h5>
-                          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-5">
+                          <h5 className="text-base font-semibold text-[var(--ink)]">Сравнение групп</h5>
+                          <p className="mt-1 text-sm text-[var(--ink-muted)]">
                             График среднего прогресса по текущему фильтру. По клику можно переключиться на другую группу.
                           </p>
                           <div className="mt-4 space-y-3">
@@ -1086,29 +1046,29 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                                 <div
                                   className={`rounded-xl border px-4 py-3 ${
                                     row.isSelected
-                                      ? "border-emerald-300 bg-emerald-50/70 dark:border-emerald-800 dark:bg-emerald-950/20"
-                                      : "border-zinc-200 bg-zinc-50 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-900"
+                                      ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                                      : "border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--accent-soft)]"
                                   }`}
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
-                                      <div className="font-medium text-zinc-950 dark:text-zinc-100">{row.groupName}</div>
-                                      <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                      <div className="font-medium text-[var(--ink)]">{row.groupName}</div>
+                                      <div className="mt-1 text-xs text-[var(--ink-muted)]">
                                         Ученики: {row.learnersCount} · Завершили все: {row.completedLearnersCount}
                                       </div>
                                     </div>
                                     <div className="text-right">
-                                      <div className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">
+                                      <div className="text-lg font-semibold text-[var(--ink)]">
                                         {formatPercent(row.avgProgressPercent)}
                                       </div>
-                                      <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                                      <div className="text-xs text-[var(--ink-muted)]">
                                         Курсы: {row.assignedCoursesCount}
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--line)]">
                                     <div
-                                      className={`h-full rounded-full ${row.isSelected ? "bg-[#2dbf6e]" : "bg-zinc-500 dark:bg-zinc-400"}`}
+                                      className={`h-full rounded-full ${row.isSelected ? "bg-[var(--accent)]" : "bg-[var(--ink-muted)]"}`}
                                       style={{ width: `${Math.max(0, Math.min(row.avgProgressPercent, 100))}%` }}
                                     />
                                   </div>
@@ -1130,11 +1090,11 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                   ) : null}
 
                   <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-5 dark:border-zinc-800 dark:bg-zinc-950/20">
+                    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <h4 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Состав группы</h4>
-                          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                          <h4 className="text-lg font-semibold text-[var(--ink)]">Состав группы</h4>
+                          <p className="mt-1 text-sm text-[var(--ink-muted)]">
                             Выберите учеников из списка. Сохранение заменяет текущий состав группы.
                           </p>
                         </div>
@@ -1143,23 +1103,20 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                           <input type="hidden" name="groupId" value={selectedGroup.id} />
                           <input type="hidden" name="groupCourseId" value={selectedGroupCourseId} />
                           <label className="block">
-                            <span className="mb-1 block text-xs text-zinc-500 dark:text-zinc-400">Поиск ученика</span>
+                            <span className="mb-1 block text-xs text-[var(--ink-muted)]">Поиск ученика</span>
                             <input
                               name="groupQuery"
                               defaultValue={groupQuery}
                               placeholder="Имя, логин или email"
-                              className="h-10 rounded-md border border-zinc-300 px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                              className="h-10 rounded-md border border-[var(--line)] px-3 text-sm"
                             />
                           </label>
-                          <button
-                            type="submit"
-                            className="h-10 rounded-md border border-zinc-300 px-3 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                          >
+                          <Button variant="secondary" type="submit">
                             Найти
-                          </button>
+                          </Button>
                           <Link
                             href={buildGroupsHref({ groupId: selectedGroup.id, groupQuery: "" })}
-                            className="inline-flex h-10 items-center rounded-md border border-zinc-300 px-3 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                            className={buttonStyles("secondary")}
                           >
                             Сбросить
                           </Link>
@@ -1168,9 +1125,9 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
 
                       <form action={setGroupMembers.bind(null, selectedGroup.id)} className="mt-5 space-y-4">
                         <input type="hidden" name="groupCourseId" value={selectedGroupCourseId} />
-                        <div className="max-h-[420px] overflow-y-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+                        <div className="max-h-[420px] overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--surface-raised)]">
                           {candidateLearners.length > 0 ? (
-                            <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                            <ul className="divide-y divide-[var(--line)]">
                               {candidateLearners.map((learner) => (
                                 <li key={learner.id} className="px-4 py-3">
                                   <label className="flex items-start gap-3">
@@ -1183,12 +1140,12 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                                       className="mt-1"
                                     />
                                     <div className="min-w-0">
-                                      <div className="font-medium text-zinc-950 dark:text-zinc-100">{learner.name}</div>
-                                      <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                      <div className="font-medium text-[var(--ink)]">{learner.name}</div>
+                                      <div className="mt-1 text-xs text-[var(--ink-muted)]">
                                         {learner.login}
                                         {learner.email ? ` · ${learner.email}` : ""}
                                       </div>
-                                      <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                      <div className="mt-1 text-xs text-[var(--ink-muted)]">
                                         {learner.department?.name ?? "Без подразделения"} ·{" "}
                                         {isUserStatus(learner.status) ? USER_STATUS_LABELS[learner.status] : learner.status}
                                       </div>
@@ -1198,7 +1155,7 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                               ))}
                             </ul>
                           ) : (
-                            <div className="px-4 py-10 text-center text-sm text-zinc-500">
+                            <div className="px-4 py-10 text-center text-sm text-[var(--ink-muted)]">
                               По текущему запросу ученики не найдены.
                             </div>
                           )}
@@ -1206,13 +1163,10 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
 
                         {canEditGroups ? (
                           <div className="flex flex-wrap gap-3">
-                            <button
-                              type="submit"
-                              className="rounded-md bg-[#2dbf6e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#27a860]"
-                            >
+                            <Button variant="primary" type="submit">
                               Сохранить состав группы
-                            </button>
-                            <p className="self-center text-xs text-zinc-500 dark:text-zinc-400">
+                            </Button>
+                            <p className="self-center text-xs text-[var(--ink-muted)]">
                               После сохранения эту группу можно выбирать в назначениях курса вместо списка email.
                             </p>
                           </div>
@@ -1220,8 +1174,8 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                       </form>
                     </div>
 
-                    <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
-                      <h4 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Текущие участники</h4>
+                    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-5">
+                      <h4 className="text-lg font-semibold text-[var(--ink)]">Текущие участники</h4>
                       {selectedGroup.memberships.length > 0 ? (
                         <ul className="mt-4 space-y-3 text-sm">
                           {selectedGroup.memberships
@@ -1230,9 +1184,9 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                               left.user.name.localeCompare(right.user.name, "ru", { sensitivity: "base", numeric: true })
                             )
                             .map((membership) => (
-                              <li key={membership.id} className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-950/30">
-                                <div className="font-medium text-zinc-950 dark:text-zinc-100">{membership.user.name}</div>
-                                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                              <li key={membership.id} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-3">
+                                <div className="font-medium text-[var(--ink)]">{membership.user.name}</div>
+                                <div className="mt-1 text-xs text-[var(--ink-muted)]">
                                   {membership.user.login}
                                   {membership.user.email ? ` · ${membership.user.email}` : ""}
                                 </div>
@@ -1240,13 +1194,13 @@ export default async function UsersGroupsPage({ searchParams }: Props) {
                             ))}
                         </ul>
                       ) : (
-                        <p className="mt-4 text-sm text-zinc-500">В группе пока нет учеников.</p>
+                        <p className="mt-4 text-sm text-[var(--ink-muted)]">В группе пока нет учеников.</p>
                       )}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-zinc-500">Создайте первую группу, чтобы назначать в нее учеников.</div>
+                <div className="text-sm text-[var(--ink-muted)]">Создайте первую группу, чтобы назначать в нее учеников.</div>
               )}
             </section>
           </div>

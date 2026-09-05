@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { updateCourseProgressionSettings } from "@/app/actions/course-settings-actions";
+import { Button, Label, Select } from "@/components/ui";
 import {
   COURSE_COMPLETION_MODE_LABELS,
   COURSE_NAVIGATION_MODE_LABELS,
@@ -104,30 +105,26 @@ export function CoursePassingSettingsDialog({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
-      >
+      <Button variant="secondary" onClick={() => setOpen(true)}>
         Настройки прохождения
-      </button>
+      </Button>
 
       {open ? (
         <div className="admin-content-modal fixed z-50 flex items-center justify-center px-4 py-6">
           <button
             type="button"
             aria-label="Закрыть настройки прохождения"
-            className="absolute inset-0 bg-zinc-950/30"
+            className="absolute inset-0 bg-black/30"
             onClick={() => setOpen(false)}
           />
-          <div className="relative z-10 max-h-full w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
-              <h2 className="text-lg font-semibold text-zinc-950">Настройки прохождения курса</h2>
+          <div className="relative z-10 max-h-full w-full max-w-3xl overflow-hidden rounded-2xl bg-[var(--surface-raised)] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[var(--line)] px-6 py-4">
+              <h2 className="text-lg font-semibold text-[var(--ink)]">Настройки прохождения курса</h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Закрыть настройки прохождения"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-2xl leading-none text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-2xl leading-none text-[var(--ink-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--ink)]"
               >
                 x
               </button>
@@ -138,93 +135,90 @@ export function CoursePassingSettingsDialog({
               className="max-h-[calc(100vh-180px)] overflow-y-auto px-6 py-5"
             >
               <div className="grid gap-6 md:grid-cols-[170px_1fr]">
-                <label className="pt-2 text-sm font-medium text-zinc-700" htmlFor="course-navigation-mode">
+                <Label className="pt-2" htmlFor="course-navigation-mode">
                   Порядок просмотра материалов
-                </label>
+                </Label>
                 <div>
-                  <select
+                  <Select
                     id="course-navigation-mode"
                     name="navigationMode"
                     defaultValue={navigationMode}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
                   >
                     {Object.entries(COURSE_NAVIGATION_MODE_LABELS).map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>
                     ))}
-                  </select>
-                  <p className="mt-2 text-xs text-zinc-500">
+                  </Select>
+                  <p className="mt-2 text-xs text-[var(--ink-muted)]">
                     При последовательном порядке учащиеся проходят обязательные материалы по очереди.
                   </p>
                 </div>
 
-                <label className="pt-2 text-sm font-medium text-zinc-700" htmlFor="course-quiz-gate-mode">
+                <Label className="pt-2" htmlFor="course-quiz-gate-mode">
                   Условие открытия после теста
-                </label>
+                </Label>
                 <div>
-                  <select
+                  <Select
                     id="course-quiz-gate-mode"
                     name="quizGateMode"
                     defaultValue={quizGateMode}
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
                   >
                     {Object.entries(COURSE_QUIZ_GATE_MODE_LABELS).map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>
                     ))}
-                  </select>
-                  <p className="mt-2 text-xs text-zinc-500">
+                  </Select>
+                  <p className="mt-2 text-xs text-[var(--ink-muted)]">
                     В строгом режиме следующий этап откроется только после статуса «Пройден».
                   </p>
                 </div>
 
-                <label className="pt-2 text-sm font-medium text-zinc-700" htmlFor="course-completion-mode">
+                <Label className="pt-2" htmlFor="course-completion-mode">
                   Условие завершения курса
-                </label>
+                </Label>
                 <div>
-                  <select
+                  <Select
                     id="course-completion-mode"
                     name="completionMode"
                     value={selectedCompletionMode}
                     onChange={(event) =>
                       setSelectedCompletionMode(event.target.value as CourseCompletionMode)
                     }
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
                   >
                     {Object.entries(COURSE_COMPLETION_MODE_LABELS).map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
 
                   {selectedCompletionMode === "REQUIRED_ITEMS" ? (
-                    <div className="mt-4 rounded-xl border border-zinc-200">
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 text-sm">
-                        <span className="font-medium text-zinc-700">
+                    <div className="mt-4 rounded-xl border border-[var(--line)]">
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3 text-sm">
+                        <span className="font-medium text-[var(--ink)]">
                           Выбрано материалов: {requiredIds.size}
                         </span>
                         <div className="flex gap-3">
-                          <button type="button" onClick={selectAllRequired} className="text-emerald-700 hover:underline">
+                          <button type="button" onClick={selectAllRequired} className="text-[var(--accent)] hover:underline">
                             Выбрать все
                           </button>
-                          <button type="button" onClick={clearRequired} className="text-emerald-700 hover:underline">
+                          <button type="button" onClick={clearRequired} className="text-[var(--accent)] hover:underline">
                             Очистить
                           </button>
                         </div>
                       </div>
                       <ul className="max-h-56 overflow-y-auto py-2">
                         {items.map((item) => (
-                          <li key={item.id} className="flex items-start gap-3 px-4 py-2 text-sm hover:bg-zinc-50">
+                          <li key={item.id} className="flex items-start gap-3 px-4 py-2 text-sm hover:bg-[var(--accent-soft)]">
                             <input
                               type="checkbox"
                               name="requiredItemIds"
                               value={item.id}
                               checked={requiredIds.has(item.id)}
                               onChange={() => toggleRequired(item.id)}
-                              className="mt-1 h-4 w-4 rounded border-zinc-300 text-emerald-600"
+                              className="mt-1 h-4 w-4 rounded border-[var(--line)] text-[var(--accent)]"
                             />
                             <MaterialSettingsLabel item={item} />
                           </li>
@@ -232,20 +226,20 @@ export function CoursePassingSettingsDialog({
                       </ul>
                     </div>
                   ) : (
-                    <p className="mt-2 text-xs text-zinc-500">
+                    <p className="mt-2 text-xs text-[var(--ink-muted)]">
                       Все материалы курса будут обязательными для успешного завершения.
                     </p>
                   )}
                 </div>
 
-                <label className="pt-2 text-sm font-medium text-zinc-700" htmlFor="course-status-format">
+                <Label className="pt-2" htmlFor="course-status-format">
                   Формат статуса курса
-                </label>
+                </Label>
                 <div>
                   {!hasGradableRequiredItems ? (
                     <input type="hidden" name="statusFormat" value="COMPLETED_ONLY" />
                   ) : null}
-                  <select
+                  <Select
                     id="course-status-format"
                     name="statusFormat"
                     value={effectiveStatusFormat}
@@ -253,35 +247,35 @@ export function CoursePassingSettingsDialog({
                     onChange={(event) =>
                       setSelectedStatusFormat(event.target.value as CourseStatusFormat)
                     }
-                    className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2 disabled:bg-zinc-100 disabled:text-zinc-400"
+                    className="disabled:bg-[var(--surface)] disabled:text-[var(--ink-muted)]"
                   >
                     {Object.entries(COURSE_STATUS_FORMAT_LABELS).map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>
                     ))}
-                  </select>
-                  <p className="mt-2 text-xs text-zinc-500">
+                  </Select>
+                  <p className="mt-2 text-xs text-[var(--ink-muted)]">
                     {hasGradableRequiredItems
                       ? "Оценивание доступно для обязательных тестов и будущих оцениваемых материалов."
                       : "Среди обязательных материалов нет оцениваемых материалов, поэтому баллы за курс не считаются."}
                   </p>
 
                   {effectiveStatusFormat === "PASSED_WITH_SCORE" && hasGradableRequiredItems ? (
-                    <div className="mt-4 rounded-xl border border-zinc-200">
-                      <div className="border-b border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-700">
+                    <div className="mt-4 rounded-xl border border-[var(--line)]">
+                      <div className="border-b border-[var(--line)] px-4 py-3 text-sm font-medium text-[var(--ink)]">
                         Материалы, которые учитываются в балле
                       </div>
                       <ul className="py-2">
                         {gradableRequiredItems.map((item) => (
-                          <li key={item.id} className="flex items-start gap-3 px-4 py-2 text-sm hover:bg-zinc-50">
+                          <li key={item.id} className="flex items-start gap-3 px-4 py-2 text-sm hover:bg-[var(--accent-soft)]">
                             <input
                               type="checkbox"
                               name="gradedItemIds"
                               value={item.id}
                               checked={scoredIds.has(item.id)}
                               onChange={() => toggleScored(item.id)}
-                              className="mt-1 h-4 w-4 rounded border-zinc-300 text-emerald-600"
+                              className="mt-1 h-4 w-4 rounded border-[var(--line)] text-[var(--accent)]"
                             />
                             <MaterialSettingsLabel item={item} />
                           </li>
@@ -292,20 +286,11 @@ export function CoursePassingSettingsDialog({
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-end gap-3 border-t border-zinc-200 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50"
-                >
+              <div className="mt-8 flex justify-end gap-3 border-t border-[var(--line)] pt-4">
+                <Button variant="secondary" onClick={() => setOpen(false)}>
                   Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-                >
-                  Сохранить
-                </button>
+                </Button>
+                <Button type="submit">Сохранить</Button>
               </div>
             </form>
           </div>
@@ -318,8 +303,8 @@ export function CoursePassingSettingsDialog({
 function MaterialSettingsLabel({ item }: { item: PassingSettingsItem }) {
   return (
     <span className="min-w-0">
-      <span className="block font-medium text-zinc-900">{item.title}</span>
-      <span className="block text-xs text-zinc-500">
+      <span className="block font-medium text-[var(--ink)]">{item.title}</span>
+      <span className="block text-xs text-[var(--ink-muted)]">
         {item.moduleTitle ? `${item.moduleTitle} · ` : ""}
         {item.typeLabel}
       </span>

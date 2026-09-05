@@ -52,17 +52,17 @@ export function CoursePortalTabs({
   ];
 
   return (
-    <nav className="bg-white px-4 sm:px-5" aria-label="Разделы курса">
+    <nav className="bg-[var(--surface-raised)] px-4 sm:px-5" aria-label="Разделы курса">
       <div className="flex flex-wrap gap-2 py-3">
         {tabs.map((tab) => {
           const isActive = active === tab.key;
           const isDisabled = tab.key === "content" && contentDisabled;
           const className = `px-4 py-2 text-sm font-medium transition ${
             isActive
-              ? "text-[#0f315d] shadow-[inset_0_-3px_0_#0f315d]"
+              ? "text-[var(--accent)] shadow-[inset_0_-3px_0_var(--accent)]"
               : isDisabled
-                ? "cursor-not-allowed text-zinc-400"
-                : "text-zinc-600 hover:bg-sky-50 hover:text-zinc-950"
+                ? "cursor-not-allowed text-[var(--ink-muted)]"
+                : "text-[var(--ink-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--ink)]"
           }`;
 
           if (isDisabled) {

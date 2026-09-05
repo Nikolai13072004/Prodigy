@@ -167,15 +167,26 @@ export function assertAttemptAvailable(args: {
   }
 }
 
+// Не-бросающий предикат истечения времени попытки. Единый источник правила:
+// бросающий assertTimeLimit использует его же, «тихие» пути (save-draft) — напрямую.
+export function isAssessmentTimeLimitExpired(args: {
+  attempt: Pick<AssessmentAttempt, "createdAt"> | null;
+  timeLimitMinutes: number | null;
+  now: Date;
+  submissionGraceMs?: number;
+}): boolean {
+  if (!args.attempt || !args.timeLimitMinutes) return false;
+  const expiresAt = args.attempt.createdAt.getTime() + args.timeLimitMinutes * 60_000;
+  return args.now.getTime() > expiresAt + Math.max(0, args.submissionGraceMs ?? 0);
+}
+
 export function assertTimeLimit(args: {
   attempt: Pick<AssessmentAttempt, "createdAt"> | null;
   timeLimitMinutes: number | null;
   now: Date;
   submissionGraceMs?: number;
 }) {
-  if (!args.attempt || !args.timeLimitMinutes) return;
-  const expiresAt = args.attempt.createdAt.getTime() + args.timeLimitMinutes * 60_000;
-  if (args.now.getTime() > expiresAt + Math.max(0, args.submissionGraceMs ?? 0)) {
+  if (isAssessmentTimeLimitExpired(args)) {
     throw new AssessmentDomainError("TIME_LIMIT_EXPIRED", "Время прохождения теста истекло.");
   }
 }

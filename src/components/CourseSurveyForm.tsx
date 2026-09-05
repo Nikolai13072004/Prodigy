@@ -2,6 +2,7 @@
 
 import { Check } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
+import { Button, Textarea } from "@/components/ui";
 import {
   COURSE_SURVEY_QUESTION_TYPE_LABELS,
   type CourseSurveyQuestionType,
@@ -107,26 +108,26 @@ export function CourseSurveyForm({
   }
 
   const className =
-    "mx-auto flex h-[640px] min-h-[520px] max-h-[calc(100dvh-160px)] max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#c7d8ee] bg-[#f6faff] shadow-xl";
+    "mx-auto flex h-[640px] min-h-[520px] max-h-[calc(100dvh-160px)] max-w-5xl flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-xl";
 
   const content = (
     <>
-      <div className="m-4 flex-none rounded-xl border border-[#c7d8ee] bg-white p-4 shadow-sm">
+      <div className="m-4 flex-none rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-          <span className="font-medium text-[#0b2446]">
+          <span className="font-medium text-[var(--ink)]">
             {isIntroStep
               ? "Титульный лист"
               : isFinishStep
                 ? "Завершение"
                 : `Вопрос ${currentStep} из ${questions.length}`}
           </span>
-          <span className="text-[#52627a]">
+          <span className="text-[var(--ink-muted)]">
             Отвечено: {answeredCount}/{questions.length}
           </span>
         </div>
-        <div className="mt-3 h-2 rounded-full bg-[#c9d8eb]">
+        <div className="mt-3 h-2 rounded-full bg-[var(--line)]">
           <div
-            className="h-2 rounded-full bg-[#0886a9] transition-all"
+            className="h-2 rounded-full bg-[var(--accent)] transition-all"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -157,39 +158,31 @@ export function CourseSurveyForm({
         ) : null}
       </div>
 
-      <div className="flex-none border-t border-[#d6e3f2] bg-white/80 px-4 py-4">
-        <div className="min-h-5 text-sm text-red-700">{error}</div>
+      <div className="flex-none border-t border-[var(--line)] bg-[var(--surface-raised)] px-4 py-4">
+        <div className="min-h-5 text-sm text-[var(--danger)]">{error}</div>
 
         <div className="mt-2 flex flex-wrap gap-2">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={goPrev}
             disabled={currentStep === 0 || lockedAfterSubmit}
-            className="rounded-md border border-[#b9cbe4] bg-white px-4 py-2 text-sm text-[#0b2446] hover:bg-[#f3f7fb] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Назад
-          </button>
+          </Button>
 
           {!isFinishStep ? (
-            <button
-              type="button"
-              onClick={goNext}
-              className="rounded-md bg-[#0b3b75] px-4 py-2 text-sm font-medium text-white hover:bg-[#0a3263]"
-            >
-              Далее
-            </button>
+            <Button onClick={goNext}>Далее</Button>
           ) : (
-            <button
+            <Button
               type={previewMode ? "button" : "submit"}
               disabled={previewMode || lockedAfterSubmit}
-              className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-default disabled:opacity-60"
             >
               {previewMode
                 ? "Предпросмотр"
                 : lockedAfterSubmit
                   ? "Опрос пройден"
                   : submitLabel}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -232,22 +225,22 @@ function SurveyFinishStep({
   questionsCount: number;
 }) {
   return (
-    <section className="flex min-h-full items-center justify-center rounded-xl border border-[#c7d8ee] bg-white p-6 text-center shadow-sm">
+    <section className="flex min-h-full items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-6 text-center shadow-sm">
       <div className="max-w-xl">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--success)]">
           <Check className="h-7 w-7" aria-hidden="true" />
         </div>
-        <h2 className="mt-5 text-2xl font-semibold text-zinc-950">
+        <h2 className="mt-5 text-2xl font-semibold text-[var(--ink)]">
           {locked ? "Опрос уже пройден" : saved ? "Опрос отправлен" : "Все готово к отправке"}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-zinc-600">
+        <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
           {locked
             ? "Ответы сохранены. Повторное заполнение недоступно."
             : saved
               ? "Ответы сохранены. Спасибо за обратную связь."
               : "Проверьте ответы при необходимости кнопкой «Назад» и отправьте опрос."}
         </p>
-        <p className="mt-4 text-sm font-medium text-[#0b2446]">
+        <p className="mt-4 text-sm font-medium text-[var(--ink)]">
           Заполнено: {answeredCount}/{questionsCount}
         </p>
       </div>
@@ -267,13 +260,13 @@ function SurveyIntroStep({
   questionsCount: number;
 }) {
   return (
-    <section className="h-full min-h-[320px] overflow-hidden rounded-xl border border-[#c7d8ee] bg-white shadow-sm">
-      <div className="relative flex min-h-full items-end bg-zinc-100">
+    <section className="h-full min-h-[320px] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
+      <div className="relative flex min-h-full items-end bg-[var(--surface)]">
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/75 via-zinc-950/25 to-white/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-white/10" />
         <div className="relative w-full p-6 text-white sm:p-8">
           <h1 className="max-w-3xl text-3xl font-semibold leading-tight sm:text-4xl">{title}</h1>
           {description ? (
@@ -300,13 +293,13 @@ function SurveyQuestionStep({
   onChange: (value: string) => void;
 }) {
   return (
-    <section className="min-h-full rounded-xl border border-[#c7d8ee] bg-white p-5 shadow-sm">
+    <section className="min-h-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-sm">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Вопрос {index + 1}</p>
-        <h2 className="mt-1 text-lg font-semibold leading-7 text-zinc-950">{question.title}</h2>
+        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Вопрос {index + 1}</p>
+        <h2 className="mt-1 text-lg font-semibold leading-7 text-[var(--ink)]">{question.title}</h2>
       </div>
 
-      <p className="mt-2 text-xs font-medium text-zinc-500">
+      <p className="mt-2 text-xs font-medium text-[var(--ink-muted)]">
         {COURSE_SURVEY_QUESTION_TYPE_LABELS[question.type]}
       </p>
 
@@ -321,8 +314,8 @@ function SurveyQuestionStep({
                   key={rating}
                   className={`inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border text-sm font-semibold transition ${
                     checked
-                      ? "border-[#0b2446] bg-[#0b2446] text-white"
-                      : "border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50"
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                      : "border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                   }`}
                 >
                   <input
@@ -352,8 +345,8 @@ function SurveyQuestionStep({
                   key={`${question.id}-${optionIndex}`}
                   className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 text-sm transition ${
                     checked
-                      ? "border-[#0b2446] bg-[#f3f7fb] text-zinc-950"
-                      : "border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50"
+                      ? "border-[var(--accent)] bg-[var(--surface)] text-[var(--ink)]"
+                      : "border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                   }`}
                 >
                   <input
@@ -362,7 +355,7 @@ function SurveyQuestionStep({
                     value={option}
                     checked={checked}
                     onChange={(event) => onChange(event.target.value)}
-                    className="mt-1 h-4 w-4 border-zinc-300 text-[#0b2446] focus:ring-[#0b2446]"
+                    className="mt-1 h-4 w-4 border-[var(--line)] text-[var(--accent)] focus:ring-[var(--accent)]"
                   />
                   <span>{option}</span>
                 </label>
@@ -375,12 +368,11 @@ function SurveyQuestionStep({
       {question.type === "TEXT" ? (
         <label className="mt-4 block">
           <span className="sr-only">{question.title}</span>
-          <textarea
+          <Textarea
             value={value}
             onChange={(event) => onChange(event.target.value)}
             rows={5}
             placeholder="Напишите ваш ответ"
-            className="min-h-28 w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-500"
           />
         </label>
       ) : null}

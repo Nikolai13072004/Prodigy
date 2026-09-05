@@ -41,26 +41,26 @@ export default async function QuizBuilderPreviewPage({ params }: Props) {
         <div>
           <Link
             href={`/courses/${courseId}/quiz/${quizId}/builder`}
-            className="text-sm text-zinc-600 underline"
+            className="text-sm text-[var(--ink-muted)] underline"
           >
             ← Назад в конструктор
           </Link>
-          <h1 className="mt-3 text-2xl font-semibold">{quiz.courseItem.title}</h1>
-          <p className="mt-1 text-sm text-zinc-700">
+          <h1 className="mt-3 text-2xl font-semibold text-[var(--ink)]">{quiz.courseItem.title}</h1>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
             Предпросмотр теста в режиме сотрудника. Попытка не создается.
           </p>
         </div>
       </div>
 
       {quiz.description && (
-        <section className="mt-5 rounded-xl border border-black bg-white p-5">
-          <h2 className="text-sm font-semibold text-zinc-500">Описание</h2>
-          <p className="mt-2 text-sm text-zinc-700">{quiz.description}</p>
+        <section className="mt-5 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-5">
+          <h2 className="text-sm font-semibold text-[var(--ink-muted)]">Описание</h2>
+          <p className="mt-2 text-sm text-[var(--ink-muted)]">{quiz.description}</p>
         </section>
       )}
 
       {quiz.questions.length === 0 ? (
-        <p className="mt-5 rounded-xl border border-black bg-white p-5 text-sm text-zinc-700">
+        <p className="mt-5 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 text-sm text-[var(--ink-muted)]">
           В тесте пока нет вопросов.
         </p>
       ) : (

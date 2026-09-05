@@ -3,7 +3,9 @@ import { stat } from "fs/promises";
 import path from "path";
 import { Readable } from "stream";
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { storage } from "@/lib/storage";
+import { canAccessUpload } from "@/lib/storage/upload-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,7 +55,8 @@ async function resolveUploadPath(context: RouteContext) {
   const segments = params.path ?? [];
   if (segments.length === 0 || !segments.every(isSafeSegment)) return null;
 
-  return storage.path("uploads", segments.join("/"));
+  const key = segments.join("/");
+  return { key, absolutePath: storage.path("uploads", key) };
 }
 
 function cacheControlFor(filePath: string) {
@@ -65,14 +68,36 @@ function cacheControlFor(filePath: string) {
   return "private, max-age=31536000, immutable";
 }
 
+// Типы, которые браузер исполняет как документ в origin приложения. Без изоляции
+// загруженный автором курса пакет получает доступ к сессии пользователя: PPTX
+// конвертируется в HTML5 именно сюда, а `<img>`-рендер SVG от скриптов не спасает,
+// если файл открыть по прямой ссылке.
+const EXECUTABLE_EXTENSIONS = new Set([".html", ".htm", ".svg"]);
+
+function isExecutableDocument(filePath: string) {
+  return EXECUTABLE_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+}
+
 function commonHeaders(filePath: string, size: number) {
-  return new Headers({
+  const headers = new Headers({
     "Accept-Ranges": "bytes",
     "Cache-Control": cacheControlFor(filePath),
     "Content-Disposition": `inline; filename="${path.basename(filePath).replace(/"/g, "")}"`,
     "Content-Length": String(size),
     "Content-Type": contentTypeFor(filePath),
+    // Тип берётся из расширения, а не угадывается по содержимому.
+    "X-Content-Type-Options": "nosniff",
   });
+
+  if (isExecutableDocument(filePath)) {
+    // Без `allow-same-origin` документ попадает в opaque origin: скрипты внутри
+    // работают (HTML5-плеер это требует), но cookie, localStorage и DOM
+    // приложения им недоступны. Эффективная песочница — пересечение с атрибутом
+    // `sandbox` у iframe, поэтому заголовок закрывает и прямое открытие по ссылке.
+    headers.set("Content-Security-Policy", "sandbox allow-scripts allow-popups");
+  }
+
+  return headers;
 }
 
 function parseRange(rangeHeader: string | null, size: number) {
@@ -108,10 +133,23 @@ function parseRange(rangeHeader: string | null, size: number) {
 }
 
 async function serveUpload(request: NextRequest, context: RouteContext, includeBody: boolean) {
-  const filePath = await resolveUploadPath(context);
-  if (!filePath) {
+  const resolved = await resolveUploadPath(context);
+  if (!resolved) {
     return NextResponse.json({ error: "Файл не найден" }, { status: 404 });
   }
+
+  // Хранилище вынесено из public/, поэтому этот роут — единственная выдача
+  // байтов, и авторизация здесь не обходится статикой. Аутентификация, затем
+  // проверка доступа к конкретному файлу по его владельцу.
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Требуется вход" }, { status: 401 });
+  }
+  if (!(await canAccessUpload(session.user, resolved.key))) {
+    return NextResponse.json({ error: "Нет доступа к файлу" }, { status: 403 });
+  }
+
+  const filePath = resolved.absolutePath;
 
   try {
     const info = await stat(filePath);

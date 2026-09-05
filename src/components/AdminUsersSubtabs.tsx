@@ -36,18 +36,18 @@ export async function AdminUsersSubtabs({ active }: { active?: TabKey }) {
   const visibleTabs = TABS.filter((tab) => hasPermission(session.user.roles, tab.requiredPermission, permissions));
 
   return (
-    <nav className="mt-4 overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60">
+    <nav className="mt-4 overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--surface-raised)]">
       <ul className="flex min-w-max">
         {visibleTabs.map((tab) => {
           const isActive = tab.key === active;
           return (
-            <li key={tab.key} className="border-r border-zinc-200 last:border-r-0 dark:border-zinc-800">
+            <li key={tab.key} className="border-r border-[var(--line)] last:border-r-0">
               <Link
                 href={tab.href}
                 className={`block px-5 py-3 text-sm ${
                   isActive
-                    ? "bg-white font-semibold text-[#0f315d] shadow-[inset_0_-3px_0_#0f315d] dark:bg-zinc-900 dark:text-white dark:shadow-[inset_0_-3px_0_#f4f4f5]"
-                    : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                    ? "bg-[var(--surface-raised)] font-semibold text-[var(--ink)] shadow-[inset_0_-3px_0_var(--ink)]"
+                    : "text-[var(--ink-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--ink)]"
                 }`}
               >
                 {tab.label}

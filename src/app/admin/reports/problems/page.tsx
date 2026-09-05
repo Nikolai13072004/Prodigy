@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Children, type ReactNode } from "react";
+import { Card } from "@/components/ui";
 import { requirePermission } from "@/lib/auth-guards";
 import prisma from "@/lib/prisma";
 import { PERMISSIONS } from "@/lib/roles";
@@ -82,12 +83,12 @@ export default async function ProblemReportPage() {
 
   return (
     <main className="mx-auto max-w-6xl">
-      <Link href="/admin/reports" className="text-sm text-emerald-700 underline">
+      <Link href="/admin/reports" className="text-sm text-[var(--accent)] underline">
         ← К отчетам
       </Link>
       <div className="mt-4">
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">Проблемный отчет</h1>
-        <p className="mt-2 max-w-3xl text-sm text-zinc-600">
+        <h1 className="text-3xl font-semibold tracking-tight text-[var(--ink)]">Проблемный отчет</h1>
+        <p className="mt-2 max-w-3xl text-sm text-[var(--ink-muted)]">
           Быстрый список мест, где обучение застряло: ручная проверка, проваленные тесты, истекший доступ и ошибки отправки.
         </p>
       </div>
@@ -158,10 +159,10 @@ export default async function ProblemReportPage() {
 
 function MetricCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="text-3xl font-semibold tracking-tight text-zinc-950">{value}</div>
-      <div className="mt-1 text-sm text-zinc-500">{label}</div>
-    </div>
+    <Card>
+      <div className="text-3xl font-semibold tracking-tight text-[var(--ink)]">{value}</div>
+      <div className="mt-1 text-sm text-[var(--ink-muted)]">{label}</div>
+    </Card>
   );
 }
 
@@ -179,10 +180,10 @@ function ProblemSection({
   const itemCount = Children.count(children);
 
   return (
-    <section id={id} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <h2 className="text-lg font-semibold text-zinc-950">{title}</h2>
+    <section id={id} className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-sm">
+      <h2 className="text-lg font-semibold text-[var(--ink)]">{title}</h2>
       {itemCount === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/70 px-4 py-4 text-sm text-zinc-600">
+        <p className="mt-4 rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] px-4 py-4 text-sm text-[var(--ink-muted)]">
           {empty}
         </p>
       ) : (
@@ -194,9 +195,9 @@ function ProblemSection({
 
 function ProblemLink({ href, title, meta }: { href: string; title: string; meta: string }) {
   return (
-    <Link href={href} className="block rounded-xl border border-zinc-200 px-4 py-3 hover:bg-zinc-50">
-      <div className="font-medium text-zinc-950">{title}</div>
-      <div className="mt-1 text-sm text-zinc-500">{meta}</div>
+    <Link href={href} className="block rounded-xl border border-[var(--line)] px-4 py-3 hover:bg-[var(--surface)]">
+      <div className="font-medium text-[var(--ink)]">{title}</div>
+      <div className="mt-1 text-sm text-[var(--ink-muted)]">{meta}</div>
     </Link>
   );
 }

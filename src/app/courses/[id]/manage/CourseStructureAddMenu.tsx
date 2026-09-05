@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { createCourseItem, createCourseModule } from "@/app/actions/course-content-actions";
+import { Select } from "@/components/ui";
 import {
   CourseItemCreateFields,
   type CourseItemType,
@@ -26,7 +27,7 @@ type AddMode = "module" | CourseItemType | "upload";
 const UPLOAD_ACCEPT =
   ".pdf,.pptx,.mp4,.webm,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,video/webm";
 const modeButtonBase =
-  "w-full rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-emerald-500";
+  "w-full rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 
 const MATERIAL_LABELS: Record<CourseItemType, string> = {
   TEXT: "Страница",
@@ -229,7 +230,7 @@ export function CourseStructureAddMenu({ courseId, modules }: CourseStructureAdd
       <button
         type="button"
         onClick={() => openPanel()}
-        className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
+        className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-strong)]"
       >
         <Plus aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
         Добавить
@@ -240,25 +241,25 @@ export function CourseStructureAddMenu({ courseId, modules }: CourseStructureAdd
           <button
             type="button"
             aria-label="Закрыть окно добавления"
-            className="absolute inset-0 bg-zinc-950/30 backdrop-blur-[1px]"
+            className="absolute inset-0 bg-black/30 backdrop-blur-[1px]"
             onClick={closePanel}
           />
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="course-add-panel-title"
-            className="relative z-10 flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl"
+            className="relative z-10 flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-2xl"
           >
-            <div className="border-b border-zinc-200 bg-gradient-to-br from-emerald-50 via-white to-blue-50 px-6 py-5">
+            <div className="border-b border-[var(--line)] bg-gradient-to-br from-[var(--accent-soft)] via-[var(--surface-raised)] to-[var(--info-soft)] px-6 py-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
                     Конструктор курса
                   </p>
-                  <h2 id="course-add-panel-title" className="mt-2 text-2xl font-semibold text-zinc-950">
+                  <h2 id="course-add-panel-title" className="mt-2 text-2xl font-semibold text-[var(--ink)]">
                     Добавить в курс
                   </h2>
-                  <p className="mt-2 max-w-xl text-sm text-zinc-600">
+                  <p className="mt-2 max-w-xl text-sm text-[var(--ink-muted)]">
                     Сначала выберите, что именно добавляем. Форма не закроется при локальной ошибке,
                     чтобы не терять введенные данные.
                   </p>
@@ -266,7 +267,7 @@ export function CourseStructureAddMenu({ courseId, modules }: CourseStructureAdd
                 <button
                   type="button"
                   onClick={closePanel}
-                  className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                  className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                 >
                   Закрыть
                 </button>
@@ -328,35 +329,35 @@ export function CourseStructureAddMenu({ courseId, modules }: CourseStructureAdd
 
               <div className="min-w-0">
                 {!activeMode ? (
-                  <div className="rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-6 text-sm text-zinc-600">
+                  <div className="rounded-3xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm text-[var(--ink-muted)]">
                     Выберите слева тип элемента. Для презентаций и видео можно использовать обычную форму
                     или быстрый режим загрузки файла.
                   </div>
                 ) : null}
 
                 {activeMode === "module" ? (
-                  <form action={createCourseModule.bind(null, courseId)} className="space-y-4 rounded-3xl border border-zinc-200 p-5">
+                  <form action={createCourseModule.bind(null, courseId)} className="space-y-4 rounded-3xl border border-[var(--line)] p-5">
                     <div>
-                      <label className="block text-sm font-medium text-zinc-900">Название раздела</label>
+                      <label className="block text-sm font-medium text-[var(--ink)]">Название раздела</label>
                       <input
                         name="title"
                         defaultValue="Новый раздел"
                         required
-                        className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
+                        className="mt-1 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm outline-none ring-[var(--accent)] focus:ring-2"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-zinc-900">Описание</label>
+                      <label className="block text-sm font-medium text-[var(--ink)]">Описание</label>
                       <textarea
                         name="description"
                         rows={4}
                         placeholder="Коротко опишите, что будет внутри раздела"
-                        className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
+                        className="mt-1 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm outline-none ring-[var(--accent)] focus:ring-2"
                       />
                     </div>
                     <button
                       type="submit"
-                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                      className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)]"
                     >
                       Добавить раздел
                     </button>
@@ -366,18 +367,18 @@ export function CourseStructureAddMenu({ courseId, modules }: CourseStructureAdd
                 {activeMode && activeMode !== "module" && activeMode !== "upload" ? (
                   <form
                     action={createCourseItem.bind(null, courseId)}
-                    className="space-y-4 rounded-3xl border border-zinc-200 p-5"
+                    className="space-y-4 rounded-3xl border border-[var(--line)] p-5"
                     onChange={() => {
                       if (formError) setFormError(null);
                     }}
                     onSubmit={handleMaterialFormSubmit}
                   >
-                    <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                    <div className="rounded-2xl border border-[var(--info-soft)] bg-[var(--info-soft)] px-4 py-3 text-sm text-[var(--info)]">
                       <p className="font-medium">{MATERIAL_LABELS[activeMode]}</p>
-                      <p className="mt-1 text-xs text-blue-800">{MATERIAL_DESCRIPTIONS[activeMode]}</p>
+                      <p className="mt-1 text-xs text-[var(--info)]">{MATERIAL_DESCRIPTIONS[activeMode]}</p>
                     </div>
                     {formError ? (
-                      <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                      <p role="alert" className="rounded-xl border border-[var(--danger)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger)]">
                         {formError}
                       </p>
                     ) : null}
@@ -385,7 +386,7 @@ export function CourseStructureAddMenu({ courseId, modules }: CourseStructureAdd
                       name="title"
                       placeholder="Название материала"
                       required
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
+                      className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm outline-none ring-[var(--accent)] focus:ring-2"
                     />
                     <ModuleSelect modules={modules} />
                     <CourseItemCreateFields
@@ -396,7 +397,7 @@ export function CourseStructureAddMenu({ courseId, modules }: CourseStructureAdd
                     />
                     <button
                       type="submit"
-                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                      className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)]"
                     >
                       Добавить материал
                     </button>
@@ -404,20 +405,20 @@ export function CourseStructureAddMenu({ courseId, modules }: CourseStructureAdd
                 ) : null}
 
                 {activeMode === "upload" ? (
-                  <div className="space-y-4 rounded-3xl border border-zinc-200 p-5">
-                    <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                  <div className="space-y-4 rounded-3xl border border-[var(--line)] p-5">
+                    <div className="rounded-2xl border border-[var(--accent-soft)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
                       <p className="font-medium">Быстрая загрузка</p>
-                      <p className="mt-1 text-xs text-emerald-800">
+                      <p className="mt-1 text-xs text-[var(--accent-strong)]">
                         Выберите PDF/PPTX, MP4 или WebM. Материал будет создан автоматически в первом разделе курса.
                       </p>
                     </div>
                     {uploadError ? (
-                      <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                      <p role="alert" className="rounded-xl border border-[var(--danger)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger)]">
                         {uploadError}
                       </p>
                     ) : null}
                     {uploadBusy ? (
-                      <p role="status" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                      <p role="status" className="rounded-xl border border-[var(--info-soft)] bg-[var(--info-soft)] px-3 py-2 text-sm text-[var(--info)]">
                         Загружаю и подготавливаю материал...
                       </p>
                     ) : null}
@@ -425,7 +426,7 @@ export function CourseStructureAddMenu({ courseId, modules }: CourseStructureAdd
                       type="button"
                       onClick={() => uploadInputRef.current?.click()}
                       disabled={uploadBusy}
-                      className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Выбрать файл
                     </button>
@@ -478,25 +479,25 @@ function ModeButton({
       onClick={onClick}
       className={`${modeButtonBase} ${
         active
-          ? "border-emerald-300 bg-emerald-50 text-emerald-950 shadow-sm"
-          : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50"
+          ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow-sm"
+          : "border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink)] hover:border-[var(--line)] hover:bg-[var(--accent-soft)]"
       }`}
     >
       <span className="flex items-center gap-2 text-sm font-semibold">
         {icon}
         {title}
       </span>
-      <span className="mt-2 block text-xs leading-relaxed text-zinc-500">{description}</span>
+      <span className="mt-2 block text-xs leading-relaxed text-[var(--ink-muted)]">{description}</span>
     </button>
   );
 }
 
 function ModuleSelect({ modules }: { modules: Array<{ id: string; title: string }> }) {
   return (
-    <select
+    <Select
       name="moduleId"
       defaultValue={modules[0]?.id ?? ""}
-      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
+      className="w-full"
     >
       <option value="">Без раздела</option>
       {modules.map((module) => (
@@ -504,6 +505,6 @@ function ModuleSelect({ modules }: { modules: Array<{ id: string; title: string 
           {module.title}
         </option>
       ))}
-    </select>
+    </Select>
   );
 }

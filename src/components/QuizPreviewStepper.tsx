@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Progress, Select, Textarea } from "@/components/ui";
 import { QuizQuestionMediaViewer } from "@/components/QuizQuestionMediaViewer";
 import { QUESTION_LABELS } from "@/lib/constants";
 import { parseQuizQuestionMediaFromConfig } from "@/lib/quiz-question-media";
@@ -31,23 +32,21 @@ export function QuizPreviewStepper({ questions }: Props) {
 
   return (
     <section className="mt-5 space-y-4">
-      <div className="rounded-lg border border-black bg-white p-4">
+      <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] p-4">
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-          <span className="font-medium text-zinc-700">
+          <span className="font-medium text-[var(--ink)]">
             Вопрос {currentIndex + 1} из {questions.length}
           </span>
-          <span className="text-zinc-600">Режим предпросмотра</span>
+          <span className="text-[var(--ink-muted)]">Режим предпросмотра</span>
         </div>
-        <div className="mt-3 h-2 rounded-full bg-zinc-200">
-          <div
-            className="h-2 rounded-full bg-zinc-900 transition-all"
-            style={{ width: `${Math.round(((currentIndex + 1) / questions.length) * 100)}%` }}
-          />
-        </div>
+        <Progress
+          className="mt-3"
+          value={((currentIndex + 1) / questions.length) * 100}
+        />
       </div>
 
-      <article className="rounded-xl border border-black bg-white p-5">
-        <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+      <article className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-5">
+        <div className="text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">
           {QUESTION_LABELS[currentQuestion.type as keyof typeof QUESTION_LABELS] ??
             currentQuestion.type}{" "}
           ({currentQuestion.points} б.)
@@ -73,33 +72,26 @@ export function QuizPreviewStepper({ questions }: Props) {
       </article>
 
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
           disabled={currentIndex === 0}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
         >
           Назад
-        </button>
+        </Button>
 
         {!isLastQuestion && (
-          <button
-            type="button"
+          <Button
             onClick={() => setCurrentIndex((prev) => Math.min(questions.length - 1, prev + 1))}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white"
           >
             Далее
-          </button>
+          </Button>
         )}
 
         {isLastQuestion && (
-          <button
-            type="button"
-            disabled
-            className="rounded-md bg-zinc-300 px-6 py-2.5 text-sm font-medium text-zinc-600"
-          >
+          <Button disabled>
             Закончить тест (только предпросмотр)
-          </button>
+          </Button>
         )}
       </div>
     </section>
@@ -112,13 +104,8 @@ function OpenPreview({ configJson }: { configJson: string }) {
 
   return (
     <div className="mt-3 space-y-2">
-      <textarea
-        rows={4}
-        disabled
-        placeholder="Поле ответа сотрудника"
-        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-      />
-      <p className="text-xs text-zinc-500">
+      <Textarea rows={4} disabled placeholder="Поле ответа сотрудника" />
+      <p className="text-xs text-[var(--ink-muted)]">
         {isManualReview
           ? "Ответ будет отправлен преподавателю на проверку."
           : "Ответ будет проверен автоматически по эталону."}
@@ -157,18 +144,15 @@ function MatchingPreview({
     <div className="mt-3 space-y-3">
       {config.left.map((leftLabel, index) => (
         <div key={`${questionId}-${index}`} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <span className="min-w-[180px] text-sm text-zinc-800">{leftLabel}</span>
-          <select
-            disabled
-            className="w-full max-w-xs rounded-md border border-zinc-300 px-3 py-2 text-sm"
-          >
+          <span className="min-w-[180px] text-sm text-[var(--ink)]">{leftLabel}</span>
+          <Select disabled className="max-w-xs">
             <option value="">Выберите вариант</option>
             {config.right.map((value, rightIndex) => (
               <option key={`${questionId}-opt-${rightIndex}`} value={rightIndex}>
                 {value}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       ))}
     </div>
@@ -182,15 +166,15 @@ function FilePreview({ configJson }: { configJson: string }) {
     .filter(Boolean);
 
   return (
-    <div className="mt-3 rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-4">
-      <p className="text-sm font-medium text-zinc-900">Загрузка файла</p>
-      <p className="mt-2 text-sm text-zinc-600">
+    <div className="mt-3 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-4">
+      <p className="text-sm font-medium text-[var(--ink)]">Загрузка файла</p>
+      <p className="mt-2 text-sm text-[var(--ink-muted)]">
         Допустимые форматы: {extensions.length ? extensions.join(", ") : "по настройке вопроса"}.
       </p>
-      <p className="mt-1 text-sm text-zinc-600">
+      <p className="mt-1 text-sm text-[var(--ink-muted)]">
         Максимальный размер: {Math.max(config.maxFileSizeMb ?? 10, 1)} МБ.
       </p>
-      <p className="mt-2 text-xs text-zinc-500">
+      <p className="mt-2 text-xs text-[var(--ink-muted)]">
         После отправки такой ответ получит статус «На проверке».
       </p>
     </div>

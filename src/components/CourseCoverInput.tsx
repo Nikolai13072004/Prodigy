@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { Button, buttonStyles, Label } from "@/components/ui";
 
 type Props = {
   initialValue: string | null;
@@ -205,16 +206,16 @@ export function CourseCoverInput({
     showLabel || showHint ? (
       <div>
         {showLabel ? (
-          <label htmlFor={inputId} className="block text-sm font-medium text-zinc-900">
+          <Label htmlFor={inputId} className="block">
             {label}
-          </label>
+          </Label>
         ) : null}
-        {showHint ? <p className="mt-1 text-xs text-zinc-500">{hint}</p> : null}
+        {showHint ? <p className="mt-1 text-xs text-[var(--ink-muted)]">{hint}</p> : null}
       </div>
     ) : null;
   const uploadControls = (
     <div className="flex gap-2">
-      <label className="inline-flex cursor-pointer items-center rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100">
+      <label className={buttonStyles("secondary", "md", "cursor-pointer")}>
         {busy ? "Загрузка..." : value ? "Заменить" : "Загрузить"}
         <input
           className="sr-only"
@@ -224,8 +225,8 @@ export function CourseCoverInput({
           disabled={busy}
         />
       </label>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
         onClick={() => {
           setValue("");
           setGenerationNotice(null);
@@ -233,23 +234,22 @@ export function CourseCoverInput({
             setPairedThumbnailValue("");
           }
         }}
-        className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
       >
         Очистить
-      </button>
+      </Button>
     </div>
   );
   const hasPreparedPresentationSource = Boolean(preparedSourcePdfUrl);
   const hasPresentationSource = Boolean(preparedSourcePdfUrl || sourcePresentationUrl);
   const sourceControls = hasPresentationSource ? (
-    <div className="rounded-xl border border-zinc-200 bg-white p-3">
-      <p className="text-xs text-zinc-600">
+    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-3">
+      <p className="text-xs text-[var(--ink-muted)]">
         {hasPreparedPresentationSource
           ? "Можно автоматически сделать обложку и миниатюру из страницы загруженной презентации."
           : "PDF для предпросмотра еще не подготовлен. Система попробует подготовить его из презентации при нажатии."}
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <label htmlFor={`${inputId}-cover-page`} className="text-sm text-zinc-700">
+        <label htmlFor={`${inputId}-cover-page`} className="text-sm text-[var(--ink)]">
           Номер страницы
         </label>
         <input
@@ -259,17 +259,16 @@ export function CourseCoverInput({
           max={preparedSourcePages && preparedSourcePages > 0 ? preparedSourcePages : undefined}
           value={coverPageInput}
           onChange={(event) => setCoverPageInput(event.target.value)}
-          className="w-28 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+          className="w-28 rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--ink)]"
         />
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={onGenerateFromPresentation}
           disabled={busy}
-          className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? "Подготовка..." : hasPreparedPresentationSource ? "Сделать из страницы" : "Подготовить и сделать"}
-        </button>
-        <label className="inline-flex items-center gap-2 text-sm text-zinc-700">
+        </Button>
+        <label className="inline-flex items-center gap-2 text-sm text-[var(--ink)]">
           <input
             type="checkbox"
             checked={preferCleanPresentationImage}
@@ -279,9 +278,9 @@ export function CourseCoverInput({
         </label>
       </div>
       {hasPreparedPresentationSource && preparedSourcePages && preparedSourcePages > 0 ? (
-        <p className="mt-2 text-xs text-zinc-500">Доступно страниц: {preparedSourcePages}</p>
+        <p className="mt-2 text-xs text-[var(--ink-muted)]">Доступно страниц: {preparedSourcePages}</p>
       ) : !hasPreparedPresentationSource && preparedSourcePages && preparedSourcePages > 0 ? (
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-2 text-xs text-[var(--ink-muted)]">
           Сохранено слайдов в базе: {preparedSourcePages}. Доступность страниц подтвердится после подготовки PDF.
         </p>
       ) : null}
@@ -290,14 +289,14 @@ export function CourseCoverInput({
   const previewValue = pairedThumbnailName && pairedThumbnailValue ? pairedThumbnailValue : value;
   const preview = (
     <div
-      className={`flex items-center justify-center overflow-hidden rounded-xl border border-dashed border-zinc-300 bg-white ${previewClassName}`}
+      className={`flex items-center justify-center overflow-hidden rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface-raised)] ${previewClassName}`}
       style={{ aspectRatio: previewAspectRatio }}
     >
       {previewValue ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={previewValue} alt={label} className="h-full w-full object-cover" />
       ) : (
-        <span className="px-3 text-center text-xs text-zinc-400">Изображение не загружено</span>
+        <span className="px-3 text-center text-xs text-[var(--ink-muted)]">Изображение не загружено</span>
       )}
     </div>
   );
@@ -321,7 +320,7 @@ export function CourseCoverInput({
             {labelBlock}
             {uploadControls}
             {sourceControls}
-            {error ? <div className="text-sm text-rose-600">{error}</div> : null}
+            {error ? <div className="text-sm text-[var(--danger)]">{error}</div> : null}
           </div>
         </div>
       </div>
@@ -329,7 +328,7 @@ export function CourseCoverInput({
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
+    <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         {labelBlock}
         {uploadControls}
@@ -340,9 +339,9 @@ export function CourseCoverInput({
 
       <div className="mt-4 flex flex-wrap items-center gap-4">
         {preview}
-        {error ? <div className="min-w-0 flex-1 text-sm text-rose-600">{error}</div> : null}
+        {error ? <div className="min-w-0 flex-1 text-sm text-[var(--danger)]">{error}</div> : null}
         {!error && generationNotice ? (
-          <div className="min-w-0 flex-1 text-sm text-zinc-600">{generationNotice}</div>
+          <div className="min-w-0 flex-1 text-sm text-[var(--ink-muted)]">{generationNotice}</div>
         ) : null}
       </div>
     </div>

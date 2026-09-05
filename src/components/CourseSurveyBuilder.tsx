@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { Button, Select } from "@/components/ui";
 import {
   COURSE_SURVEY_QUESTION_TYPE_LABELS,
   type CourseSurveyQuestionDraft,
@@ -116,56 +117,40 @@ export function CourseSurveyBuilder({ initialQuestions }: Props) {
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+    <section className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface-raised)]">
       <input type="hidden" name="questionsJson" value={serializedQuestions} />
 
       <div className="grid min-h-[560px] lg:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="border-b border-zinc-200 bg-zinc-50/70 p-4 lg:border-b-0 lg:border-r">
+        <aside className="border-b border-[var(--line)] bg-[var(--surface)] p-4 lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Содержание</p>
-            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-zinc-600">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">Содержание</p>
+            <span className="rounded-full bg-[var(--surface-raised)] px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)]">
               {questions.length} вопросов
             </span>
           </div>
 
           <div className="mt-3 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => addQuestion("SINGLE_CHOICE")}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
-            >
+            <Button onClick={() => addQuestion("SINGLE_CHOICE")} className="w-full">
               <Plus className="h-4 w-4" />
               Новый вопрос
-            </button>
+            </Button>
             <div className="grid grid-cols-3 gap-1">
-              <button
-                type="button"
-                onClick={() => addQuestion("RATING_5")}
-                className="rounded-md border border-zinc-300 bg-white px-2 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
-              >
+              <Button variant="secondary" size="sm" onClick={() => addQuestion("RATING_5")}>
                 1-5
-              </button>
-              <button
-                type="button"
-                onClick={() => addQuestion("SINGLE_CHOICE")}
-                className="rounded-md border border-zinc-300 bg-white px-2 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
-              >
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => addQuestion("SINGLE_CHOICE")}>
                 Один
-              </button>
-              <button
-                type="button"
-                onClick={() => addQuestion("TEXT")}
-                className="rounded-md border border-zinc-300 bg-white px-2 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
-              >
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => addQuestion("TEXT")}>
                 Текст
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="mt-5">
             <div className="space-y-1">
               {questions.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-zinc-300 p-4 text-sm text-zinc-500">
+                <div className="rounded-lg border border-dashed border-[var(--line)] p-4 text-sm text-[var(--ink-muted)]">
                   Вопросов пока нет.
                 </div>
               ) : (
@@ -178,14 +163,14 @@ export function CourseSurveyBuilder({ initialQuestions }: Props) {
                       onClick={() => setSelectedIndex(index)}
                       className={`flex w-full gap-3 rounded-md border-l-2 px-3 py-2 text-left text-sm transition ${
                         isActive
-                          ? "border-l-zinc-900 bg-white text-zinc-950 shadow-sm"
-                          : "border-l-transparent text-zinc-600 hover:bg-white hover:text-zinc-950"
+                          ? "border-l-[var(--accent)] bg-[var(--surface-raised)] text-[var(--ink)] shadow-sm"
+                          : "border-l-transparent text-[var(--ink-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--ink)]"
                       }`}
                     >
                       <span className="w-5 shrink-0 text-right font-semibold">{index + 1}</span>
                       <span className="min-w-0">
                         <span className="block truncate font-medium">{question.title || "Без текста вопроса"}</span>
-                        <span className="mt-0.5 block truncate text-xs text-zinc-500">
+                        <span className="mt-0.5 block truncate text-xs text-[var(--ink-muted)]">
                           {COURSE_SURVEY_QUESTION_TYPE_LABELS[question.type]}
                         </span>
                       </span>
@@ -211,10 +196,10 @@ export function CourseSurveyBuilder({ initialQuestions }: Props) {
               onRemoveOption={(optionIndex) => removeOption(safeSelectedIndex, optionIndex)}
             />
           ) : (
-            <div className="flex min-h-[360px] items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/70 p-8 text-center">
+            <div className="flex min-h-[360px] items-center justify-center rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-8 text-center">
               <div>
-                <p className="text-base font-semibold text-zinc-900">Конструктор опроса</p>
-                <p className="mt-1 text-sm text-zinc-500">Создайте первый вопрос.</p>
+                <p className="text-base font-semibold text-[var(--ink)]">Конструктор опроса</p>
+                <p className="mt-1 text-sm text-[var(--ink-muted)]">Создайте первый вопрос.</p>
               </div>
             </div>
           )}
@@ -249,11 +234,11 @@ function QuestionEditor({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Вопрос {index + 1}</p>
-          <h2 className="mt-1 text-xl font-semibold text-zinc-950">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">Вопрос {index + 1}</p>
+          <h2 className="mt-1 text-xl font-semibold text-[var(--ink)]">
             {COURSE_SURVEY_QUESTION_TYPE_LABELS[question.type]}
           </h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
             {getCourseSurveyQuestionInputLabel(question.type)} · {formatCourseSurveyRequiredLabel(question.isRequired)}
           </p>
         </div>
@@ -263,7 +248,7 @@ function QuestionEditor({
             type="button"
             onClick={() => onMove(-1)}
             disabled={index <= 0}
-            className="inline-flex items-center gap-2 rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex items-center gap-2 rounded-md border border-[var(--line)] px-3 py-2 text-sm hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-45"
           >
             <ArrowUp className="h-4 w-4" />
             Выше
@@ -272,7 +257,7 @@ function QuestionEditor({
             type="button"
             onClick={() => onMove(1)}
             disabled={index >= total - 1}
-            className="inline-flex items-center gap-2 rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex items-center gap-2 rounded-md border border-[var(--line)] px-3 py-2 text-sm hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-45"
           >
             <ArrowDown className="h-4 w-4" />
             Ниже
@@ -280,7 +265,7 @@ function QuestionEditor({
           <button
             type="button"
             onClick={onRemove}
-            className="inline-flex items-center gap-2 rounded-md border border-red-300 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+            className="inline-flex items-center gap-2 rounded-md border border-[var(--danger)] px-3 py-2 text-sm text-[var(--danger)] hover:bg-[var(--danger-soft)]"
           >
             <Trash2 className="h-4 w-4" />
             Удалить
@@ -288,44 +273,43 @@ function QuestionEditor({
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-zinc-200 p-4">
+      <div className="mt-4 rounded-xl border border-[var(--line)] p-4">
         <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_220px]">
-          <label className="grid min-w-0 gap-2 text-sm text-zinc-700">
+          <label className="grid min-w-0 gap-2 text-sm text-[var(--ink)]">
             <span>Текст вопроса</span>
             <textarea
               rows={4}
               value={question.title}
               onChange={(event) => onUpdate({ title: event.target.value })}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+              className="w-full rounded-lg border border-[var(--line)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]"
             />
           </label>
 
           <div className="grid min-w-0 content-start gap-4">
-            <label className="grid gap-2 text-sm text-zinc-700">
+            <label className="grid gap-2 text-sm text-[var(--ink)]">
               <span>Тип ответа</span>
-              <select
+              <Select
                 value={question.type}
                 onChange={(event) =>
                   onUpdate({
                     type: event.target.value as CourseSurveyQuestionType,
                   })
                 }
-                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
               >
                 {Object.entries(COURSE_SURVEY_QUESTION_TYPE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
-            <label className="flex items-center gap-2 text-sm text-zinc-700">
+            <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
               <input
                 type="checkbox"
                 checked={question.isRequired}
                 onChange={(event) => onUpdate({ isRequired: event.target.checked })}
-                className="h-4 w-4 rounded border-zinc-300 text-[#0b2446] focus:ring-[#0b2446]"
+                className="h-4 w-4 rounded border-[var(--line)] text-[var(--accent)] focus:ring-[var(--accent)]"
               />
               <span>Обязательный вопрос</span>
             </label>
@@ -333,13 +317,13 @@ function QuestionEditor({
         </div>
 
         {question.type === "SINGLE_CHOICE" ? (
-          <div className="mt-5 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-4">
+          <div className="mt-5 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-zinc-800">Варианты ответа</h3>
+              <h3 className="text-sm font-semibold text-[var(--ink)]">Варианты ответа</h3>
               <button
                 type="button"
                 onClick={onAddOption}
-                className="inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                className="inline-flex items-center gap-2 rounded-md border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
               >
                 <Plus className="h-4 w-4" />
                 Добавить вариант
@@ -355,20 +339,20 @@ function QuestionEditor({
                   <input
                     type="radio"
                     disabled
-                    className="mt-2 h-4 w-4 border-zinc-300 text-[#0b2446] sm:mt-0"
+                    className="mt-2 h-4 w-4 border-[var(--line)] text-[var(--accent)] sm:mt-0"
                     aria-label={`Вариант ${optionIndex + 1}`}
                   />
                   <input
                     value={option}
                     onChange={(event) => onUpdateOption(optionIndex, event.target.value)}
                     placeholder={`Вариант ответа ${optionIndex + 1}`}
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
+                    className="rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]"
                   />
                   <button
                     type="button"
                     onClick={() => onRemoveOption(optionIndex)}
                     disabled={question.options.length <= 2}
-                    className="rounded-md border border-rose-200 p-2 text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-md border border-[var(--danger)] p-2 text-[var(--danger)] hover:bg-[var(--danger-soft)] disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label="Удалить вариант ответа"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -379,7 +363,7 @@ function QuestionEditor({
           </div>
         ) : null}
 
-        <p className="mt-4 text-xs text-zinc-500">{getCourseSurveyQuestionDescription(question.type)}</p>
+        <p className="mt-4 text-xs text-[var(--ink-muted)]">{getCourseSurveyQuestionDescription(question.type)}</p>
       </div>
     </div>
   );

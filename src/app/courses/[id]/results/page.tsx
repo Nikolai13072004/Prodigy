@@ -33,14 +33,14 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
     <main className="mx-auto max-w-6xl px-4 py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link href="/courses" className="text-sm text-teal-700 underline">
+          <Link href="/courses" className="text-sm text-[var(--accent)] underline">
             ← Вернуться к списку курсов
           </Link>
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">{data.course.title}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-[var(--ink)]">{data.course.title}</h1>
             <CourseStatusBadge status={data.course.status} />
           </div>
-          <p className="mt-3 max-w-3xl text-sm text-zinc-600">
+          <p className="mt-3 max-w-3xl text-sm text-[var(--ink-muted)]">
             {data.course.description || "Описание курса пока не заполнено."}
           </p>
         </div>
@@ -52,7 +52,7 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
               status: statusFilter,
               format: "xlsx",
             })}
-            className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)]"
           >
             Экспорт Excel
           </Link>
@@ -62,20 +62,20 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
               status: statusFilter,
               format: "csv",
             })}
-            className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+            className="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
           >
             Экспорт CSV
           </Link>
           <Link
             href={`/courses/${data.course.id}/learners`}
-            className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+            className="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
           >
             Ученики
           </Link>
           {data.access.canManageAssignments ? (
             <Link
               href={`/courses/${data.course.id}/manage?section=assignments`}
-              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)]"
             >
               Назначения
             </Link>
@@ -83,7 +83,7 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
           {data.access.canOpenManage ? (
             <Link
               href={`/courses/${data.course.id}/manage?section=reports`}
-              className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+              className="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
             >
               Управление курсом
             </Link>
@@ -99,7 +99,7 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
         <SummaryCard label="Не пройдены" value={String(data.summary.failed)} />
       </section>
 
-      <section className="mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <section className="mt-4 rounded-2xl border border-[var(--line)] bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
             <ResultFilterLink
@@ -139,12 +139,12 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
               name="q"
               defaultValue={sp.q ?? ""}
               placeholder="Поиск по ФИО, логину, email, группе..."
-              className="h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none ring-emerald-500 focus:ring-2"
+              className="h-10 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm outline-none ring-[var(--accent)] focus:ring-2"
             />
           </form>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-3 text-sm text-zinc-500">
+        <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--ink-muted)]">
           <span>Показано: {data.filteredRows.length}</span>
           <span>·</span>
           <span>Тестов в курсе: {data.summary.quizCount}</span>
@@ -159,12 +159,12 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
         </div>
 
         {data.summary.quizCount === 0 ? (
-          <div className="mt-6 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/70 p-8 text-center text-sm text-zinc-700">
+          <div className="mt-6 rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-8 text-center text-sm text-[var(--ink)]">
             В курсе пока нет тестов. Как только в структуре появится тестовый элемент, здесь начнут собираться результаты.
           </div>
         ) : data.filteredRows.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/70 p-8 text-center">
-            <p className="text-sm text-zinc-700">
+          <div className="mt-6 rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-8 text-center">
+            <p className="text-sm text-[var(--ink)]">
               {data.summary.total === 0
                 ? "На курс пока не назначено ни одного ученика."
                 : sp.q
@@ -173,10 +173,10 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
             </p>
           </div>
         ) : (
-          <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200">
+          <div className="mt-6 overflow-hidden rounded-xl border border-[var(--line)]">
             <div className="overflow-x-auto">
               <table className="min-w-full border-collapse text-sm">
-                <thead className="bg-zinc-50 text-zinc-600">
+                <thead className="bg-[var(--surface)] text-[var(--ink-muted)]">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Ученик</th>
                     <th className="px-4 py-3 text-left font-medium">Подразделение</th>
@@ -191,19 +191,19 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
                 </thead>
                 <tbody>
                   {data.filteredRows.map((row) => (
-                    <tr key={row.id} className="border-t border-zinc-200 align-top text-zinc-700">
+                    <tr key={row.id} className="border-t border-[var(--line)] align-top text-[var(--ink)]">
                       <td className="px-4 py-4">
                         <Link
                           href={`/courses/${data.course.id}/learners/${row.id}`}
-                          className="font-medium text-zinc-950 hover:underline"
+                          className="font-medium text-[var(--ink)] hover:underline"
                         >
                           {row.name}
                         </Link>
-                        <div className="mt-1 text-xs text-zinc-500">Логин: {row.login}</div>
-                        {row.email ? <div className="mt-1 text-xs text-zinc-500">{row.email}</div> : null}
+                        <div className="mt-1 text-xs text-[var(--ink-muted)]">Логин: {row.login}</div>
+                        {row.email ? <div className="mt-1 text-xs text-[var(--ink-muted)]">{row.email}</div> : null}
                         {row.accountStatus !== "ACTIVE" ? (
                           <div className="mt-2">
-                            <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                            <span className="inline-flex rounded-full bg-[var(--warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--warning)]">
                               {row.accountStatusLabel}
                             </span>
                           </div>
@@ -216,48 +216,48 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
                             {row.groups.map((group) => (
                               <span
                                 key={`${row.id}:${group}`}
-                                className="inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600"
+                                className="inline-flex rounded-full bg-[var(--surface)] px-2.5 py-1 text-xs text-[var(--ink-muted)]"
                               >
                                 {group}
                               </span>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-zinc-400">Нет групп</span>
+                          <span className="text-[var(--ink-muted)]">Нет групп</span>
                         )}
                       </td>
                       <td className="px-4 py-4">
                         <div className="min-w-[160px]">
-                          <div className="flex items-center justify-between gap-3 text-xs text-zinc-500">
+                          <div className="flex items-center justify-between gap-3 text-xs text-[var(--ink-muted)]">
                             <span>
                               {row.progress.completedRequired}/{row.progress.requiredTotal || 0} этапов
                             </span>
                             <span>{row.progress.percent}%</span>
                           </div>
-                          <div className="mt-2 h-2 rounded-full bg-zinc-200">
-                            <div className="h-2 rounded-full bg-emerald-600" style={{ width: `${row.progress.percent}%` }} />
+                          <div className="mt-2 h-2 rounded-full bg-[var(--line)]">
+                            <div className="h-2 rounded-full bg-[var(--accent)]" style={{ width: `${row.progress.percent}%` }} />
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-zinc-900">
+                      <td className="px-4 py-4 text-[var(--ink)]">
                         {row.quizCount > 0 ? `${row.passedQuizCount}/${row.quizCount}` : "—"}
                       </td>
                       <td className="px-4 py-4">
                         {row.quizCount > 0 ? (
                           <div>
-                            <div className="font-medium text-zinc-950">
+                            <div className="font-medium text-[var(--ink)]">
                               {row.bestScore}/{row.maxScore}
                             </div>
-                            <div className="mt-1 text-xs text-zinc-500">{row.bestScorePercent}%</div>
+                            <div className="mt-1 text-xs text-[var(--ink-muted)]">{row.bestScorePercent}%</div>
                           </div>
                         ) : (
-                          <span className="text-zinc-400">—</span>
+                          <span className="text-[var(--ink-muted)]">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-4 text-zinc-900">
+                      <td className="px-4 py-4 text-[var(--ink)]">
                         {row.quizCount > 0 ? `${row.attemptsUsed}/${row.attemptsMax}` : "—"}
                       </td>
-                      <td className="px-4 py-4 text-xs text-zinc-500">
+                      <td className="px-4 py-4 text-xs text-[var(--ink-muted)]">
                         {row.lastAttemptAt ? formatDateTimeRu(row.lastAttemptAt) : "—"}
                       </td>
                       <td className="px-4 py-4">
@@ -277,9 +277,9 @@ export default async function CourseResultsPage({ params, searchParams }: Props)
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="text-3xl font-semibold tracking-tight text-zinc-950">{value}</div>
-      <div className="mt-1 text-sm text-zinc-500">{label}</div>
+    <div className="rounded-xl border border-[var(--line)] bg-white p-5 shadow-sm">
+      <div className="text-3xl font-semibold tracking-tight text-[var(--ink)]">{value}</div>
+      <div className="mt-1 text-sm text-[var(--ink-muted)]">{label}</div>
     </div>
   );
 }
@@ -298,8 +298,8 @@ function ResultFilterLink({
       href={href}
       className={`rounded-md px-4 py-2 text-sm transition ${
         active
-          ? "bg-white font-medium text-[#0f315d] shadow-[inset_0_-3px_0_#0f315d]"
-          : "border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+          ? "bg-[var(--surface-raised)] font-medium text-[var(--accent)] shadow-[inset_0_-3px_0_var(--accent)]"
+          : "border border-[var(--line)] bg-white text-[var(--ink-muted)] hover:border-[var(--line)] hover:text-[var(--ink)]"
       }`}
     >
       {label}
@@ -312,7 +312,7 @@ function CourseStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${
-        isPublished ? "bg-emerald-100 text-emerald-700" : "bg-zinc-100 text-zinc-600"
+        isPublished ? "bg-[var(--success-soft)] text-[var(--success)]" : "bg-[var(--surface)] text-[var(--ink-muted)]"
       }`}
     >
       {isPublished ? "Опубликован" : "Черновик"}
@@ -323,12 +323,12 @@ function CourseStatusBadge({ status }: { status: string }) {
 function ResultStatusBadge({ status, label }: { status: string; label: string }) {
   const className =
     status === "PASSED"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "bg-[var(--success-soft)] text-[var(--success)]"
       : status === "FAILED"
-        ? "bg-rose-100 text-rose-700"
+        ? "bg-[var(--danger-soft)] text-[var(--danger)]"
         : status === "IN_PROGRESS"
-          ? "bg-sky-100 text-sky-700"
-          : "bg-zinc-100 text-zinc-600";
+          ? "bg-[var(--info-soft)] text-[var(--info)]"
+          : "bg-[var(--surface)] text-[var(--ink-muted)]";
 
   return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${className}`}>{label}</span>;
 }

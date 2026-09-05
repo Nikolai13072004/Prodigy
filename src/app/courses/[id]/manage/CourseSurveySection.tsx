@@ -10,6 +10,7 @@ import { CourseSurveyBuilder } from "@/components/CourseSurveyBuilder";
 import { CourseSurveyPreviewDialog } from "@/components/CourseSurveyPreviewDialog";
 import { CourseSurveySaveActions } from "@/components/CourseSurveySaveActions";
 import { DetailsCloseButton } from "@/components/DetailsCloseButton";
+import { Input, Select, Textarea } from "@/components/ui";
 import {
   COURSE_SURVEY_QUESTION_TYPE_LABELS,
   formatCourseSurveyTitle,
@@ -41,84 +42,82 @@ export function CourseSurveySection({
   return (
     <div className="space-y-6">
       {sp.surveySaved ? (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="rounded-xl border border-[var(--success-soft)] bg-[var(--success-soft)] px-3 py-2 text-sm text-[var(--success)]">
           {sp.surveySaved}
         </p>
       ) : null}
       {sp.surveyError ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-xl border border-[var(--danger-soft)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger)]">
           {sp.surveyError}
         </p>
       ) : null}
 
-      <form action={saveCourseSurveyTemplate.bind(null, course.id)} className="rounded-2xl border border-zinc-200 bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3">
+      <form action={saveCourseSurveyTemplate.bind(null, course.id)} className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3">
           <div className="min-w-0">
-            <h3 className="text-lg font-semibold text-zinc-950">Конструктор опроса</h3>
-            <p className="mt-0.5 text-sm text-zinc-600">
+            <h3 className="text-lg font-semibold text-[var(--ink)]">Конструктор опроса</h3>
+            <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
               Соберите вопросы. Титульный лист и публикация открываются отдельной кнопкой.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2 sm:justify-end">
             <details className="relative">
-              <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 [&::-webkit-details-marker]:hidden">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-md border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] [&::-webkit-details-marker]:hidden">
                 <SlidersHorizontal className="h-4 w-4" />
                 Параметры опроса
               </summary>
-              <div className="fixed left-1/2 top-1/2 z-30 max-h-[calc(100dvh-120px)] w-[min(92vw,720px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-2xl">
-                <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-zinc-200 bg-white px-4 py-3">
+              <div className="fixed left-1/2 top-1/2 z-30 max-h-[calc(100dvh-120px)] w-[min(92vw,720px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-2xl">
+                <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[var(--line)] bg-[var(--surface-raised)] px-4 py-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-zinc-950">Параметры опроса</p>
-                    <p className="mt-0.5 text-xs text-zinc-500">Титульный лист и публикация для ученика.</p>
+                    <p className="text-sm font-semibold text-[var(--ink)]">Параметры опроса</p>
+                    <p className="mt-0.5 text-xs text-[var(--ink-muted)]">Титульный лист и публикация для ученика.</p>
                   </div>
                   <DetailsCloseButton
                     label="Закрыть параметры опроса"
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-300 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[var(--line)] text-[var(--ink-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--ink)]"
                   />
                 </div>
                 <div className="grid gap-5 p-4 lg:grid-cols-[minmax(0,1fr)_280px]">
                   <div className="space-y-4">
-                    <label className="grid gap-2 text-sm text-zinc-700">
+                    <label className="grid gap-2 text-sm text-[var(--ink)]">
                       <span>Название опроса</span>
-                      <input
+                      <Input
                         name="title"
                         defaultValue={formatCourseSurveyTitle(surveyTemplate?.title)}
-                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
                       />
                     </label>
 
-                    <label className="grid gap-2 text-sm text-zinc-700">
+                    <label className="grid gap-2 text-sm text-[var(--ink)]">
                       <span>Описание для ученика</span>
-                      <textarea
+                      <Textarea
                         name="description"
                         rows={4}
                         defaultValue={surveyTemplate?.description ?? "Поделитесь впечатлением о курсе и качестве учебных материалов."}
-                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
                       />
                     </label>
 
-                    <div className="grid gap-3 border-t border-zinc-200 pt-4">
-                      <p className="text-sm font-semibold text-zinc-950">Публикация</p>
-                      <label className="flex items-center gap-2 text-sm text-zinc-700">
+                    <div className="grid gap-3 border-t border-[var(--line)] pt-4">
+                      <p className="text-sm font-semibold text-[var(--ink)]">Публикация</p>
+                      <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
                         <input
                           type="checkbox"
                           name="isActive"
                           defaultChecked={surveyTemplate?.isActive ?? true}
-                          className="h-4 w-4 rounded border-zinc-300 text-[#0b2446] focus:ring-[#0b2446]"
+                          className="h-4 w-4 rounded border-[var(--line)] text-[var(--accent)] focus:ring-[var(--accent)]"
                         />
                         <span>Активен для учеников</span>
                       </label>
-                      <label className="flex items-center gap-2 text-sm text-zinc-700">
+                      <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
                         <input
                           type="checkbox"
                           name="isRequired"
                           defaultChecked={surveyTemplate?.isRequired ?? false}
-                          className="h-4 w-4 rounded border-zinc-300 text-[#0b2446] focus:ring-[#0b2446]"
+                          className="h-4 w-4 rounded border-[var(--line)] text-[var(--accent)] focus:ring-[var(--accent)]"
                         />
                         <span>Помечать как обязательный</span>
                       </label>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-[var(--ink-muted)]">
                         Обязательный опрос не блокирует завершение курса, но выделяется как ожидающий ответа.
                       </p>
                     </div>
@@ -149,16 +148,16 @@ export function CourseSurveySection({
         </div>
       </form>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+      <section className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-5">
         <details>
           <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3">
             <span>
-              <span className="block text-base font-semibold text-zinc-950">Шаблоны опросов</span>
-              <span className="mt-1 block text-sm text-zinc-600">
+              <span className="block text-base font-semibold text-[var(--ink)]">Шаблоны опросов</span>
+              <span className="mt-1 block text-sm text-[var(--ink-muted)]">
                 Применение сохраненного шаблона к этому курсу.
               </span>
             </span>
-            <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600">
+            <span className="rounded-full bg-[var(--surface)] px-3 py-1 text-xs font-medium text-[var(--ink-muted)]">
               {reusableSurveyTemplates.length} шаблонов
             </span>
           </summary>
@@ -168,23 +167,20 @@ export function CourseSurveySection({
               action={applyReusableCourseSurveyTemplate.bind(null, course.id)}
               className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]"
             >
-              <label className="grid gap-2 text-sm text-zinc-700">
+              <label className="grid gap-2 text-sm text-[var(--ink)]">
                 <span>Выбрать шаблон</span>
-                <select
-                  name="reusableTemplateId"
-                  className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-500"
-                >
+                <Select name="reusableTemplateId">
                   {reusableSurveyTemplates.map((template) => (
                     <option key={template.id} value={template.id}>
                       {formatCourseSurveyTitle(template.title)} · {template.questions.length} вопросов
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
 
               <div className="flex items-end">
                 <ConfirmSubmitButton
-                  className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+                  className="rounded-md border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                   confirmMessage="Применить выбранный шаблон? Текущие настройки и вопросы опроса курса будут заменены."
                 >
                   Применить шаблон
@@ -192,7 +188,7 @@ export function CourseSurveySection({
               </div>
             </form>
           ) : (
-            <p className="mt-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/70 px-4 py-4 text-sm text-zinc-600">
+            <p className="mt-4 rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] px-4 py-4 text-sm text-[var(--ink-muted)]">
               Пока нет сохраненных шаблонов. Настройте опрос выше и нажмите «Сохранить как шаблон».
             </p>
           )}
@@ -225,19 +221,19 @@ export function CourseSurveySection({
           </section>
 
           {surveyTemplate.questions.filter((question) => question.type === "RATING_5").length > 0 ? (
-            <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-              <h3 className="text-base font-semibold text-zinc-950">Средние оценки по шкальным вопросам</h3>
+            <section className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-5">
+              <h3 className="text-base font-semibold text-[var(--ink)]">Средние оценки по шкальным вопросам</h3>
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
                 {surveyTemplate.questions
                   .filter((question) => question.type === "RATING_5")
                   .map((question) => (
-                    <div key={question.id} className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-4">
-                      <p className="text-sm font-medium text-zinc-900">{question.title}</p>
+                    <div key={question.id} className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-4">
+                      <p className="text-sm font-medium text-[var(--ink)]">{question.title}</p>
                       <div className="mt-3 flex items-end justify-between gap-3">
-                        <div className="text-3xl font-semibold text-[#0b2446]">
+                        <div className="text-3xl font-semibold text-[var(--ink)]">
                           {surveyAverageByQuestionId.get(question.id) ?? "—"}
                         </div>
-                        <div className="text-xs text-zinc-500">
+                        <div className="text-xs text-[var(--ink-muted)]">
                           {COURSE_SURVEY_QUESTION_TYPE_LABELS.RATING_5}
                         </div>
                       </div>
@@ -247,29 +243,29 @@ export function CourseSurveySection({
             </section>
           ) : null}
 
-          <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+          <section className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="text-base font-semibold text-zinc-950">Ответы учеников</h3>
-                <p className="mt-1 text-sm text-zinc-600">
+                <h3 className="text-base font-semibold text-[var(--ink)]">Ответы учеников</h3>
+                <p className="mt-1 text-sm text-[var(--ink-muted)]">
                   Последние сохраненные ответы по этому опросу.
                 </p>
               </div>
-              <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600">
+              <span className="rounded-full bg-[var(--surface)] px-3 py-1 text-xs font-medium text-[var(--ink-muted)]">
                 {surveyResponses.length} ответов
               </span>
             </div>
 
             {surveyResponses.length === 0 ? (
-              <p className="mt-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/70 px-4 py-4 text-sm text-zinc-600">
+              <p className="mt-4 rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] px-4 py-4 text-sm text-[var(--ink-muted)]">
                 Ученики еще не проходили опрос по этому курсу.
               </p>
             ) : (
               <div className="mt-4 space-y-4">
                 {surveyResponses.map((response) => (
-                  <article key={response.id} className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-4">
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500">
-                      <span className="font-medium text-zinc-950">{response.user.name}</span>
+                  <article key={response.id} className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--ink-muted)]">
+                      <span className="font-medium text-[var(--ink)]">{response.user.name}</span>
                       <span>·</span>
                       <span>{response.user.login}</span>
                       <span>·</span>
@@ -282,10 +278,10 @@ export function CourseSurveySection({
                       {[...response.answers]
                         .sort((left, right) => left.question.orderIndex - right.question.orderIndex)
                         .map((answer) => (
-                        <div key={answer.id} className="rounded-lg border border-zinc-200 bg-white px-4 py-3">
+                        <div key={answer.id} className="rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-3">
                           <div className="flex flex-wrap items-center justify-between gap-3">
-                            <p className="text-sm font-medium text-zinc-900">{answer.question.title}</p>
-                            <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">
+                            <p className="text-sm font-medium text-[var(--ink)]">{answer.question.title}</p>
+                            <span className="rounded-full bg-[var(--surface)] px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)]">
                               {answer.question.type === "RATING_5"
                                 ? COURSE_SURVEY_QUESTION_TYPE_LABELS.RATING_5
                                 : answer.question.type === "SINGLE_CHOICE"
@@ -293,13 +289,13 @@ export function CourseSurveySection({
                                   : COURSE_SURVEY_QUESTION_TYPE_LABELS.TEXT}
                             </span>
                           </div>
-                          <div className="mt-2 text-sm text-zinc-700">
+                          <div className="mt-2 text-sm text-[var(--ink)]">
                             {typeof answer.ratingValue === "number" ? (
-                              <span className="font-semibold text-[#0b2446]">{answer.ratingValue}/5</span>
+                              <span className="font-semibold text-[var(--ink)]">{answer.ratingValue}/5</span>
                             ) : answer.textValue?.trim() ? (
                               <p className="whitespace-pre-line">{answer.textValue}</p>
                             ) : (
-                              <span className="text-zinc-400">Ответ не указан</span>
+                              <span className="text-[var(--ink-muted)]">Ответ не указан</span>
                             )}
                           </div>
                         </div>
@@ -326,10 +322,10 @@ function MetricCard({
   description: string;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-zinc-950">{value}</p>
-      <p className="mt-1 text-sm text-zinc-600">{description}</p>
+    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-[var(--ink)]">{value}</p>
+      <p className="mt-1 text-sm text-[var(--ink-muted)]">{description}</p>
     </div>
   );
 }

@@ -1,30 +1,24 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { appBaseUrl } from "@/lib/app-base-url";
 import { revalidatePath } from "next/cache";
 import { auditActorFromSessionUser, recordAuditEvent } from "@/lib/audit-log";
 import { requirePermission } from "@/lib/auth-guards";
 import { enqueueStudentInviteEmails, enqueueUserActivationEmails } from "@/lib/email/queue";
 import { generatePasswordForPolicy, getPlatformSecuritySettings } from "@/lib/platform-settings";
-import prisma from "@/lib/prisma";
 import { ensureSystemRoleProfiles } from "@/lib/role-profiles";
 import { PERMISSIONS, STANDARD_ROLE_NAMES, hasPermission, primaryRole } from "@/lib/roles";
 import { buildUserCsvImportDraft, type UserCsvImportDraftRow } from "@/lib/user-csv-import";
 import { createUserActivationToken, userActivationExpiresAt } from "@/lib/user-activations";
 import { USER_STATUSES } from "@/lib/users";
+import { createAvailableLogin } from "@/modules/user/domain/available-login";
+import type { CreateImportedUserInput } from "@/modules/user/application/user-import-ports";
+import { userImport } from "@/modules/user/server/user-import";
 import type { UserCsvImportActionState, UserCsvImportResultRow } from "@/app/admin/users/import/user-csv-import-state";
 
 function asString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
-}
-
-function appBaseUrl() {
-  return (
-    process.env.APP_BASE_URL?.trim() ||
-    process.env.NEXTAUTH_URL?.trim() ||
-    process.env.AUTH_URL?.trim() ||
-    "http://127.0.0.1:3002"
-  );
 }
 
 function toErrorRow(row: UserCsvImportDraftRow, detail: string): UserCsvImportResultRow {
@@ -49,27 +43,6 @@ function buildRowDetail(canEditAccessLevel: boolean, emailQueued: boolean) {
   return emailQueued
     ? "Ученик создан, письмо с временным паролем поставлено в очередь."
     : "Ученик создан, но письмо с временным паролем не удалось поставить в очередь.";
-}
-
-function createAvailableLogin(baseLogin: string, occupiedLogins: Set<string>) {
-  if (!occupiedLogins.has(baseLogin)) {
-    occupiedLogins.add(baseLogin);
-    return baseLogin;
-  }
-
-  let attempt = 2;
-  while (attempt < 10_000) {
-    const suffix = `-${attempt}`;
-    const truncatedBase = baseLogin.slice(0, Math.max(1, 48 - suffix.length));
-    const candidate = `${truncatedBase}${suffix}`;
-    if (!occupiedLogins.has(candidate)) {
-      occupiedLogins.add(candidate);
-      return candidate;
-    }
-    attempt += 1;
-  }
-
-  throw new Error(`Не удалось подобрать свободный логин для ${baseLogin}.`);
 }
 
 function buildActionState(args: {
@@ -116,30 +89,8 @@ export async function importUsersFromCsv(
   );
   const csvContent = asString(formData, "csvContent");
 
-  const [roleProfiles, groups, departments, organizations, existingUsers] = await Promise.all([
-    prisma.roleProfile.findMany({
-      orderBy: [{ isSystem: "desc" }, { name: "asc" }],
-      select: { id: true, name: true },
-    }),
-    prisma.group.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
-    prisma.department.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
-    prisma.organization.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
-    prisma.user.findMany({
-      select: {
-        email: true,
-        login: true,
-      },
-    }),
-  ]);
+  const { roleProfiles, groups, departments, organizations, existingUsers } =
+    await userImport.loadReferenceData();
 
   const draft = buildUserCsvImportDraft({
     csvText: csvContent,
@@ -251,85 +202,57 @@ export async function importUsersFromCsv(
   }> = [];
 
   try {
-    createdRows = await prisma.$transaction(async (tx) => {
-      const created: Array<{
-        id: string;
-        rowNumber: number;
-        name: string;
-        firstName: string;
-        email: string;
-        login: string;
-        roles: string[];
-        activationUrl: string | null;
-        temporaryPassword: string | null;
-      }> = [];
-
-      for (const row of preparedRows) {
+    // Секреты готовим в транспорте (как в reset-user-password); репозиторий
+    // делает только атомарное создание пачки. Хеширование параллельно — быстрее.
+    const preparedSecrets = await Promise.all(
+      preparedRows.map(async (row) => {
         const temporaryPassword = generatePasswordForPolicy(securitySettings);
         const passwordHash = await bcrypt.hash(temporaryPassword, 10);
         const activationToken = canEditAccessLevel ? createUserActivationToken() : null;
         const role = primaryRole(row.draft.roles) ?? STANDARD_ROLE_NAMES.STUDENT;
+        return { row, temporaryPassword, passwordHash, activationToken, role };
+      })
+    );
 
-        const user = await tx.user.create({
-          data: {
-            name: row.draft.name,
-            firstName: row.draft.firstName,
-            lastName: row.draft.lastName,
-            login: row.login,
-            email: row.draft.email,
-            passwordHash,
-            role,
-            status: canEditAccessLevel ? USER_STATUSES.PENDING : USER_STATUSES.ACTIVE,
-            departmentId: row.departmentId,
-            organizationId: row.organizationId,
-            userRoles: {
-              create: row.roleProfileIds.map((roleProfileId) => ({
-                roleProfileId,
-              })),
-            },
-            groupMemberships: row.groupId
-              ? {
-                  create: {
-                    groupId: row.groupId,
-                  },
-                }
-              : undefined,
-          },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            firstName: true,
-            login: true,
-          },
-        });
-
-        if (activationToken && user.email) {
-          await tx.userActivationInvite.create({
-            data: {
-              userId: user.id,
-              email: user.email,
+    const createInputs: CreateImportedUserInput[] = preparedSecrets.map(
+      ({ row, passwordHash, activationToken, role }) => ({
+        name: row.draft.name,
+        firstName: row.draft.firstName,
+        lastName: row.draft.lastName,
+        login: row.login,
+        email: row.draft.email,
+        passwordHash,
+        role,
+        status: canEditAccessLevel ? USER_STATUSES.PENDING : USER_STATUSES.ACTIVE,
+        departmentId: row.departmentId,
+        organizationId: row.organizationId,
+        roleProfileIds: row.roleProfileIds,
+        groupId: row.groupId,
+        activation: activationToken
+          ? {
               tokenHash: activationToken.tokenHash,
-              invitedById: session.user.id,
               expiresAt: userActivationExpiresAt(securitySettings.userActivationInviteTtlDays),
-            },
-          });
-        }
+              invitedById: session.user.id,
+            }
+          : null,
+      })
+    );
 
-        created.push({
-          id: user.id,
-          rowNumber: row.draft.rowNumber,
-          name: user.name,
-          email: user.email ?? row.draft.email,
-          firstName: user.firstName,
-          login: user.login,
-          roles: row.draft.roles,
-          activationUrl: activationToken ? `${appBaseUrl()}/activate/${activationToken.token}` : null,
-          temporaryPassword: canEditAccessLevel ? null : temporaryPassword,
-        });
-      }
+    const created = await userImport.createImportedUsers(createInputs);
 
-      return created;
+    createdRows = created.map((user, index) => {
+      const { row, temporaryPassword, activationToken } = preparedSecrets[index];
+      return {
+        id: user.id,
+        rowNumber: row.draft.rowNumber,
+        name: user.name,
+        email: user.email ?? row.draft.email,
+        firstName: user.firstName,
+        login: user.login,
+        roles: row.draft.roles,
+        activationUrl: activationToken ? `${appBaseUrl()}/activate/${activationToken.token}` : null,
+        temporaryPassword: canEditAccessLevel ? null : temporaryPassword,
+      };
     });
   } catch (error) {
     console.error("Failed to import users from CSV", error);

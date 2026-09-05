@@ -2,12 +2,19 @@ import { randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import {
+  enqueueCertificateEmails,
   enqueueCourseAssignedEmails,
   enqueueCourseInviteEmails,
 } from "@/lib/email/queue";
 import { getPlatformSettings } from "@/lib/platform-settings";
 import { createRouteOutboxEvent } from "../application/route-outbox-event";
 import { OUTBOX_TOPICS } from "../domain/topics";
+
+// Топики, чьи письма собираются из настроек платформы (шаблон, бренд).
+const TOPICS_REQUIRING_SETTINGS = new Set<string>([
+  OUTBOX_TOPICS.COURSE_ASSIGNED_EMAIL,
+  OUTBOX_TOPICS.CERTIFICATE_ISSUED_EMAIL,
+]);
 
 const CLAIM_LEASE_MS = 5 * 60_000;
 const RETRY_BASE_MS = 30_000;
@@ -72,7 +79,7 @@ function parseOptionalDate(value: string | null) {
 }
 
 async function processClaimedEvent(event: Awaited<ReturnType<typeof claimOutboxEvents>>[number]) {
-  const settings = event.topic === OUTBOX_TOPICS.COURSE_ASSIGNED_EMAIL
+  const settings = TOPICS_REQUIRING_SETTINGS.has(event.topic)
     ? await getPlatformSettings()
     : null;
   return prisma.$transaction(async (client) => {
@@ -103,6 +110,19 @@ async function processClaimedEvent(event: Awaited<ReturnType<typeof claimOutboxE
             linkTtlHours: payload.linkTtlHours,
           },
           { client },
+        );
+      },
+      async certificateIssuedEmail(payload) {
+        await enqueueCertificateEmails(
+          payload.recipients,
+          {
+            courseTitle: payload.courseTitle,
+            courseUrl: payload.courseUrl,
+            certificateUrl: payload.certificateUrl,
+            certificateSerial: payload.certificateSerial,
+            issuedAt: parseOptionalDate(payload.issuedAt),
+          },
+          { client, settings: settings! },
         );
       },
     });

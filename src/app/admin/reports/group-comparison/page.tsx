@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button, Field, Select, TD, TH, THead, TR, Table } from "@/components/ui";
 import { requirePermission } from "@/lib/auth-guards";
 import { getCourseProgress } from "@/lib/course-progress";
 import prisma from "@/lib/prisma";
@@ -117,67 +118,65 @@ export default async function GroupComparisonReportPage({ searchParams }: Props)
 
   return (
     <main className="mx-auto max-w-6xl">
-      <Link href="/admin/reports" className="text-sm text-emerald-700 underline">
+      <Link href="/admin/reports" className="text-sm text-[var(--accent)] underline">
         ← К отчетам
       </Link>
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">Сравнение групп</h1>
-          <p className="mt-2 max-w-3xl text-sm text-zinc-600">
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--ink)]">Сравнение групп</h1>
+          <p className="mt-2 max-w-3xl text-sm text-[var(--ink-muted)]">
             Сравните группы по назначению и прохождению выбранного курса.
           </p>
         </div>
       </div>
 
-      <form className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <label className="block text-sm font-medium text-zinc-700">
-          Курс
-          <select
+      <form className="mt-6 rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-sm">
+        <Field label="Курс" htmlFor="courseId">
+          <Select
+            id="courseId"
             name="courseId"
             defaultValue={selectedCourseId}
-            className="mt-2 h-11 w-full max-w-xl rounded-xl border border-zinc-300 px-3 text-sm outline-none ring-emerald-500 focus:ring-2"
+            className="max-w-xl"
           >
             {courses.map((courseOption) => (
               <option key={courseOption.id} value={courseOption.id}>
                 {courseOption.title}
               </option>
             ))}
-          </select>
-        </label>
-        <button className="mt-4 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+          </Select>
+        </Field>
+        <Button type="submit" className="mt-4">
           Применить
-        </button>
+        </Button>
       </form>
 
-      <section className="mt-6 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
-            <thead className="bg-zinc-50 text-zinc-600">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Группа</th>
-                <th className="px-4 py-3 text-left font-medium">Участников</th>
-                <th className="px-4 py-3 text-left font-medium">Назначено</th>
-                <th className="px-4 py-3 text-left font-medium">Завершили</th>
-                <th className="px-4 py-3 text-left font-medium">В процессе</th>
-                <th className="px-4 py-3 text-left font-medium">Не начали</th>
-                <th className="px-4 py-3 text-left font-medium">Средний прогресс</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id} className="border-t border-zinc-200 text-zinc-700">
-                  <td className="px-4 py-4 font-medium text-zinc-950">{row.name}</td>
-                  <td className="px-4 py-4">{row.members}</td>
-                  <td className="px-4 py-4">{row.assigned}</td>
-                  <td className="px-4 py-4">{row.completed}</td>
-                  <td className="px-4 py-4">{row.inProgress}</td>
-                  <td className="px-4 py-4">{row.notStarted}</td>
-                  <td className="px-4 py-4">{row.average}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <section className="mt-6">
+        <Table className="min-w-full border-collapse">
+          <THead>
+            <TR>
+              <TH>Группа</TH>
+              <TH>Участников</TH>
+              <TH>Назначено</TH>
+              <TH>Завершили</TH>
+              <TH>В процессе</TH>
+              <TH>Не начали</TH>
+              <TH>Средний прогресс</TH>
+            </TR>
+          </THead>
+          <tbody>
+            {rows.map((row) => (
+              <TR key={row.id} className="text-[var(--ink-muted)]">
+                <TD className="font-medium text-[var(--ink)]">{row.name}</TD>
+                <TD>{row.members}</TD>
+                <TD>{row.assigned}</TD>
+                <TD>{row.completed}</TD>
+                <TD>{row.inProgress}</TD>
+                <TD>{row.notStarted}</TD>
+                <TD>{row.average}%</TD>
+              </TR>
+            ))}
+          </tbody>
+        </Table>
       </section>
     </main>
   );

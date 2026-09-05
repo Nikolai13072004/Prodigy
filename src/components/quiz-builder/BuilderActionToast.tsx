@@ -16,8 +16,8 @@ export function BuilderActionToast({ kind, message }: { kind: ToastKind; message
 
   const palette =
     kind === "success"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-      : "border-red-200 bg-red-50 text-red-800";
+      ? "border-[var(--success)] bg-[var(--success-soft)] text-[var(--success)]"
+      : "border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger)]";
 
   return (
     <div

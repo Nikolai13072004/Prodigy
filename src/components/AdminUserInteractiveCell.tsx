@@ -69,7 +69,7 @@ export function AdminUserInteractiveCell({ userId, name, login, avatarUrl, editL
         onClick={openEditForm}
         className="group flex min-w-0 items-center gap-2 text-left"
       >
-        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-sky-100 bg-sky-50 text-xs font-semibold text-[#0f315d] dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-100">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--info-soft)] bg-[var(--info-soft)] text-xs font-semibold text-[var(--info)]">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
@@ -78,11 +78,11 @@ export function AdminUserInteractiveCell({ userId, name, login, avatarUrl, editL
           )}
         </span>
         <span className="min-w-0">
-          <span className="block truncate font-medium text-zinc-800 group-hover:underline dark:text-zinc-100">
+          <span className="block truncate font-medium text-[var(--ink)] group-hover:underline">
             {name}
           </span>
           {login ? (
-            <span className="mt-0.5 block truncate text-xs leading-4 text-zinc-500 dark:text-zinc-400">
+            <span className="mt-0.5 block truncate text-xs leading-4 text-[var(--ink-muted)]">
               Логин: {login}
             </span>
           ) : null}
@@ -91,13 +91,13 @@ export function AdminUserInteractiveCell({ userId, name, login, avatarUrl, editL
 
       {menu ? (
         <div
-          className="fixed z-50 min-w-56 rounded-md border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+          className="fixed z-50 min-w-56 rounded-md border border-[var(--line)] bg-[var(--surface-raised)] p-1 shadow-lg"
           style={{ left: menu.x, top: menu.y }}
         >
           <button
             type="button"
             onClick={openEditForm}
-            className="block w-full rounded-sm px-3 py-1.5 text-left text-sm text-zinc-800 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            className="block w-full rounded-sm px-3 py-1.5 text-left text-sm text-[var(--ink)] hover:bg-[var(--accent-soft)]"
           >
             {editLabel}
           </button>

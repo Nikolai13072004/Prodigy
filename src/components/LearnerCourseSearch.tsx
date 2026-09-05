@@ -73,7 +73,7 @@ export function LearnerCourseSearch({
       <label className="sr-only" htmlFor="learner-course-search">
         Поиск курса
       </label>
-      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]">
         <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 20 20" fill="none">
           <path
             d="m14.5 14.5 3 3m-1.25-8.125a6.875 6.875 0 1 1-13.75 0 6.875 6.875 0 0 1 13.75 0Z"
@@ -90,7 +90,7 @@ export function LearnerCourseSearch({
         onChange={(event) => setValue(event.target.value)}
         placeholder="Поиск по моим курсам"
         autoComplete="off"
-        className="h-10 w-full rounded-md border border-zinc-300 bg-white pl-9 pr-10 text-sm outline-none ring-teal-500 transition focus:border-teal-400 focus:ring-2"
+        className="h-10 w-full rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] pl-9 pr-10 text-sm outline-none ring-[var(--accent)] transition focus:border-[var(--accent)] focus:ring-2"
       />
       {value ? (
         <button
@@ -99,7 +99,7 @@ export function LearnerCourseSearch({
             setValue("");
             replaceSearch("");
           }}
-          className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+          className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--ink)]"
           aria-label="Очистить поиск"
         >
           <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 20 20" fill="none">

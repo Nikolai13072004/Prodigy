@@ -179,7 +179,7 @@ export default async function CourseSurveyPage({ params, searchParams }: Props) 
         actions={
           <Link
             href={appendCourseReturnSource(`/courses/${courseId}`, returnSource)}
-            className="rounded-md bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-white/90"
+            className="rounded-md bg-white px-3 py-2 text-sm font-medium text-black hover:bg-white/90"
           >
             Вернуться к курсу
           </Link>
@@ -187,14 +187,14 @@ export default async function CourseSurveyPage({ params, searchParams }: Props) 
       >
         <div className="space-y-4">
           {sp.survey === "locked" ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <div className="rounded-xl border border-[var(--warning)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)]">
               Опрос доступен после полного завершения курса.
             </div>
           ) : null}
 
           {!progress.isCompleted ? (
-            <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <p className="text-sm text-zinc-700">
+            <section className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-sm">
+              <p className="text-sm text-[var(--ink-muted)]">
                 Сначала завершите все обязательные этапы курса, после этого опрос станет доступен для заполнения.
               </p>
             </section>

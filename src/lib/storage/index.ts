@@ -19,10 +19,19 @@ export type StorageListEntry = StorageObject & {
 };
 
 const STORAGE_ROOTS: Record<StorageArea, { rootDir: string; publicBaseUrl: string }> = {
+  // uploads физически ВНЕ `public/`: файлы в `public/` Next отдаёт статикой
+  // раньше, чем срабатывает route handler `app/uploads/[...path]/route.ts`,
+  // поэтому авторизация и CSP из роута обходятся, пока корень в public.
+  // URL остаётся `/uploads/...` (publicBaseUrl), но единственный путь к байтам —
+  // через роут, где стоит проверка доступа. `data/` уже используется хранилищем
+  // (`data/storage-tmp`); в docker сюда монтируется том `lms_uploads`.
   uploads: {
-    rootDir: path.join(/* turbopackIgnore: true */ process.cwd(), "public", "uploads"),
+    rootDir: path.join(/* turbopackIgnore: true */ process.cwd(), "data", "uploads"),
     publicBaseUrl: "/uploads",
   },
+  // branding остаётся в public/: логотипы публичны (страница входа), а защита
+  // от исполнения SVG сделана заголовками в next.config.ts (headers() работает
+  // и для статики public/ — "checked before the filesystem").
   branding: {
     rootDir: path.join(/* turbopackIgnore: true */ process.cwd(), "public", "branding"),
     publicBaseUrl: "/branding",

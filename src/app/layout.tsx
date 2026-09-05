@@ -1,16 +1,30 @@
 import type { Metadata } from "next";
-import { Manrope, Geist_Mono } from "next/font/google";
+import Script from "next/script";
+import { IBM_Plex_Sans, IBM_Plex_Mono, Onest } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { Providers } from "@/components/Providers";
 import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import { getPlatformBranding } from "@/lib/platform-settings";
 import "./globals.css";
 
-const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin", "cyrillic"] });
+// Дизайн-язык Trenning: IBM Plex Sans (интерфейс), Onest (заголовки),
+// IBM Plex Mono (числа/коды). Все три с кириллицей.
+const ibmSans = IBM_Plex_Sans({
+  variable: "--font-ibm-sans",
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600"],
+});
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const ibmMono = IBM_Plex_Mono({
+  variable: "--font-ibm-mono",
+  subsets: ["latin", "cyrillic"],
+  weight: ["500", "600"],
+});
+
+const onest = Onest({
+  variable: "--font-onest",
+  subsets: ["latin", "cyrillic"],
+  weight: ["500", "600", "700"],
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -37,9 +51,13 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${ibmSans.variable} ${ibmMono.variable} ${onest.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-zinc-50 text-zinc-900">
+      <body className="min-h-full bg-[var(--canvas)] text-[var(--ink)]">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {"(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}else if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();"}
+        </Script>
         <Providers>
           <AppShell>{children}</AppShell>
           <ScrollToTopButton />

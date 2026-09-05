@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { CoursePortalTabs, type CoursePortalTab } from "@/components/CoursePortalTabs";
+import { Badge } from "@/components/ui";
 import type { CourseReturnSource } from "@/lib/course-return-source";
 
 type CoursePortalBadgeTone = "default" | "success" | "warning" | "danger" | "info";
@@ -60,10 +61,10 @@ export function CoursePortalFrame({
   children,
 }: Props) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
       {!hideHero ? (
         <div
-          className="relative overflow-hidden bg-zinc-900 px-5 py-6 text-white sm:px-7"
+          className="relative overflow-hidden bg-[var(--aurora-sidebar)] px-5 py-6 text-white sm:px-7"
           style={
             coverUrl
               ? {
@@ -91,14 +92,25 @@ export function CoursePortalFrame({
 
               {badges.length > 0 ? (
                 <div className="mt-5 flex flex-wrap items-center gap-2">
-                  {badges.map((badge) => (
-                    <span
-                      key={`${badge.label}-${badge.tone ?? "default"}`}
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${getBadgeToneClass(badge.tone)}`}
-                    >
-                      {badge.label}
-                    </span>
-                  ))}
+                  {badges.map((badge) => {
+                    const tone = badge.tone ?? "default";
+                    const key = `${badge.label}-${tone}`;
+                    if (tone === "default") {
+                      return (
+                        <span
+                          key={key}
+                          className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white/85"
+                        >
+                          {badge.label}
+                        </span>
+                      );
+                    }
+                    return (
+                      <Badge key={key} tone={tone}>
+                        {badge.label}
+                      </Badge>
+                    );
+                  })}
                 </div>
               ) : null}
 
@@ -148,15 +160,7 @@ export function CoursePortalFrame({
         showSurvey={showSurvey}
       />
 
-      <div className="border-t border-zinc-200 bg-slate-50/70 px-4 py-4 sm:px-5">{children}</div>
+      <div className="border-t border-[var(--line)] bg-[var(--surface)] px-4 py-4 sm:px-5">{children}</div>
     </section>
   );
-}
-
-function getBadgeToneClass(tone: CoursePortalBadgeTone = "default") {
-  if (tone === "success") return "bg-emerald-100 text-emerald-700";
-  if (tone === "warning") return "bg-amber-100 text-amber-800";
-  if (tone === "danger") return "bg-red-100 text-red-700";
-  if (tone === "info") return "bg-sky-100 text-sky-700";
-  return "bg-white/15 text-white/85";
 }

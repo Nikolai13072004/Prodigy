@@ -190,16 +190,16 @@ export default async function CourseAboutPage({ params, searchParams }: Props) {
           canOpenContent ? (
             <Link
               href={appendCourseReturnSource(`/courses/${course.id}`, returnSource)}
-              className="rounded-md bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-white/90"
+              className="rounded-md bg-white px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-white/90"
             >
               Перейти к обучению
             </Link>
           ) : hasAssignment && deadlineMeta?.isExpired ? (
-            <span className="rounded-md border border-red-200/40 bg-red-500/15 px-3 py-2 text-sm text-red-50">
+            <span className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/15 px-3 py-2 text-sm text-white">
               Срок доступа истек
             </span>
           ) : hasAssignment && !canStudyMaterials ? (
-            <span className="rounded-md border border-amber-200/40 bg-amber-500/15 px-3 py-2 text-sm text-amber-50">
+            <span className="rounded-md border border-[var(--warning)]/40 bg-[var(--warning)]/15 px-3 py-2 text-sm text-white">
               Материалы недоступны по роли
             </span>
           ) : (
@@ -212,50 +212,50 @@ export default async function CourseAboutPage({ params, searchParams }: Props) {
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="space-y-4">
             {hasAssignment && !canOpenContent && deadlineMeta?.isExpired ? (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm">
+              <div className="rounded-xl border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)] shadow-sm">
                 Срок доступа к курсу истек. Материалы и тесты недоступны, но карточка курса сохранена для просмотра.
               </div>
             ) : null}
 
             {hasAssignment && !canOpenContent && !deadlineMeta?.isExpired && !canStudyMaterials ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+              <div className="rounded-xl border border-[var(--warning)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)] shadow-sm">
                 Курс назначен, но право на просмотр материалов и ведение прогресса не выдано для этой роли.
               </div>
             ) : null}
 
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <h2 className="text-base font-semibold text-zinc-950">О курсе</h2>
-              <p className="mt-3 whitespace-pre-line text-sm leading-6 text-zinc-700">
+            <div className="rounded-xl border border-[var(--line)] bg-white p-4 shadow-sm">
+              <h2 className="text-base font-semibold text-[var(--ink)]">О курсе</h2>
+              <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[var(--ink)]">
                 {displayCourse.description || "Описание курса пока не заполнено."}
               </p>
             </div>
 
-            <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <h2 className="text-base font-semibold text-zinc-950">Программа курса</h2>
+            <section className="rounded-xl border border-[var(--line)] bg-white p-4 shadow-sm">
+              <h2 className="text-base font-semibold text-[var(--ink)]">Программа курса</h2>
               {programGroups.length === 0 ? (
-                <p className="mt-3 text-sm text-zinc-700">Материалы курса пока не добавлены.</p>
+                <p className="mt-3 text-sm text-[var(--ink)]">Материалы курса пока не добавлены.</p>
               ) : (
                 <div className="mt-3 space-y-4">
                   {programGroups.map((group, groupIndex) => (
                     <section key={group.id ?? `program-group-${groupIndex}`}>
                       {!group.isSynthetic || programGroups.length > 1 ? (
                         <div className="mb-2">
-                          <h3 className="text-sm font-semibold text-zinc-900">{group.title}</h3>
+                          <h3 className="text-sm font-semibold text-[var(--ink)]">{group.title}</h3>
                           {group.description ? (
-                            <p className="mt-1 text-xs text-zinc-500">{group.description}</p>
+                            <p className="mt-1 text-xs text-[var(--ink-muted)]">{group.description}</p>
                           ) : null}
                         </div>
                       ) : null}
 
-                      <ol className="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200">
+                      <ol className="divide-y divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)]">
                         {group.items.map((item, itemIndex) => (
                           <li key={item.id} className="flex items-start gap-3 px-3 py-3">
-                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-xs font-semibold text-[var(--ink-muted)]">
                               {itemIndex + 1}
                             </span>
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-zinc-950">{item.title}</p>
-                              <p className="mt-1 text-xs text-zinc-500">
+                              <p className="text-sm font-semibold text-[var(--ink)]">{item.title}</p>
+                              <p className="mt-1 text-xs text-[var(--ink-muted)]">
                                 {getCourseItemTypeLabel(item.type)}
                                 {item.isRequired ? " · обязательный" : ""}
                               </p>
@@ -270,58 +270,58 @@ export default async function CourseAboutPage({ params, searchParams }: Props) {
             </section>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <h2 className="text-base font-semibold text-zinc-950">Требования к ученику</h2>
-                <p className="mt-2 text-sm text-zinc-700">
+              <section className="rounded-xl border border-[var(--line)] bg-white p-4 shadow-sm">
+                <h2 className="text-base font-semibold text-[var(--ink)]">Требования к ученику</h2>
+                <p className="mt-2 text-sm text-[var(--ink)]">
                   {displayCourse.requirements || "Специальные требования пока не указаны."}
                 </p>
               </section>
 
-              <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <h2 className="text-base font-semibold text-zinc-950">Целевая аудитория</h2>
-                <p className="mt-2 text-sm text-zinc-700">
+              <section className="rounded-xl border border-[var(--line)] bg-white p-4 shadow-sm">
+                <h2 className="text-base font-semibold text-[var(--ink)]">Целевая аудитория</h2>
+                <p className="mt-2 text-sm text-[var(--ink)]">
                   {displayCourse.targetAudience || "Целевая аудитория пока не указана."}
                 </p>
               </section>
             </div>
           </div>
 
-          <aside className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <h2 className="text-base font-semibold text-zinc-950">Карточка курса</h2>
+          <aside className="rounded-xl border border-[var(--line)] bg-white p-4 shadow-sm">
+            <h2 className="text-base font-semibold text-[var(--ink)]">Карточка курса</h2>
             <dl className="mt-3 space-y-3 text-sm">
               <div>
-                <dt className="text-zinc-500">Автор</dt>
-                <dd className="mt-1 font-medium text-zinc-950">
+                <dt className="text-[var(--ink-muted)]">Автор</dt>
+                <dd className="mt-1 font-medium text-[var(--ink)]">
                   {course.owner?.name ?? course.owner?.login ?? "Не назначен"}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-500">Категория</dt>
-                <dd className="mt-1 text-zinc-900">{getCourseCategoryLabel(displayCourse.category)}</dd>
+                <dt className="text-[var(--ink-muted)]">Категория</dt>
+                <dd className="mt-1 text-[var(--ink)]">{getCourseCategoryLabel(displayCourse.category)}</dd>
               </div>
               <div>
-                <dt className="text-zinc-500">Уровень</dt>
-                <dd className="mt-1 text-zinc-900">{getCourseDifficultyLabel(displayCourse.difficultyLevel)}</dd>
+                <dt className="text-[var(--ink-muted)]">Уровень</dt>
+                <dd className="mt-1 text-[var(--ink)]">{getCourseDifficultyLabel(displayCourse.difficultyLevel)}</dd>
               </div>
               <div>
-                <dt className="text-zinc-500">Длительность</dt>
-                <dd className="mt-1 text-zinc-900">{formatCourseDuration(displayCourse.durationMinutes)}</dd>
+                <dt className="text-[var(--ink-muted)]">Длительность</dt>
+                <dd className="mt-1 text-[var(--ink)]">{formatCourseDuration(displayCourse.durationMinutes)}</dd>
               </div>
               <div>
-                <dt className="text-zinc-500">Материалы</dt>
-                <dd className="mt-1 text-zinc-900">
+                <dt className="text-[var(--ink-muted)]">Материалы</dt>
+                <dd className="mt-1 text-[var(--ink)]">
                   {displayItems.length} всего, {requiredItemsCount} обязательных
                 </dd>
               </div>
               {deadlineMeta ? (
                 <div>
-                  <dt className="text-zinc-500">Доступ</dt>
-                  <dd className="mt-1 text-zinc-900">{deadlineMeta.compactLabel}</dd>
+                  <dt className="text-[var(--ink-muted)]">Доступ</dt>
+                  <dd className="mt-1 text-[var(--ink)]">{deadlineMeta.compactLabel}</dd>
                 </div>
               ) : null}
               <div>
-                <dt className="text-zinc-500">Рейтинг</dt>
-                <dd className="mt-1 text-zinc-900">
+                <dt className="text-[var(--ink-muted)]">Рейтинг</dt>
+                <dd className="mt-1 text-[var(--ink)]">
                   {averageRating === null ? "Пока нет оценок" : `${averageRating}/5 на основе ${course.feedbacks.length} отзывов`}
                 </dd>
               </div>
@@ -330,7 +330,7 @@ export default async function CourseAboutPage({ params, searchParams }: Props) {
             {settings.feedbackEnabled ? (
               <Link
                 href={appendCourseReturnSource(`/courses/${course.id}/feedback`, returnSource)}
-                className="mt-4 inline-flex w-full justify-center rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+                className="mt-4 inline-flex w-full justify-center rounded-lg border border-[var(--line)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
               >
                 Перейти к отзывам
               </Link>

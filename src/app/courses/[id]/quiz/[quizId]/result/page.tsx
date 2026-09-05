@@ -3,8 +3,10 @@ import { Check, Clock3, RotateCcw, Star, X } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { QuizQuestionMediaViewer } from "@/components/QuizQuestionMediaViewer";
+import { Card, buttonStyles } from "@/components/ui";
 import { canManageCourse } from "@/lib/access";
 import { getCourseProgress, getQuizProgress } from "@/lib/course-progress";
+import { findCourseCertificate } from "@/modules/certification/server/find-course-certificate";
 import { getPlatformSettings } from "@/lib/platform-settings";
 import {
   isManualReviewQuestion,
@@ -145,6 +147,11 @@ export default async function QuizResultPage({ params, searchParams }: Props) {
     : null;
   const isCourseCompleted =
     isOwnLearnerAttempt && isStudent && courseProgress.isCompleted;
+  const courseCertificate = isCourseCompleted
+    ? await findCourseCertificate(session.user.id, courseId)
+    : null;
+  const certificateSerial =
+    courseCertificate?.status === "ISSUED" ? courseCertificate.serial : null;
   const showSurveyCta =
     isCourseCompleted && Boolean(course.surveyTemplate?.isActive) && (course.surveyTemplate?.responses.length ?? 0) === 0;
   const showFeedbackCta =
@@ -172,7 +179,7 @@ export default async function QuizResultPage({ params, searchParams }: Props) {
     <main className="mx-auto max-w-4xl px-4 py-10">
       <Link
         href={`/courses/${courseId}`}
-        className="text-sm text-zinc-600 underline"
+        className="text-sm text-[var(--ink-muted)] underline"
       >
         ← {attempt.quiz.courseItem.course.title}
       </Link>
@@ -196,30 +203,41 @@ export default async function QuizResultPage({ params, searchParams }: Props) {
         retryLocked={isRetryLocked}
       />
 
+      {certificateSerial ? (
+        <div className="mt-6 rounded-[var(--radius-panel)] bg-[var(--success-soft)] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-medium text-[var(--ink)]">Сертификат о прохождении курса готов.</p>
+            <Link href={`/certificates/${certificateSerial}`} className={buttonStyles("primary")}>
+              Открыть сертификат
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
       {isRetryLocked && retryAvailableAt ? (
-        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="mt-6 rounded-lg border border-[var(--warning)] bg-[var(--warning-soft)] p-4 text-sm text-[var(--warning)]">
           Следующая попытка будет доступна {retryAvailableAt.toLocaleString("ru-RU")}. До этого момента кнопка повтора скрыта.
         </div>
       ) : null}
 
       {securityEvents.length > 0 ? (
-        <section className="mt-6 rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-700">
+        <section className="mt-6 rounded-lg border border-[var(--line)] bg-white p-4 text-sm text-[var(--ink)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-semibold text-zinc-950">События во время теста</h2>
-              <p className="mt-1 text-xs text-zinc-500">
+              <h2 className="font-semibold text-[var(--ink)]">События во время теста</h2>
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">
                 Зафиксированы потери фокуса или уход со страницы. Это не блокирует результат, но помогает проверяющему.
               </p>
             </div>
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+            <span className="rounded-full bg-[var(--warning-soft)] px-3 py-1 text-xs font-medium text-[var(--warning)]">
               {securityEvents.length} событий
             </span>
           </div>
           <ul className="mt-3 space-y-2">
             {securityEvents.slice(-8).map((event, index) => (
-              <li key={`${event.type}-${event.at.toISOString()}-${index}`} className="flex justify-between gap-3 rounded-md bg-zinc-50 px-3 py-2">
+              <li key={`${event.type}-${event.at.toISOString()}-${index}`} className="flex justify-between gap-3 rounded-md bg-[var(--surface)] px-3 py-2">
                 <span>{getSecurityEventLabel(event.type)}</span>
-                <span className="shrink-0 text-xs text-zinc-500">{event.at.toLocaleString("ru-RU")}</span>
+                <span className="shrink-0 text-xs text-[var(--ink-muted)]">{event.at.toLocaleString("ru-RU")}</span>
               </li>
             ))}
           </ul>
@@ -227,12 +245,12 @@ export default async function QuizResultPage({ params, searchParams }: Props) {
       ) : null}
 
       {attempt.outcome === "PENDING_REVIEW" ? (
-        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="mt-6 rounded-lg border border-[var(--warning)] bg-[var(--warning-soft)] p-4 text-sm text-[var(--warning)]">
           Закрытые вопросы проверены сразу, а задания с ручной проверкой сейчас находятся в
           статусе «На проверке».
         </div>
       ) : attempt.reviewedAt || attempt.reviewComment ? (
-        <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <div className="mt-6 rounded-lg border border-[var(--success)] bg-[var(--success-soft)] p-4 text-sm text-[var(--success)]">
           <p className="font-medium">Проверка преподавателя завершена.</p>
           <p className="mt-1">
             {attempt.reviewedAt
@@ -241,7 +259,7 @@ export default async function QuizResultPage({ params, searchParams }: Props) {
             {attempt.reviewedByName ? ` · ${attempt.reviewedByName}` : ""}
           </p>
           {attempt.reviewComment ? (
-            <div className="mt-3 rounded-md border border-emerald-200 bg-white/80 p-3 text-zinc-800">
+            <div className="mt-3 rounded-md border border-[var(--success)] bg-white/80 p-3 text-[var(--ink)]">
               <p className="font-medium">Комментарий преподавателя</p>
               <p className="mt-2 whitespace-pre-wrap">{attempt.reviewComment}</p>
             </div>
@@ -250,7 +268,7 @@ export default async function QuizResultPage({ params, searchParams }: Props) {
       ) : null}
 
       {mode !== "SCORE_ONLY" && !canShowAnswerReview ? (
-        <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="mt-8 rounded-lg border border-[var(--warning)] bg-[var(--warning-soft)] p-4 text-sm text-[var(--warning)]">
           Подробный разбор и правильные ответы будут доступны после успешной сдачи теста
           или когда закончатся доступные попытки.
         </div>
@@ -320,86 +338,67 @@ function QuizResultSummary({
   const showSecondaryCourseActions = isCourseCompleted;
 
   return (
-    <section className="mt-6 rounded-xl border border-zinc-200 bg-white px-6 py-8 text-center shadow-sm">
-      <p className="text-left text-xs text-zinc-500">
+    <Card padding="none" className="mt-6 px-6 py-8 text-center">
+      <p className="text-left text-xs text-[var(--ink-muted)]">
         Попытка №{attemptNumber} · завершена{" "}
         {completedAt ? completedAt.toLocaleString("ru-RU") : "в процессе"}
       </p>
 
       <div className="mt-8 flex items-center justify-center gap-5">
         <ResultGauge outcome={outcome} percent={scorePercent} />
-        <div className="max-w-[120px] text-left text-xs text-zinc-500">
+        <div className="max-w-[120px] text-left text-xs text-[var(--ink-muted)]">
           <div>Проходной балл</div>
-          <div className="mt-1 text-base font-semibold text-zinc-800">{passingPercent}%</div>
+          <div className="mt-1 text-base font-semibold text-[var(--ink)]">{passingPercent}%</div>
         </div>
       </div>
 
       <div className="mx-auto mt-7 max-w-xl">
-        <h1 className="text-2xl font-bold text-zinc-950">{resultTitle}</h1>
-        <p className="mt-2 text-sm text-zinc-600">{resultDescription}</p>
+        <h1 className="text-2xl font-bold text-[var(--ink)]">{resultTitle}</h1>
+        <p className="mt-2 text-sm text-[var(--ink-muted)]">{resultDescription}</p>
         {feedbackEnabled && hasFeedback ? (
-          <p className="mt-3 text-sm font-medium text-emerald-700">Спасибо, ваша оценка курса сохранена.</p>
+          <p className="mt-3 text-sm font-medium text-[var(--success)]">Спасибо, ваша оценка курса сохранена.</p>
         ) : null}
       </div>
 
       <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
         {showSurveyCta ? (
-          <Link
-            href={`/courses/${courseId}/survey`}
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700"
-          >
+          <Link href={`/courses/${courseId}/survey`} className={buttonStyles("primary")}>
             <Star aria-hidden="true" className="h-4 w-4" />
             Пройти опрос
           </Link>
         ) : showFeedbackCta ? (
-          <Link
-            href={`/courses/${courseId}/feedback`}
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700"
-          >
+          <Link href={`/courses/${courseId}/feedback`} className={buttonStyles("primary")}>
             <Star aria-hidden="true" className="h-4 w-4" />
             Оценить курс
           </Link>
         ) : (
-          <Link
-            href={`/courses/${courseId}`}
-            className="inline-flex h-10 items-center rounded-md bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700"
-          >
+          <Link href={`/courses/${courseId}`} className={buttonStyles("primary")}>
             Завершить
           </Link>
         )}
         {canRetryQuiz ? (
-          <Link
-            href={quizHref}
-            prefetch={false}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-          >
+          <Link href={quizHref} prefetch={false} className={buttonStyles("secondary")}>
             <RotateCcw aria-hidden="true" className="h-4 w-4" />
             Пройти заново
           </Link>
         ) : null}
         {!canRetryQuiz && outcome === "FAILED" && retryAvailableAt && retryLocked ? (
-          <span className="inline-flex h-10 items-center rounded-md border border-amber-200 bg-amber-50 px-4 text-sm font-medium text-amber-800">
+          <span className="inline-flex h-10 items-center rounded-[var(--radius-control)] bg-[var(--warning-soft)] px-4 text-sm font-medium text-[var(--warning)]">
             Повтор с {retryAvailableAt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
           </span>
         ) : null}
         {showFeedbackCta ? (
-          <Link
-            href={`/courses/${courseId}`}
-            className="inline-flex h-10 items-center rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-          >
+          <Link href={`/courses/${courseId}`} className={buttonStyles("secondary")}>
             К карточке курса
           </Link>
         ) : null}
         {showSecondaryCourseActions ? (
-          <Link
-            href="/courses"
-            className="inline-flex h-10 items-center rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-          >
+          <Link href="/courses" className={buttonStyles("secondary")}>
             Мои курсы
           </Link>
         ) : null}
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -417,7 +416,7 @@ function ResultGauge({ outcome, percent }: { outcome: string; percent: number })
           fill="none"
           stroke="currentColor"
           strokeWidth="6"
-          className="text-zinc-200"
+          className="text-[var(--line)]"
         />
         <circle
           cx="60"
@@ -435,7 +434,7 @@ function ResultGauge({ outcome, percent }: { outcome: string; percent: number })
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <Icon aria-hidden="true" className={`h-7 w-7 ${tone.text}`} strokeWidth={2.4} />
-        <span className="mt-1 text-3xl font-bold text-zinc-950">{percent}%</span>
+        <span className="mt-1 text-3xl font-bold text-[var(--ink)]">{percent}%</span>
       </div>
     </div>
   );
@@ -472,21 +471,21 @@ function getResultDescription(outcome: string, canRetryQuiz: boolean) {
 function getOutcomeTone(outcome: string) {
   if (outcome === "PASSED") {
     return {
-      ring: "text-emerald-500",
-      text: "text-emerald-600",
+      ring: "text-[var(--success)]",
+      text: "text-[var(--success)]",
     };
   }
 
   if (outcome === "FAILED") {
     return {
-      ring: "text-zinc-600",
-      text: "text-zinc-600",
+      ring: "text-[var(--ink-muted)]",
+      text: "text-[var(--ink-muted)]",
     };
   }
 
   return {
-    ring: "text-amber-500",
-    text: "text-amber-600",
+    ring: "text-[var(--warning)]",
+    text: "text-[var(--warning)]",
   };
 }
 
@@ -537,10 +536,10 @@ function ResultQuestionCard({
   const awardedPoints = review ? Math.max(0, Math.min(question.points, review.awardedPoints)) : null;
 
   return (
-    <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <article className="rounded-xl border border-[var(--line)] bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+          <div className="text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">
             Вопрос {index}
           </div>
           <h2 className="mt-2 font-semibold">{question.prompt}</h2>
@@ -555,12 +554,12 @@ function ResultQuestionCard({
               needsManualReview
                 ? review
                   ? isAccepted
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-red-100 text-red-700"
-                  : "bg-amber-100 text-amber-700"
+                    ? "bg-[var(--success-soft)] text-[var(--success)]"
+                    : "bg-[var(--danger-soft)] text-[var(--danger)]"
+                  : "bg-[var(--warning-soft)] text-[var(--warning)]"
                 : isCorrect
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-red-100 text-red-700"
+                  ? "bg-[var(--success-soft)] text-[var(--success)]"
+                  : "bg-[var(--danger-soft)] text-[var(--danger)]"
             }`}
           >
             {needsManualReview
@@ -577,7 +576,7 @@ function ResultQuestionCard({
       </div>
 
       {needsManualReview ? (
-        <div className="mt-4 space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="mt-4 space-y-3 rounded-lg border border-[var(--warning)] bg-[var(--warning-soft)] p-4 text-sm text-[var(--warning)]">
           <p>
             {review
               ? "Ответ проверен преподавателем."
@@ -614,7 +613,7 @@ function ResultQuestionCard({
           ) : null}
         </div>
       ) : (
-        <div className="mt-4 text-sm text-zinc-700">
+        <div className="mt-4 text-sm text-[var(--ink)]">
           <p>
             <span className="font-medium">Правильный ответ: </span>
             {formatCorrectAnswer(question)}

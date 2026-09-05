@@ -18,7 +18,7 @@ export const prismaLearningRepository: LearningRepository = {
   findMaterial(materialId) {
     return prisma.courseItem.findFirst({
       where: { id: materialId, archivedAt: null },
-      select: { id: true, courseId: true, type: true, totalSlides: true },
+      select: { id: true, courseId: true, type: true, totalSlides: true, isRequired: true },
     });
   },
 
@@ -70,7 +70,7 @@ export const prismaLearningRepository: LearningRepository = {
           viewedAt: new Date(),
         },
       });
-      return projection;
+      return { projection, previousProgressPercent: previous?.progressPercent ?? null };
     });
   },
 };

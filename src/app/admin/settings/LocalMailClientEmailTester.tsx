@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, ExternalLink, Mail } from "lucide-react";
+import { Input, Label, Select } from "@/components/ui";
 import { formatHoursLabel } from "@/lib/email/template-format";
 import type { PlatformHtmlEmailTemplate } from "@/lib/email/template-settings";
 
@@ -145,50 +146,50 @@ export function LocalMailClientEmailTester({ defaultRecipient, linkTtlHours, sit
   }
 
   return (
-    <section className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
-      <h3 className="text-sm font-semibold text-zinc-950">Проверка письма</h3>
-      <p className="mt-2 text-xs text-zinc-500">
+    <section className="mt-6 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4">
+      <h3 className="text-sm font-semibold text-[var(--ink)]">Проверка письма</h3>
+      <p className="mt-2 text-xs text-[var(--ink-muted)]">
         Локальный клиент использует настройки Windows. Если Outlook не запускает черновик, откройте письмо в Outlook Web.
       </p>
 
       <div className="mt-4 space-y-4">
         <div>
-          <label htmlFor="mailtoTestRecipient" className="block text-sm font-medium text-zinc-900">
+          <Label htmlFor="mailtoTestRecipient" className="block">
             Получатель
-          </label>
-          <input
+          </Label>
+          <Input
             id="mailtoTestRecipient"
             type="email"
             value={recipient}
             onChange={(event) => setRecipient(event.target.value)}
             placeholder="admin@company.ru"
-            className="mt-2 h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+            className="mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="mailtoTestTemplate" className="block text-sm font-medium text-zinc-900">
+          <Label htmlFor="mailtoTestTemplate" className="block">
             Шаблон
-          </label>
-          <select
+          </Label>
+          <Select
             id="mailtoTestTemplate"
             value={templateKey}
             onChange={(event) => setTemplateKey(event.target.value as TemplateKey)}
-            className="mt-2 h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+            className="mt-2"
           >
             {TEMPLATE_OPTIONS.map((option) => (
               <option key={option.key} value={option.key}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="grid gap-2">
           <button
             type="button"
             onClick={openLocalMailClient}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-strong)]"
           >
             <Mail aria-hidden="true" className="h-4 w-4" />
             Локальный клиент
@@ -197,7 +198,7 @@ export function LocalMailClientEmailTester({ defaultRecipient, linkTtlHours, sit
           <button
             type="button"
             onClick={openOutlookWeb}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--accent-soft)]"
           >
             <ExternalLink aria-hidden="true" className="h-4 w-4" />
             Outlook Web
@@ -206,14 +207,14 @@ export function LocalMailClientEmailTester({ defaultRecipient, linkTtlHours, sit
           <button
             type="button"
             onClick={copyDraft}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--accent-soft)]"
           >
             <Copy aria-hidden="true" className="h-4 w-4" />
             {copied ? "Скопировано" : "Копировать письмо"}
           </button>
         </div>
 
-        {error ? <p className="text-xs text-rose-600">{error}</p> : null}
+        {error ? <p className="text-xs text-[var(--danger)]">{error}</p> : null}
       </div>
     </section>
   );

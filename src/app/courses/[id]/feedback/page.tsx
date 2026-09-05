@@ -153,7 +153,7 @@ export default async function FeedbackPage({ params, searchParams }: Props) {
           allowed ? (
             <Link
               href={appendCourseReturnSource(`/courses/${courseId}`, returnSource)}
-              className="rounded-md bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-white/90"
+              className="rounded-md bg-white px-3 py-2 text-sm font-medium text-black hover:bg-white/90"
             >
               Перейти к обучению
             </Link>
@@ -166,42 +166,42 @@ export default async function FeedbackPage({ params, searchParams }: Props) {
       >
         <div className="space-y-4">
           {sp.feedback === "pending" ? (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p className="rounded-xl border border-[var(--warning)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)]">
               Отзыв сохранен и отправлен на модерацию.
             </p>
           ) : null}
 
           {sp.feedback === "locked" ? (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p className="rounded-xl border border-[var(--warning)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)]">
               Оставить отзыв можно после полного завершения курса.
             </p>
           ) : null}
 
           {sp.feedback === "deleted" ? (
-            <p className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
+            <p className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--ink)]">
               Отзыв удален. Вы можете оставить новый отзыв о курсе.
             </p>
           ) : null}
 
-          <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-wrap items-center gap-2 text-lg font-semibold text-zinc-900">
-              <span className="text-amber-500">★</span>
+          <section className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-4 shadow-sm sm:p-5">
+            <div className="flex flex-wrap items-center gap-2 text-lg font-semibold text-[var(--ink)]">
+              <span className="text-[var(--warning)]">★</span>
               <span>{ratingSummary}</span>
             </div>
 
             {showComposer ? (
               <div className="mt-5 flex gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent-strong)] text-sm font-semibold text-white">
                   {initials(session.user.name || session.user.email || "У")}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <form action={submitFeedback.bind(null, courseId)} className="rounded-2xl border border-emerald-400 bg-white p-3 shadow-sm">
+                  <form action={submitFeedback.bind(null, courseId)} className="rounded-2xl border border-[var(--accent)] bg-[var(--surface-raised)] p-3 shadow-sm">
                     <CourseFeedbackComposer
                       defaultRating={existing?.rating ?? null}
                       defaultComment={existing?.comment ?? ""}
                     />
                   </form>
-                  <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <p className="mt-3 rounded-xl border border-[var(--warning)] bg-[var(--warning-soft)] px-3 py-2 text-xs text-[var(--warning)]">
                     {existing?.status === "PENDING"
                       ? "Ваш текущий отзыв сохранен и ждет публикации после модерации."
                       : "После сохранения отзыв обновится для администратора и других учеников."}
@@ -209,7 +209,7 @@ export default async function FeedbackPage({ params, searchParams }: Props) {
                 </div>
               </div>
             ) : !canLeaveFeedback ? (
-              <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+              <div className="mt-5 rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--ink-muted)]">
                 {allowed
                   ? "Отзывы становятся доступны после завершения курса. Так оценка будет основана на полном опыте обучения."
                   : "Отзывы можно читать в каталоге, но оставить свой отзыв получится после назначения и полного прохождения курса."}
@@ -218,48 +218,48 @@ export default async function FeedbackPage({ params, searchParams }: Props) {
 
             <div className="mt-6 space-y-4">
               {course.feedbacks.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/70 px-6 py-10 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-zinc-200 bg-white text-xl text-zinc-300">
+                <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--surface-raised)] text-xl text-[var(--ink-muted)]">
                     ”
                   </div>
-                  <p className="mt-3 text-sm font-medium text-zinc-700">Отзывов пока нет</p>
-                  <p className="mt-1 text-xs text-zinc-500">Ваш отзыв может стать первым.</p>
+                  <p className="mt-3 text-sm font-medium text-[var(--ink)]">Отзывов пока нет</p>
+                  <p className="mt-1 text-xs text-[var(--ink-muted)]">Ваш отзыв может стать первым.</p>
                 </div>
               ) : (
                 <ul className="space-y-3">
                   {course.feedbacks.map((feedback) => (
                     <li key={feedback.id} className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent-strong)] text-sm font-semibold text-white">
                         {initials(feedback.user.name || feedback.user.login)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="max-w-3xl rounded-2xl bg-zinc-100 px-4 py-3">
+                        <div className="max-w-3xl rounded-2xl bg-[var(--surface)] px-4 py-3">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-zinc-950">
+                            <p className="text-sm font-semibold text-[var(--ink)]">
                               {feedback.user.name || feedback.user.login}
                             </p>
-                            <span className="text-xs text-zinc-500">{formatReviewRelativeDate(feedback.createdAt)}</span>
+                            <span className="text-xs text-[var(--ink-muted)]">{formatReviewRelativeDate(feedback.createdAt)}</span>
                           </div>
-                          <div className="mt-1 text-lg leading-none text-amber-500">{"★".repeat(feedback.rating)}</div>
+                          <div className="mt-1 text-lg leading-none text-[var(--warning)]">{"★".repeat(feedback.rating)}</div>
                           {feedback.comment ? (
-                            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-700">{feedback.comment}</p>
+                            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-[var(--ink)]">{feedback.comment}</p>
                           ) : (
-                            <p className="mt-2 text-sm text-zinc-400">Комментарий не добавлен.</p>
+                            <p className="mt-2 text-sm text-[var(--ink-muted)]">Комментарий не добавлен.</p>
                           )}
                         </div>
 
                         {feedback.userId === session.user.id ? (
-                          <div className="mt-2 flex flex-wrap items-center gap-4 pl-4 text-xs font-medium text-zinc-500">
+                          <div className="mt-2 flex flex-wrap items-center gap-4 pl-4 text-xs font-medium text-[var(--ink-muted)]">
                             <Link
                               href={appendCourseReturnSource(`/courses/${courseId}/feedback?edit=1`, returnSource)}
-                              className="hover:text-zinc-900"
+                              className="hover:text-[var(--ink)]"
                             >
                               Редактировать
                             </Link>
                             <form action={deleteMyCourseFeedback.bind(null, courseId)}>
                               <ConfirmSubmitButton
                                 confirmMessage="Удалить ваш отзыв о курсе?"
-                                className="hover:text-red-600"
+                                className="hover:text-[var(--danger)]"
                               >
                                 Удалить
                               </ConfirmSubmitButton>
@@ -275,7 +275,7 @@ export default async function FeedbackPage({ params, searchParams }: Props) {
           </section>
 
           {existing?.status === "PUBLISHED" && !isEditingPublishedFeedback ? (
-            <p className="px-1 text-sm leading-6 text-zinc-700">
+            <p className="px-1 text-sm leading-6 text-[var(--ink)]">
               Вы можете в любой момент отредактировать текст отзыва, скорректировать оценку и удалить отзыв.
             </p>
           ) : null}

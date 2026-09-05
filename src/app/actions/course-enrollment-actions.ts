@@ -1,23 +1,28 @@
 "use server";
 
+import { appBaseUrl } from "@/lib/app-base-url";
+import { unenrollCourseLearner as unenrollCourseLearnerUseCase } from "@/modules/enrollment/server/unenroll-course-learner";
+import {
+  updateCourseLearnerAccess as updateCourseLearnerAccessUseCase,
+  updateCourseLearnersAccessBulk as updateCourseLearnersAccessBulkUseCase,
+} from "@/modules/enrollment/server/learner-access";
+import { extractBulkAccessSkipDetails } from "@/modules/enrollment/application/update-course-learners-access-bulk";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
 import {
   asOptionalPositiveInt,
   asPositiveInt,
   asString,
 } from "./course-action-input";
+import type { UpdateCourseLearnerAccessMode } from "@/modules/enrollment/application/update-course-learner-access";
+import type { BulkAccessMode } from "@/modules/enrollment/application/update-course-learners-access-bulk";
 import {
   requireCourseWorkspaceAccess,
   requirePermission,
 } from "@/lib/auth-guards";
 import { auditActorFromSessionUser, getAuditRequestContext, recordAuditEvent } from "@/lib/audit-log";
 import { getCourseBroadcastAudience } from "@/lib/course-broadcasts";
-import {
-  parseCourseAccessDateInput,
-  resolveEffectiveCourseAccessWindow,
-} from "@/lib/course-access-window";
+import { parseCourseAccessDateInput } from "@/lib/course-access-window";
 import {
   getCourseLearnersData,
   getCourseLearnerSortDirection,
@@ -32,6 +37,7 @@ import {
 import { EnrollmentApplicationError } from "@/modules/enrollment/application/errors";
 import { changeCourseAssignments } from "@/modules/enrollment/server/change-course-assignments";
 import { planInviteRecipients } from "@/modules/enrollment/domain/invite-recipient-plan";
+import { loadInviteCandidateUsers, loadLearnerContact } from "@/modules/enrollment/server/enrollment-directory";
 import {
   enqueueCourseAccessExtendedEmails,
   enqueueCourseBroadcastEmails,
@@ -183,15 +189,6 @@ async function resolveBulkLearnerIdsForAccessUpdate(
   } as const;
 }
 
-function appBaseUrl() {
-  return (
-    process.env.APP_BASE_URL?.trim() ||
-    process.env.NEXTAUTH_URL?.trim() ||
-    process.env.AUTH_URL?.trim() ||
-    "http://127.0.0.1:3002"
-  );
-}
-
 function addDays(date: Date, days: number) {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
@@ -202,18 +199,6 @@ function formatDateRu(value: Date) {
     month: "2-digit",
     year: "numeric",
   }).format(value);
-}
-
-function describeCourseAccessLabel(accessWindow: {
-  expiresAt: Date | null;
-  isUnlimited: boolean;
-  state: "active" | "expired";
-} | null) {
-  if (!accessWindow) return "Нет доступа";
-  if (accessWindow.isUnlimited || !accessWindow.expiresAt) return "Бессрочно";
-
-  const label = `До ${formatDateRu(accessWindow.expiresAt)}`;
-  return accessWindow.state === "expired" ? `${label} (истек)` : label;
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
@@ -346,34 +331,12 @@ export async function setCourseAssignments(courseId: string, formData: FormData)
   const accessLabel = accessRequest.accessLabel;
 
   const existingUsersWithEmail = inviteEmailsFromForm.length
-    ? await prisma.user.findMany({
-        where: { email: { not: null } },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          status: true,
-          firstName: true,
-          role: true,
-          userRoles: {
-            include: {
-              roleProfile: {
-                select: { name: true },
-              },
-            },
-          },
-        },
-      })
+    ? await loadInviteCandidateUsers()
     : [];
 
   const invitePlan = planInviteRecipients({
     inviteEmails: inviteEmailsFromForm,
-    existingUsers: existingUsersWithEmail.map((user) => ({
-      id: user.id,
-      email: user.email,
-      status: user.status,
-      roleNames: [user.role, ...user.userRoles.map((item) => item.roleProfile.name)].filter(Boolean),
-    })),
+    existingUsers: existingUsersWithEmail,
     activeStatus: USER_STATUSES.ACTIVE,
     studentRoleName: STANDARD_ROLE_NAMES.STUDENT,
   });
@@ -610,71 +573,15 @@ export async function sendCourseBroadcastMessage(courseId: string, formData: For
 
 export async function updateCourseLearnerAccess(courseId: string, learnerId: string, formData: FormData) {
   const session = await requirePermission(PERMISSIONS.COURSES_MANAGE_ASSIGNMENTS);
-  const mode = asString(formData, "mode") || "EXTEND";
+  const rawMode = asString(formData, "mode") || "EXTEND";
+  const mode = (rawMode === "SET_DATE" || rawMode === "UNLIMITED" || rawMode === "EXTEND"
+    ? rawMode
+    : "EXTEND") as UpdateCourseLearnerAccessMode;
 
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: {
-      id: true,
-      title: true,
-      directAssignments: {
-        where: { userId: learnerId },
-        select: { expiresAt: true },
-      },
-      groupAssignments: {
-        select: {
-          expiresAt: true,
-          group: {
-            select: {
-              memberships: {
-                where: { userId: learnerId },
-                select: { userId: true },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!course) throw new Error("Курс не найден");
-
-  const learner = await prisma.user.findUnique({
-    where: { id: learnerId },
-    select: {
-      name: true,
-      email: true,
-      firstName: true,
-    },
-  });
-
-  const relevantGroupAssignments = course.groupAssignments.filter(
-    (assignment) => assignment.group.memberships.length > 0
-  );
-
-  if (course.directAssignments.length === 0 && relevantGroupAssignments.length === 0) {
-    redirect(learnerAccessReturnUrl(courseId, learnerId, formData, "accessError", "У ученика нет назначений на этот курс."));
-  }
-
-  const accessWindow = resolveEffectiveCourseAccessWindow(
-    course.directAssignments.map((assignment) => assignment.expiresAt),
-    relevantGroupAssignments.map((assignment) => assignment.expiresAt)
-  );
-  const previousAccessLabel = describeCourseAccessLabel(accessWindow);
-
-  if (mode === "UNLIMITED" && accessWindow?.isUnlimited) {
-    redirect(learnerAccessReturnUrl(courseId, learnerId, formData, "accessSaved", "У ученика уже бессрочный доступ."));
-  }
-  if (mode === "EXTEND" && accessWindow?.isUnlimited) {
-    redirect(learnerAccessReturnUrl(courseId, learnerId, formData, "accessSaved", "У ученика уже бессрочный доступ."));
-  }
-
-  let expiresAt: Date | null = null;
-  let message = "Доступ сделан бессрочным.";
-
+  // Ввод даты для SET_DATE валидируем здесь (немедленные redirect на ошибку).
+  let requestedExpiresAt: Date | null = null;
   if (mode === "SET_DATE") {
-    const rawExpiresOn = asString(formData, "accessExpiresOn");
-    const parsed = parseCourseAccessDateInput(rawExpiresOn);
+    const parsed = parseCourseAccessDateInput(asString(formData, "accessExpiresOn"));
     if (!parsed) {
       redirect(learnerAccessReturnUrl(courseId, learnerId, formData, "accessError", "Не удалось распознать дату окончания доступа."));
     }
@@ -689,145 +596,94 @@ export async function updateCourseLearnerAccess(courseId: string, learnerId: str
         )
       );
     }
-
-    expiresAt = parsed;
-    message =
-      accessWindow?.state === "expired"
-        ? `Доступ восстановлен до ${formatDateRu(parsed)}.`
-        : `Доступ установлен до ${formatDateRu(parsed)}.`;
-  } else if (mode !== "UNLIMITED") {
-    const days = asPositiveInt(formData, "days", 30);
-    const now = new Date();
-    const baseDate =
-      accessWindow?.expiresAt && accessWindow.expiresAt.getTime() > now.getTime() ? accessWindow.expiresAt : now;
-    expiresAt = addDays(baseDate, days);
-    message =
-      accessWindow?.state === "expired"
-        ? `Доступ восстановлен до ${formatDateRu(expiresAt)}.`
-        : `Доступ продлен до ${formatDateRu(expiresAt)}.`;
+    requestedExpiresAt = parsed;
   }
 
-  const nextAccessWindow = resolveEffectiveCourseAccessWindow(
-    [expiresAt],
-    relevantGroupAssignments.map((assignment) => assignment.expiresAt)
-  );
-  const nextAccessLabel = describeCourseAccessLabel(nextAccessWindow);
-  message = `${message} Было: ${previousAccessLabel}. Стало: ${nextAccessLabel}.`;
+  const days = asPositiveInt(formData, "days", 30);
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
 
-  await prisma.courseUserAssignment.upsert({
-    where: {
-      courseId_userId: {
-        courseId,
-        userId: learnerId,
-      },
-    },
-    create: {
-      courseId,
-      userId: learnerId,
-      assignedById: session.user.id,
-      expiresAt,
-    },
-    update: {
-      assignedById: session.user.id,
-      expiresAt,
-    },
-  });
-
-  const learnerEmail = learner?.email?.trim() || null;
+  // Пред-загрузка учителя нужна для отправки письма после use-case.
+  const learnerRow = await loadLearnerContact(learnerId);
+  const learnerEmail = learnerRow?.email?.trim() || null;
   const accessEmailQueued = Boolean(learnerEmail);
+
+  let result;
+  try {
+    result = await updateCourseLearnerAccessUseCase({
+      courseId,
+      learnerId,
+      mode,
+      requestedExpiresAt,
+      days,
+      now: new Date(),
+      accessEmailQueued,
+      audit: {
+        actorId: actor.id,
+        actorLogin: actor.login,
+        actorName: actor.name,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+    });
+  } catch (error) {
+    if (error instanceof EnrollmentApplicationError) {
+      if (error.code === "COURSE_NOT_FOUND") {
+        throw new Error(error.message);
+      }
+      if (error.code === "NO_ASSIGNMENT") {
+        redirect(learnerAccessReturnUrl(courseId, learnerId, formData, "accessError", error.message));
+      }
+      if (error.code === "ALREADY_UNLIMITED") {
+        redirect(learnerAccessReturnUrl(courseId, learnerId, formData, "accessSaved", error.message));
+      }
+      redirect(learnerAccessReturnUrl(courseId, learnerId, formData, "accessError", error.message));
+    }
+    throw error;
+  }
+
   if (learnerEmail) {
     await enqueueCourseAccessExtendedEmails(
       [
         {
           email: learnerEmail,
-          name: learner?.name ?? null,
-          firstName: learner?.firstName ?? null,
+          name: learnerRow?.name ?? null,
+          firstName: learnerRow?.firstName ?? null,
         },
       ],
       {
         courseId,
-        courseTitle: course.title,
+        courseTitle: result.course.title,
         courseUrl: `${appBaseUrl()}/courses/${courseId}`,
-        previousAccessLabel,
-        nextAccessLabel,
+        previousAccessLabel: result.previousAccessLabel,
+        nextAccessLabel: result.nextAccessLabel,
       }
     );
   }
 
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "courses:update_access",
-    objectType: "course_assignment",
-    objectId: `${courseId}:${learnerId}`,
-    objectLabel: learnerId,
-    metadata: {
-      courseId,
-      learnerId,
-      mode,
-      expiresAt,
-      previousExpiresAt: accessWindow?.expiresAt?.toISOString() ?? null,
-      nextExpiresAt: nextAccessWindow?.expiresAt?.toISOString() ?? null,
-      previousAccessLabel,
-      nextAccessLabel,
-      accessEmailQueued,
-      message,
-    },
-  });
-
   revalidateCourseAccessPaths(courseId, [learnerId]);
-  redirect(learnerAccessReturnUrl(courseId, learnerId, formData, "accessSaved", message));
+  redirect(learnerAccessReturnUrl(courseId, learnerId, formData, "accessSaved", result.message));
 }
 
 export async function unenrollCourseLearner(courseId: string, learnerId: string, formData: FormData) {
+  // ADR-009/013: транспорт — guard, парсинг ввода, вызов use-case, revalidate/redirect.
   const session = await requirePermission(PERMISSIONS.COURSES_MANAGE_ASSIGNMENTS);
-  const progressDisposition = asString(formData, "progressDisposition") === "delete" ? "delete" : "keep";
-  const shouldDeleteProgress = progressDisposition === "delete";
+  const deleteProgress = asString(formData, "progressDisposition") === "delete";
+  const revokeCertificate = asString(formData, "revokeCertificate") === "1";
 
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: {
-      id: true,
-      title: true,
-      items: {
-        select: {
-          id: true,
-          quiz: {
-            select: { id: true },
-          },
-        },
-      },
-      directAssignments: {
-        where: { userId: learnerId },
-        select: { userId: true, expiresAt: true },
-      },
-      groupAssignments: {
-        select: {
-          groupId: true,
-          expiresAt: true,
-          group: {
-            select: {
-              memberships: {
-                where: { userId: learnerId },
-                select: { userId: true },
-              },
-            },
-          },
-        },
-      },
-    },
+  const result = await unenrollCourseLearnerUseCase({
+    courseId,
+    learnerId,
+    actor: auditActorFromSessionUser(session.user),
+    deleteProgress,
+    revokeCertificate,
+    now: new Date(),
   });
 
-  if (!course) {
+  if (result.status === "COURSE_NOT_FOUND") {
     redirect(learnersAccessListReturnUrl(courseId, formData, "assignmentError", "Курс не найден."));
   }
-
-  const relevantGroupAssignments = course.groupAssignments.filter(
-    (assignment) => assignment.group.memberships.length > 0
-  );
-  const hadDirectAssignment = course.directAssignments.length > 0;
-  const hadGroupAssignment = relevantGroupAssignments.length > 0;
-
-  if (!hadDirectAssignment && !hadGroupAssignment) {
+  if (result.status === "NO_ASSIGNMENT") {
     redirect(
       learnersAccessListReturnUrl(
         courseId,
@@ -837,90 +693,6 @@ export async function unenrollCourseLearner(courseId: string, learnerId: string,
       )
     );
   }
-
-  const expiredOverrideAt = new Date(Date.now() - 1_000);
-  const courseItemIds = course.items.map((item) => item.id);
-  const courseQuizIds = course.items.flatMap((item) => (item.quiz?.id ? [item.quiz.id] : []));
-
-  await prisma.$transaction(async (tx) => {
-    if (hadGroupAssignment) {
-      await tx.courseUserAssignment.upsert({
-        where: {
-          courseId_userId: {
-            courseId,
-            userId: learnerId,
-          },
-        },
-        create: {
-          courseId,
-          userId: learnerId,
-          assignedById: session.user.id,
-          expiresAt: expiredOverrideAt,
-        },
-        update: {
-          assignedById: session.user.id,
-          expiresAt: expiredOverrideAt,
-        },
-      });
-    } else {
-      await tx.courseUserAssignment.deleteMany({
-        where: {
-          courseId,
-          userId: learnerId,
-        },
-      });
-    }
-
-    if (!shouldDeleteProgress) return;
-
-    if (courseItemIds.length > 0) {
-      await tx.courseItemView.deleteMany({
-        where: {
-          userId: learnerId,
-          courseItemId: { in: courseItemIds },
-        },
-      });
-    }
-
-    if (courseQuizIds.length > 0) {
-      await tx.quizUserBestResult.deleteMany({
-        where: {
-          userId: learnerId,
-          quizId: { in: courseQuizIds },
-        },
-      });
-
-      await tx.quizAttempt.deleteMany({
-        where: {
-          userId: learnerId,
-          quizId: { in: courseQuizIds },
-        },
-      });
-    }
-
-    await tx.courseFeedback.deleteMany({
-      where: {
-        courseId,
-        userId: learnerId,
-      },
-    });
-  });
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "courses:unenroll_learner",
-    objectType: "course_assignment",
-    objectId: `${courseId}:${learnerId}`,
-    objectLabel: course.title,
-    metadata: {
-      courseId,
-      learnerId,
-      hadDirectAssignment,
-      hadGroupAssignment,
-      progressDisposition,
-      overrideExpiresAt: hadGroupAssignment ? expiredOverrideAt.toISOString() : null,
-    },
-  });
 
   revalidateCourseAccessPaths(courseId, [learnerId]);
   revalidatePath("/admin/reports");
@@ -932,7 +704,7 @@ export async function unenrollCourseLearner(courseId: string, learnerId: string,
       courseId,
       formData,
       "assignmentSaved",
-      shouldDeleteProgress
+      result.status === "DONE" && result.deletedProgress
         ? "Ученик отчислен с курса. Прогресс по курсу удален."
         : "Ученик отчислен с курса. Прогресс по курсу сохранен."
     )
@@ -998,163 +770,70 @@ export async function updateCourseLearnersAccessBulk(courseId: string, formData:
     requestedExpiresAt = parsed;
   }
 
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: {
-      id: true,
-      directAssignments: {
-        where: { userId: { in: learnerIds } },
-        select: { userId: true, expiresAt: true },
-      },
-      groupAssignments: {
-        select: {
-          expiresAt: true,
-          group: {
-            select: {
-              memberships: {
-                where: { userId: { in: learnerIds } },
-                select: { userId: true },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
 
-  if (!course) throw new Error("Курс не найден");
-
-  const directExpiriesByLearnerId = new Map<string, Array<Date | null>>();
-  const groupExpiriesByLearnerId = new Map<string, Array<Date | null>>();
-
-  for (const assignment of course.directAssignments) {
-    const values = directExpiriesByLearnerId.get(assignment.userId) ?? [];
-    values.push(assignment.expiresAt);
-    directExpiriesByLearnerId.set(assignment.userId, values);
-  }
-
-  for (const assignment of course.groupAssignments) {
-    for (const membership of assignment.group.memberships) {
-      const values = groupExpiriesByLearnerId.get(membership.userId) ?? [];
-      values.push(assignment.expiresAt);
-      groupExpiriesByLearnerId.set(membership.userId, values);
-    }
-  }
-
-  const updates: Array<{ learnerId: string; expiresAt: Date | null }> = [];
-  let learnersWithoutAssignments = 0;
-  let learnersWithUnlimitedAccess = 0;
-  const now = new Date();
-
-  for (const learnerId of learnerIds) {
-    const directExpiries = directExpiriesByLearnerId.get(learnerId) ?? [];
-    const groupExpiries = groupExpiriesByLearnerId.get(learnerId) ?? [];
-    const accessWindow = resolveEffectiveCourseAccessWindow(directExpiries, groupExpiries);
-
-    if (!accessWindow) {
-      learnersWithoutAssignments += 1;
-      continue;
-    }
-
-    if ((action.mode === "UNLIMITED" || action.mode === "EXTEND") && accessWindow.isUnlimited) {
-      learnersWithUnlimitedAccess += 1;
-      continue;
-    }
-
-    if (action.mode === "SET_DATE") {
-      updates.push({ learnerId, expiresAt: requestedExpiresAt });
-      continue;
-    }
-
-    if (action.mode === "UNLIMITED") {
-      updates.push({ learnerId, expiresAt: null });
-      continue;
-    }
-
-    const baseDate =
-      accessWindow.expiresAt && accessWindow.expiresAt.getTime() > now.getTime() ? accessWindow.expiresAt : now;
-    updates.push({
-      learnerId,
-      expiresAt: addDays(baseDate, action.days),
-    });
-  }
-
-  if (updates.length === 0) {
-    const details: string[] = [];
-    if (learnersWithUnlimitedAccess > 0) {
-      details.push(`уже бессрочный доступ: ${learnersWithUnlimitedAccess}`);
-    }
-    if (learnersWithoutAssignments > 0) {
-      details.push(`без назначений: ${learnersWithoutAssignments}`);
-    }
-    const message =
-      details.length > 0
-        ? `Изменения не применены: ${details.join(", ")}.`
-        : "Изменения не применены.";
-
-    redirect(
-      learnersAccessListReturnUrl(
-        courseId,
-        formData,
-        learnersWithUnlimitedAccess > 0 ? "accessSaved" : "accessError",
-        message
-      )
-    );
-  }
-
-  await prisma.$transaction(
-    updates.map((update) =>
-      prisma.courseUserAssignment.upsert({
-        where: {
-          courseId_userId: {
-            courseId,
-            userId: update.learnerId,
-          },
-        },
-        create: {
-          courseId,
-          userId: update.learnerId,
-          assignedById: session.user.id,
-          expiresAt: update.expiresAt,
-        },
-        update: {
-          assignedById: session.user.id,
-          expiresAt: update.expiresAt,
-        },
-      })
-    )
-  );
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "courses:bulk_update_access",
-    objectType: "course_assignment",
-    objectId: courseId,
-    objectLabel: courseId,
-    metadata: {
-      scope,
+  let result;
+  try {
+    result = await updateCourseLearnersAccessBulkUseCase({
+      courseId,
       learnerIds,
-      updatedLearnerIds: updates.map((update) => update.learnerId),
-      mode: action.mode,
-      days: action.mode === "EXTEND" ? action.days : null,
+      mode: action.mode as BulkAccessMode,
       requestedExpiresAt,
-      learnersWithoutAssignments,
-      learnersWithUnlimitedAccess,
-    },
-  });
+      days: action.days ?? 0,
+      scope,
+      now: new Date(),
+      audit: {
+        actorId: actor.id,
+        actorLogin: actor.login,
+        actorName: actor.name,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+    });
+  } catch (error) {
+    if (error instanceof EnrollmentApplicationError && error.code === "COURSE_NOT_FOUND") {
+      throw new Error(error.message);
+    }
+    if (error instanceof EnrollmentApplicationError && error.code === "NOTHING_TO_UPDATE") {
+      const skip = extractBulkAccessSkipDetails(error);
+      const learnersWithUnlimitedAccess = skip?.learnersWithUnlimitedAccess ?? 0;
+      const learnersWithoutAssignments = skip?.learnersWithoutAssignments ?? 0;
+      const details: string[] = [];
+      if (learnersWithUnlimitedAccess > 0) {
+        details.push(`уже бессрочный доступ: ${learnersWithUnlimitedAccess}`);
+      }
+      if (learnersWithoutAssignments > 0) {
+        details.push(`без назначений: ${learnersWithoutAssignments}`);
+      }
+      const message =
+        details.length > 0
+          ? `Изменения не применены: ${details.join(", ")}.`
+          : "Изменения не применены.";
+      redirect(
+        learnersAccessListReturnUrl(
+          courseId,
+          formData,
+          learnersWithUnlimitedAccess > 0 ? "accessSaved" : "accessError",
+          message
+        )
+      );
+    }
+    throw error;
+  }
 
   revalidateCourseAccessPaths(
     courseId,
-    Array.from(new Set([...learnerIds, ...updates.map((update) => update.learnerId)]))
+    Array.from(new Set([...learnerIds, ...result.updatedLearnerIds]))
   );
 
-  const updatedCountLabel = formatLearnerCount(updates.length);
+  const updatedCountLabel = formatLearnerCount(result.updatedLearnerIds.length);
   const details: string[] = [];
-  if (learnersWithUnlimitedAccess > 0) {
-    details.push(`уже бессрочный доступ: ${learnersWithUnlimitedAccess}`);
+  if (result.learnersWithUnlimitedAccess > 0) {
+    details.push(`уже бессрочный доступ: ${result.learnersWithUnlimitedAccess}`);
   }
-  if (learnersWithoutAssignments > 0) {
-    details.push(`без назначений: ${learnersWithoutAssignments}`);
+  if (result.learnersWithoutAssignments > 0) {
+    details.push(`без назначений: ${result.learnersWithoutAssignments}`);
   }
 
   const message =

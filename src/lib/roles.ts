@@ -80,6 +80,7 @@ export const PERMISSIONS = {
   REPORTS_VIEW: "reports.view",
   LEARNING_MATERIALS_PROGRESS: "learning.materials_progress",
   LEARNING_KNOWLEDGE_CHECK: "learning.knowledge_check",
+  CERTIFICATES_MANAGE: "certificates.manage",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -172,6 +173,11 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
     label: "Прохождение тестов",
     group: ACCESS_GROUPS.LEARNING_MANAGEMENT,
   },
+  {
+    key: PERMISSIONS.CERTIFICATES_MANAGE,
+    label: "Управление сертификатами (реестр, отзыв, выдача)",
+    group: ACCESS_GROUPS.LEARNING_MANAGEMENT,
+  },
 ];
 
 export const GROUP_PERMISSIONS: Record<AccessGroup, Permission[]> = {
@@ -209,6 +215,7 @@ export const GROUP_PERMISSIONS: Record<AccessGroup, Permission[]> = {
   LEARNING_MANAGEMENT: [
     PERMISSIONS.LEARNING_MATERIALS_PROGRESS,
     PERMISSIONS.LEARNING_KNOWLEDGE_CHECK,
+    PERMISSIONS.CERTIFICATES_MANAGE,
   ],
 };
 
@@ -230,6 +237,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.COURSES_VIEW,
     PERMISSIONS.COURSES_MANAGE_ASSIGNMENTS,
     PERMISSIONS.REPORTS_VIEW,
+    PERMISSIONS.CERTIFICATES_MANAGE,
   ],
   [STANDARD_ROLE_NAMES.COURSE_AUTHOR]: [
     PERMISSIONS.COURSES_VIEW,
@@ -237,6 +245,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.COURSES_PUBLISH,
     PERMISSIONS.COURSES_DELETE,
     PERMISSIONS.COURSES_MANAGE_ASSIGNMENTS,
+    PERMISSIONS.CERTIFICATES_MANAGE,
   ],
 };
 

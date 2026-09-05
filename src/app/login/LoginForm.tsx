@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { Button, Input, Label } from "@/components/ui";
 
 type Props = { callbackUrl?: string };
 
@@ -58,68 +59,64 @@ export function LoginForm({ callbackUrl }: Props) {
   return (
     <form onSubmit={onSubmit} className="mt-8 space-y-4">
       <div>
-        <label htmlFor="login" className="block text-sm font-medium">
+        <Label htmlFor="login" className="block">
           Логин
-        </label>
-        <input
+        </Label>
+        <Input
           id="login"
           name="login"
           type="text"
           autoComplete="username"
           required
           placeholder="например admin"
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="mt-1"
         />
       </div>
       <div>
-        <label htmlFor="password" className="block text-sm font-medium">
+        <Label htmlFor="password" className="block">
           Пароль
-        </label>
-        <input
+        </Label>
+        <Input
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
           required
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="mt-1"
         />
       </div>
       <div className="-mt-2 text-right">
-        <Link className="text-sm font-medium text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline" href="/forgot-password">
+        <Link className="text-sm font-medium text-[var(--ink-muted)] underline-offset-2 hover:text-[var(--ink)] hover:underline" href="/forgot-password">
           Забыли пароль?
         </Link>
       </div>
       {requiresTwoFactor && (
         <div>
-          <label htmlFor="twoFactorCode" className="block text-sm font-medium">
+          <Label htmlFor="twoFactorCode" className="block">
             Код 2FA или recovery-код
-          </label>
-          <input
+          </Label>
+          <Input
             id="twoFactorCode"
             name="twoFactorCode"
             type="text"
             autoComplete="one-time-code"
             required
             placeholder="123456 или ABCD-EFGH"
-            className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="mt-1"
           />
-          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-xs text-[var(--ink-muted)]">
             Для администраторов после включения политики безопасности обязателен код из Google Authenticator.
           </p>
         </div>
       )}
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+        <p className="text-sm text-[var(--danger)]" role="alert">
           {error}
         </p>
       )}
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-      >
+      <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Вход…" : "Войти"}
-      </button>
+      </Button>
     </form>
   );
 }

@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { ATTEMPT_OUTCOME_LABELS } from "@/lib/constants";
 import prisma from "@/lib/prisma";
 import { isPlatformAdminRole } from "@/lib/roles";
+import { AnalyticsSubtabs } from "@/components/AnalyticsSubtabs";
+import { Card } from "@/components/ui";
 
 export default async function HistoryPage() {
   const session = await auth();
@@ -45,23 +47,25 @@ export default async function HistoryPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <div>
-        <h1 className="text-2xl font-semibold">История прохождений</h1>
-        <p className="mt-2 text-sm text-zinc-700">
+        <h1 className="text-2xl font-semibold text-[var(--ink)]">История прохождений</h1>
+        <p className="mt-2 text-sm text-[var(--ink-muted)]">
           Здесь собраны попытки тестов и отзывы по курсам в разрезе каждого курса.
         </p>
       </div>
 
+      <AnalyticsSubtabs active="history" />
+
       <div className="mt-8 space-y-8">
         {courses.map((course) => (
-          <section key={course.id} className="rounded-xl border border-slate-700 bg-white p-6 shadow-sm">
+          <Card key={course.id} padding="lg">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold">{course.title}</h2>
-                <p className="mt-1 text-sm text-zinc-500">
+                <p className="mt-1 text-sm text-[var(--ink-muted)]">
                   {course.status === "PUBLISHED" ? "Опубликован" : "Черновик"}
                 </p>
               </div>
-              <Link href={`/courses/${course.id}`} className="text-sm text-teal-700 underline">
+              <Link href={`/courses/${course.id}`} className="text-sm text-[var(--accent)] underline">
                 Открыть курс
               </Link>
             </div>
@@ -71,21 +75,21 @@ export default async function HistoryPage() {
                 <h3 className="text-sm font-semibold">Тесты и попытки</h3>
                 <div className="mt-3 space-y-3">
                   {course.items.filter((item) => item.type === "QUIZ" && item.quiz).length === 0 ? (
-                    <p className="text-sm text-zinc-500">В курсе нет тестов.</p>
+                    <p className="text-sm text-[var(--ink-muted)]">В курсе нет тестов.</p>
                   ) : (
                     course.items
                       .filter((item) => item.type === "QUIZ" && item.quiz)
                       .map((item) => (
-                        <div key={item.id} className="rounded-lg border border-slate-700 p-4">
+                        <div key={item.id} className="rounded-lg border border-[var(--line)] p-4">
                           <div className="font-medium">{item.title}</div>
                           {item.quiz?.attempts.length ? (
                             <ul className="mt-3 space-y-2">
                               {item.quiz.attempts.map((attempt) => (
-                                <li key={attempt.id} className="rounded-md border border-zinc-200 p-3">
-                                  <div className="text-xs text-zinc-500">
+                                <li key={attempt.id} className="rounded-md border border-[var(--line)] p-3">
+                                  <div className="text-xs text-[var(--ink-muted)]">
                                     {attempt.completedAt ? attempt.completedAt.toLocaleString("ru-RU") : "Попытка в работе"}
                                   </div>
-                                  <div className="mt-1 text-sm text-zinc-700">
+                                  <div className="mt-1 text-sm text-[var(--ink)]">
                                     {attempt.user.name} ({attempt.user.login}) · попытка {attempt.attemptNumber} · {attempt.correctAnswers}/
                                     {attempt.totalQuestions} ·{" "}
                                     {ATTEMPT_OUTCOME_LABELS[attempt.outcome as keyof typeof ATTEMPT_OUTCOME_LABELS]}
@@ -94,7 +98,7 @@ export default async function HistoryPage() {
                               ))}
                             </ul>
                           ) : (
-                            <p className="mt-3 text-sm text-zinc-500">Попыток пока нет.</p>
+                            <p className="mt-3 text-sm text-[var(--ink-muted)]">Попыток пока нет.</p>
                           )}
                         </div>
                       ))
@@ -105,14 +109,14 @@ export default async function HistoryPage() {
               <div>
                 <h3 className="text-sm font-semibold">Отзывы по курсу</h3>
                 {course.feedbacks.length ? (
-                  <ul className="mt-3 space-y-3 text-sm text-zinc-700">
+                  <ul className="mt-3 space-y-3 text-sm text-[var(--ink)]">
                     {course.feedbacks.map((feedback) => (
-                      <li key={feedback.id} className="rounded-lg border border-slate-700 p-4">
-                        <div className="text-xs text-zinc-500">{feedback.createdAt.toLocaleString("ru-RU")}</div>
+                      <li key={feedback.id} className="rounded-lg border border-[var(--line)] p-4">
+                        <div className="text-xs text-[var(--ink-muted)]">{feedback.createdAt.toLocaleString("ru-RU")}</div>
                         <div className="font-medium">
                           {feedback.user.name} ({feedback.user.login})
                         </div>
-                        <div className="mt-1 text-xs text-zinc-500">
+                        <div className="mt-1 text-xs text-[var(--ink-muted)]">
                           Оценка: {feedback.rating}/5 · {feedback.status === "PUBLISHED" ? "Опубликован" : "На модерации"}
                         </div>
                         {feedback.comment && <p className="mt-2">{feedback.comment}</p>}
@@ -120,11 +124,11 @@ export default async function HistoryPage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-3 text-sm text-zinc-500">Отзывов пока нет.</p>
+                  <p className="mt-3 text-sm text-[var(--ink-muted)]">Отзывов пока нет.</p>
                 )}
               </div>
             </div>
-          </section>
+          </Card>
         ))}
       </div>
     </div>

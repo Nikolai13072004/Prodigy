@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Label, Select } from "@/components/ui";
 import { CourseCoverInput } from "@/components/CourseCoverInput";
 import {
   PresentationUploadFields,
@@ -60,22 +61,22 @@ export function PresentationCourseAssetsFields({
 
 function PresentationViewModeSelect({ defaultValue }: { defaultValue: PresentationViewMode }) {
   return (
-    <label className="block text-sm font-medium text-zinc-900">
+    <Label className="block">
       Режим просмотра презентации
-      <select
+      <Select
         name="presentationViewMode"
         defaultValue={defaultValue}
-        className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+        className="mt-1"
       >
         {Object.entries(PRESENTATION_VIEW_MODE_LABELS).map(([value, label]) => (
           <option key={value} value={value}>
             {label}
           </option>
         ))}
-      </select>
-      <span className="mt-1 block text-xs font-normal text-zinc-500">
+      </Select>
+      <span className="mt-1 block text-xs font-normal text-[var(--ink-muted)]">
         HTML5-плеер работает без внешних сервисов для загруженных PPTX.
       </span>
-    </label>
+    </Label>
   );
 }

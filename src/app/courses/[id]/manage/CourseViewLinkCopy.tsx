@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Button, Input } from "@/components/ui";
+
 type CourseViewLinkCopyProps = {
   href: string;
 };
@@ -17,19 +19,15 @@ export function CourseViewLinkCopy({ href }: CourseViewLinkCopyProps) {
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row">
-      <input
+      <Input
         value={href}
         readOnly
         aria-label="Ссылка на просмотр курса"
-        className="min-w-0 flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600 outline-none"
+        className="min-w-0 flex-1"
       />
-      <button
-        type="button"
-        onClick={copyLink}
-        className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-      >
+      <Button type="button" onClick={copyLink}>
         {copied ? "Скопировано" : "Копировать"}
-      </button>
+      </Button>
     </div>
   );
 }

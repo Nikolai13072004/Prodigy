@@ -12,6 +12,7 @@ import {
 } from "@/app/actions/quiz-builder-actions";
 import { CourseModalAutoClose } from "@/app/courses/[id]/manage/CourseModalAutoClose";
 import { BuilderActionToast } from "@/components/quiz-builder/BuilderActionToast";
+import { Select } from "@/components/ui";
 import {
   CreateQuestionForm,
   EditQuestionForm,
@@ -307,17 +308,17 @@ export default async function QuizBuilderPage({ params, searchParams }: Props) {
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium">Режим показа результата</label>
-                <select
+                <Select
                   name="resultViewMode"
                   defaultValue={quiz.courseItem.course.resultViewMode}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                  className="mt-1 w-full"
                 >
                   {Object.entries(RESULT_VIEW_MODE_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
                     </option>
                   ))}
-                </select>
+                </Select>
                 <p className="mt-1 text-xs text-zinc-500">
                   Настройка общая для курса: можно показать только итог, итог с ответами ученика или полный разбор.
                 </p>
@@ -580,7 +581,7 @@ function QuestionTypeLink({
       href={buildBaseQuery({ createType: value })}
       className={`rounded-md px-3 py-1.5 text-sm transition ${
         activeType === value
-          ? "bg-white font-medium text-[#0f315d] shadow-[inset_0_-3px_0_#0f315d] dark:bg-zinc-900 dark:text-zinc-100 dark:shadow-[inset_0_-3px_0_#f4f4f5]"
+          ? "bg-white font-medium text-[var(--accent)] shadow-[inset_0_-3px_0_var(--accent)] dark:bg-zinc-900 dark:text-zinc-100 dark:shadow-[inset_0_-3px_0_var(--accent)]"
           : "border border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-950 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
       }`}
     >

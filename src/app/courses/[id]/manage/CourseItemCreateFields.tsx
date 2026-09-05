@@ -8,6 +8,7 @@ import {
   resolvePresentationSourcePdfUrl,
 } from "@/components/PresentationUploadFields";
 import { RichTextEditorField } from "@/components/RichTextEditorField";
+import { Select } from "@/components/ui";
 import {
   PRESENTATION_VIEW_MODE_LABELS,
   normalizePresentationViewMode,
@@ -58,29 +59,24 @@ export function CourseItemCreateFields({
     <>
       <div className={`grid gap-3 ${showTypeSelect ? "md:grid-cols-2" : ""}`}>
         {showTypeSelect ? (
-          <select
+          <Select
             name="type"
             value={type}
             onChange={(event) => handleTypeChange(event.target.value as CourseItemType)}
-            className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
           >
             {typeOptions.map((option) => (
               <option key={option} value={option}>
                 {typeLabels[option] ?? DEFAULT_TYPE_LABELS[option]}
               </option>
             ))}
-          </select>
+          </Select>
         ) : (
           <input type="hidden" name="type" value={type} readOnly />
         )}
-        <select
-          name="isRequired"
-          defaultValue="1"
-          className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
-        >
+        <Select name="isRequired" defaultValue="1">
           <option value="1">Обязательный материал</option>
           <option value="0">Необязательный материал</option>
-        </select>
+        </Select>
       </div>
 
       {isText ? (
@@ -105,31 +101,31 @@ export function CourseItemCreateFields({
 
       {isQuiz ? (
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="block text-xs font-medium text-zinc-600">
+          <label className="block text-xs font-medium text-[var(--ink-muted)]">
             Количество попыток
             <input
               name="maxAttempts"
               type="number"
               min={1}
               defaultValue={2}
-              className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring-2"
+              className="mt-1 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
             />
           </label>
-          <label className="block text-xs font-medium text-zinc-600">
+          <label className="block text-xs font-medium text-[var(--ink-muted)]">
             Минимум правильных ответов
             <input
               name="minCorrectAnswers"
               type="number"
               min={1}
               defaultValue={1}
-              className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring-2"
+              className="mt-1 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
             />
           </label>
         </div>
       ) : null}
 
       {isSurvey ? (
-        <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+        <div className="rounded-xl border border-[var(--info)] bg-[var(--info-soft)] px-4 py-3 text-sm text-[var(--info)]">
           После добавления откроется конструктор опроса. В нем можно настроить титульный лист,
           вопросы и варианты ответов.
         </div>
@@ -197,20 +193,20 @@ export function CourseItemPresentationFields({
 
 function PresentationViewModeSelect({ defaultValue }: { defaultValue: PresentationViewMode }) {
   return (
-    <label className="block text-xs font-medium text-zinc-600">
+    <label className="block text-xs font-medium text-[var(--ink-muted)]">
       Режим просмотра презентации
-      <select
+      <Select
         name="presentationViewMode"
         defaultValue={defaultValue}
-        className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring-2"
+        className="mt-1"
       >
         {Object.entries(PRESENTATION_VIEW_MODE_LABELS).map(([value, label]) => (
           <option key={value} value={value}>
             {label}
           </option>
         ))}
-      </select>
-      <span className="mt-1 block text-xs font-normal text-zinc-500">
+      </Select>
+      <span className="mt-1 block text-xs font-normal text-[var(--ink-muted)]">
         HTML5-плеер работает без внешних сервисов для загруженных PPTX.
       </span>
     </label>

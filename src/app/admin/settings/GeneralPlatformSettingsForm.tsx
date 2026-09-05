@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { BrandAssetInput } from "@/components/BrandAssetInput";
+import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 import {
   INITIAL_GENERAL_PLATFORM_SETTINGS_FORM_STATE,
   type GeneralPlatformSettingsFormState,
@@ -70,64 +71,64 @@ function GeneralPlatformSettingsFormBody({ error, formAction, initialValues, pen
 
   return (
     <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <form action={formAction} className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <form action={formAction} className="rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] p-6 shadow-sm">
         <div>
-          <h2 className="text-xl font-semibold text-zinc-950">Настройки - Общие</h2>
-          <p className="mt-2 text-sm text-zinc-600">
+          <h2 className="text-xl font-semibold text-[var(--ink)]">Настройки - Общие</h2>
+          <p className="mt-2 text-sm text-[var(--ink-muted)]">
             Название платформы, описание, контакты поддержки и бренд-ассеты будут использоваться в интерфейсе и на экране входа.
           </p>
         </div>
 
         {error ? (
-          <p role="alert" className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <p role="alert" className="mt-4 rounded-2xl border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
             {error}
           </p>
         ) : null}
 
         <div className="mt-6 space-y-5">
           <div>
-            <label htmlFor="siteName" className="block text-sm font-medium text-zinc-900">
+            <Label htmlFor="siteName" className="block">
               Название сайта
-            </label>
-            <input
+            </Label>
+            <Input
               id="siteName"
               name="siteName"
               value={siteName}
               onChange={(event) => setSiteName(event.target.value)}
-              className="mt-2 h-11 w-full rounded-xl border border-zinc-300 px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+              className="mt-2"
             />
           </div>
 
           <div>
-            <label htmlFor="siteDescription" className="block text-sm font-medium text-zinc-900">
+            <Label htmlFor="siteDescription" className="block">
               Короткое описание
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               id="siteDescription"
               name="siteDescription"
               value={siteDescription}
               onChange={(event) => setSiteDescription(event.target.value)}
               rows={4}
-              className="mt-2 w-full rounded-xl border border-zinc-300 px-3 py-3 text-sm outline-none ring-teal-500 focus:ring-2"
+              className="mt-2"
             />
           </div>
 
           <div>
-            <label htmlFor="supportEmail" className="block text-sm font-medium text-zinc-900">
+            <Label htmlFor="supportEmail" className="block">
               Email поддержки
-            </label>
-            <input
+            </Label>
+            <Input
               id="supportEmail"
               name="supportEmail"
               type="email"
               value={supportEmail}
               onChange={(event) => setSupportEmail(event.target.value)}
               placeholder="support@company.ru"
-              className="mt-2 h-11 w-full rounded-xl border border-zinc-300 px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+              className="mt-2"
             />
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4">
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4">
             <div className="space-y-4">
               <label className="flex items-start gap-3">
                 <input
@@ -135,11 +136,11 @@ function GeneralPlatformSettingsFormBody({ error, formAction, initialValues, pen
                   type="checkbox"
                   checked={feedbackEnabled}
                   onChange={(event) => setFeedbackEnabled(event.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-teal-500"
+                  className="mt-1 h-4 w-4 rounded border-[var(--line)] text-[var(--accent)] focus:ring-[var(--accent)]"
                 />
                 <span>
-                  <span className="block text-sm font-medium text-zinc-900">Включить отзывы о курсах</span>
-                  <span className="mt-1 block text-xs text-zinc-500">
+                  <span className="block text-sm font-medium text-[var(--ink)]">Включить отзывы о курсах</span>
+                  <span className="mt-1 block text-xs text-[var(--ink-muted)]">
                     Если выключить отзывы, они исчезнут из портала и каталога, но сохранятся в базе и вернутся после повторного включения.
                   </span>
                 </span>
@@ -151,11 +152,11 @@ function GeneralPlatformSettingsFormBody({ error, formAction, initialValues, pen
                   type="checkbox"
                   checked={feedbackModerationEnabled}
                   onChange={(event) => setFeedbackModerationEnabled(event.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-zinc-300 text-teal-700 focus:ring-teal-500"
+                  className="mt-1 h-4 w-4 rounded border-[var(--line)] text-[var(--accent)] focus:ring-[var(--accent)]"
                 />
                 <span>
-                  <span className="block text-sm font-medium text-zinc-900">Модерировать отзывы перед публикацией</span>
-                  <span className="mt-1 block text-xs text-zinc-500">
+                  <span className="block text-sm font-medium text-[var(--ink)]">Модерировать отзывы перед публикацией</span>
+                  <span className="mt-1 block text-xs text-[var(--ink-muted)]">
                     Если включено, новые отзывы учеников сначала попадут в статус «На модерации» и будут опубликованы после подтверждения в карточке курса.
                   </span>
                 </span>
@@ -165,60 +166,60 @@ function GeneralPlatformSettingsFormBody({ error, formAction, initialValues, pen
 
           <div className="grid gap-5 md:grid-cols-3">
             <div className="md:col-span-2">
-              <label htmlFor="timeZone" className="block text-sm font-medium text-zinc-900">
+              <Label htmlFor="timeZone" className="block">
                 Часовой пояс
-              </label>
-              <select
+              </Label>
+              <Select
                 id="timeZone"
                 name="timeZone"
                 value={timeZone}
                 onChange={(event) => setTimeZone(event.target.value)}
-                className="mt-2 h-11 w-full rounded-xl border border-zinc-300 px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+                className="mt-2"
               >
                 {PLATFORM_TIME_ZONES.map((timezone) => (
                   <option key={timezone.value} value={timezone.value}>
                     {timezone.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             <div>
-              <label htmlFor="dateFormat" className="block text-sm font-medium text-zinc-900">
+              <Label htmlFor="dateFormat" className="block">
                 Формат даты
-              </label>
-              <select
+              </Label>
+              <Select
                 id="dateFormat"
                 name="dateFormat"
                 value={dateFormat}
                 onChange={(event) => setDateFormat(event.target.value as PlatformDateFormat)}
-                className="mt-2 h-11 w-full rounded-xl border border-zinc-300 px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+                className="mt-2"
               >
                 {PLATFORM_DATE_FORMATS.map((format) => (
                   <option key={format.value} value={format.value}>
                     {format.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             <div>
-              <label htmlFor="timeFormat" className="block text-sm font-medium text-zinc-900">
+              <Label htmlFor="timeFormat" className="block">
                 Формат времени
-              </label>
-              <select
+              </Label>
+              <Select
                 id="timeFormat"
                 name="timeFormat"
                 value={timeFormat}
                 onChange={(event) => setTimeFormat(event.target.value as PlatformTimeFormat)}
-                className="mt-2 h-11 w-full rounded-xl border border-zinc-300 px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+                className="mt-2"
               >
                 {PLATFORM_TIME_FORMATS.map((format) => (
                   <option key={format.value} value={format.value}>
                     {format.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -241,64 +242,60 @@ function GeneralPlatformSettingsFormBody({ error, formAction, initialValues, pen
           />
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-zinc-900">
+            <Label htmlFor="confirmPassword" className="block">
               Подтвердите текущим паролем
-            </label>
-            <input
+            </Label>
+            <Input
               id="confirmPassword"
               name="confirmPassword"
               type="password"
               autoComplete="current-password"
-              className="mt-2 h-11 w-full rounded-xl border border-zinc-300 px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+              className="mt-2"
             />
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-[var(--ink-muted)]">
               Перед сохранением подтвердите изменение общих настроек паролем администратора.
             </p>
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="mt-6 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
-        >
+        <Button type="submit" disabled={pending} className="mt-6">
           {pending ? "Сохраняем..." : "Сохранить общие настройки"}
-        </button>
+        </Button>
       </form>
 
-      <aside className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Предпросмотр</h2>
-        <p className="mt-2 text-sm text-zinc-600">
+      <aside className="rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-[var(--ink)]">Предпросмотр</h2>
+        <p className="mt-2 text-sm text-[var(--ink-muted)]">
           Посмотрите, как обновлённые общие настройки будут выглядеть до сохранения.
         </p>
 
-        <div className="mt-5 rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+        <div className="mt-5 rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-5">
           <div className="flex items-center gap-3">
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logoUrl} alt={siteName || "Логотип"} className="h-10 w-auto max-w-[140px] object-contain" />
             ) : (
-              <div className="text-lg font-semibold text-zinc-900">{siteName || "Название платформы"}</div>
+              <div className="text-lg font-semibold text-[var(--ink)]">{siteName || "Название платформы"}</div>
             )}
             {faviconUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={faviconUrl} alt="Favicon preview" className="h-8 w-8 rounded-lg border border-zinc-200 bg-white object-contain p-1" />
+              <img src={faviconUrl} alt="Favicon preview" className="h-8 w-8 rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] object-contain p-1" />
             ) : null}
           </div>
 
-          <p className="mt-4 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">{siteName || "Название платформы"}</p>
-          <h3 className="mt-2 text-xl font-semibold text-zinc-950">Вход в систему</h3>
-          <p className="mt-3 text-sm text-zinc-600">
+          <p className="mt-4 text-xs font-medium uppercase tracking-[0.2em] text-[var(--ink-muted)]">{siteName || "Название платформы"}</p>
+          <h3 className="mt-2 text-xl font-semibold text-[var(--ink)]">Вход в систему</h3>
+          <p className="mt-3 text-sm text-[var(--ink-muted)]">
             {siteDescription || "Короткое описание платформы появится здесь."}
           </p>
 
           {supportEmail ? (
-            <p className="mt-5 text-sm text-zinc-500">Поддержка: {supportEmail}</p>
+            <p className="mt-5 text-sm text-[var(--ink-muted)]">Поддержка: {supportEmail}</p>
           ) : (
-            <p className="mt-5 text-sm text-zinc-400">Email поддержки пока не задан.</p>
+            <p className="mt-5 text-sm text-[var(--ink-muted)]">Email поддержки пока не задан.</p>
           )}
 
-          <p className="mt-3 text-sm text-zinc-500">
+          <p className="mt-3 text-sm text-[var(--ink-muted)]">
             Отзывы:{" "}
             {feedbackEnabled
               ? feedbackModerationEnabled
@@ -308,15 +305,15 @@ function GeneralPlatformSettingsFormBody({ error, formAction, initialValues, pen
           </p>
         </div>
 
-        <div className="mt-5 rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
-          <h3 className="text-sm font-semibold text-zinc-950">Пример даты и времени</h3>
-          <p className="mt-2 text-sm text-zinc-600">{previewDateTime}</p>
-          <p className="mt-2 text-xs text-zinc-500">
+        <div className="mt-5 rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-5">
+          <h3 className="text-sm font-semibold text-[var(--ink)]">Пример даты и времени</h3>
+          <p className="mt-2 text-sm text-[var(--ink-muted)]">{previewDateTime}</p>
+          <p className="mt-2 text-xs text-[var(--ink-muted)]">
             Часовой пояс: {timeZone}. Форматы: {dateFormat} и {timeFormat}.
           </p>
         </div>
 
-        <div className="mt-5 space-y-3 text-sm text-zinc-600">
+        <div className="mt-5 space-y-3 text-sm text-[var(--ink-muted)]">
           <p>Название и описание используются в metadata и на экране входа.</p>
           <p>Логотип и favicon применяются к интерфейсу платформы и вкладке браузера.</p>
           <p>Отзывы помогают ученикам выбирать курс, а администраторам - улучшать материалы.</p>

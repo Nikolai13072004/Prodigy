@@ -28,6 +28,7 @@ import {
   buildRichEmailEditorHtmlFromText,
 } from "@/lib/email/template-settings";
 import { normalizeRichTextForEditor } from "@/lib/rich-text";
+import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 
 const HTML_TEMPLATE_DEFINITIONS = [
   {
@@ -605,9 +606,9 @@ export function EmailTemplatesList({ linkTtlHours, previewData, templates }: Pro
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
-      <h3 className="text-sm font-semibold text-zinc-950">Шаблоны писем</h3>
-      <p className="mt-2 text-xs text-zinc-500">
+    <section className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4">
+      <h3 className="text-sm font-semibold text-[var(--ink)]">Шаблоны писем</h3>
+      <p className="mt-2 text-xs text-[var(--ink-muted)]">
         Все шаблоны редактируются в блочном конструкторе. Системные данные подставляются через переменные.
       </p>
 
@@ -624,7 +625,7 @@ export function EmailTemplatesList({ linkTtlHours, previewData, templates }: Pro
         ))
       )}
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)]">
         {HTML_TEMPLATE_DEFINITIONS.map((template, index) => {
           const current = values[template.key];
           const Icon = template.key === "courseAssigned" ? Send : Mail;
@@ -634,19 +635,19 @@ export function EmailTemplatesList({ linkTtlHours, previewData, templates }: Pro
               key={template.key}
               type="button"
               onClick={() => setActiveKey(template.key)}
-              className={`flex w-full items-center gap-3 px-4 py-4 text-left transition hover:bg-zinc-50 ${
-                index > 0 ? "border-t border-zinc-200" : ""
+              className={`flex w-full items-center gap-3 px-4 py-4 text-left transition hover:bg-[var(--accent-soft)] ${
+                index > 0 ? "border-t border-[var(--line)]" : ""
               }`}
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-600">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[var(--ink-muted)]">
                 <Icon aria-hidden="true" className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-zinc-950">{template.title}</span>
-                <span className="mt-1 block text-xs text-zinc-500">{template.description}</span>
-                <span className="mt-2 block truncate text-xs text-zinc-700">Тема: {current.subject}</span>
+                <span className="block text-sm font-semibold text-[var(--ink)]">{template.title}</span>
+                <span className="mt-1 block text-xs text-[var(--ink-muted)]">{template.description}</span>
+                <span className="mt-2 block truncate text-xs text-[var(--ink)]">Тема: {current.subject}</span>
               </span>
-              <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-zinc-400" />
+              <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--ink-muted)]" />
             </button>
           );
         })}
@@ -716,32 +717,32 @@ function HtmlTemplateDialog({
       <button
         type="button"
         aria-label="Закрыть окно настроек HTML-шаблона"
-        className="absolute inset-0 bg-zinc-950/45"
+        className="absolute inset-0 bg-black/45"
         onClick={onClose}
       />
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="emailTemplateDialogTitle"
-        className="relative z-10 max-h-[calc(100vh-48px)] w-full max-w-[1500px] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl"
+        className="relative z-10 max-h-[calc(100vh-48px)] w-full max-w-[1500px] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-xl"
       >
         <div className="max-h-[calc(100vh-48px)] overflow-y-auto p-5">
           <TemplateDialogHeader title={definition.title} description={definition.description} onClose={onClose} />
 
           <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-            <label htmlFor="htmlTemplateSubject" className="block text-sm font-medium text-zinc-900">
+            <Label htmlFor="htmlTemplateSubject" className="block">
               Тема письма
               <input
                 id="htmlTemplateSubject"
                 value={template.subject}
                 onChange={(event) => onUpdate("subject", event.target.value)}
-                className="mt-2 h-11 w-full rounded-xl border border-zinc-300 px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+                className="mt-2 h-11 w-full rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] px-3 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]"
               />
-            </label>
+            </Label>
             <button
               type="button"
               onClick={() => setIsPreviewOpen(true)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm font-medium text-[var(--ink)] transition-colors hover:bg-[var(--accent-soft)]"
             >
               <Eye aria-hidden="true" className="h-4 w-4" />
               Предпросмотр
@@ -793,10 +794,10 @@ function EmailTemplatePreviewDialog({
   onPreviewUserChange: (value: string) => void;
 }) {
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-zinc-950/30 px-4 py-6">
-      <section className="max-h-[calc(100vh-72px)] w-full max-w-4xl overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 shadow-2xl">
-        <div className="flex items-center justify-between gap-4 border-b border-zinc-200 bg-white px-5 py-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 px-4 py-6">
+      <section className="max-h-[calc(100vh-72px)] w-full max-w-4xl overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-2xl">
+        <div className="flex items-center justify-between gap-4 border-b border-[var(--line)] bg-[var(--surface-raised)] px-5 py-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
             <Eye aria-hidden="true" className="h-4 w-4" />
             Предпросмотр
           </div>
@@ -804,20 +805,20 @@ function EmailTemplatePreviewDialog({
             type="button"
             onClick={onClose}
             aria-label="Закрыть предпросмотр"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)]"
           >
             <X aria-hidden="true" className="h-4 w-4" />
           </button>
         </div>
 
         <div className="max-h-[calc(100vh-145px)] overflow-y-auto p-5">
-          <div className="mb-4 grid gap-3 rounded-2xl border border-zinc-200 bg-white p-3 md:grid-cols-3">
-            <label className="block text-xs font-medium text-zinc-700">
+          <div className="mb-4 grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-3 md:grid-cols-3">
+            <label className="block text-xs font-medium text-[var(--ink)]">
               Курс для preview
-              <select
+              <Select
+                className="mt-1"
                 value={previewCourseId}
                 onChange={(event) => onPreviewCourseChange(event.target.value)}
-                className="mt-1 h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-teal-500 focus:ring-2"
               >
                 <option value="">Показать переменные</option>
                 {previewData.courses.map((course) => (
@@ -825,14 +826,14 @@ function EmailTemplatePreviewDialog({
                     {course.title}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
-            <label className="block text-xs font-medium text-zinc-700">
+            <label className="block text-xs font-medium text-[var(--ink)]">
               Получатель
-              <select
+              <Select
+                className="mt-1"
                 value={previewUserId}
                 onChange={(event) => onPreviewUserChange(event.target.value)}
-                className="mt-1 h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-teal-500 focus:ring-2"
               >
                 <option value="">Показать переменные</option>
                 {previewData.users.map((user) => (
@@ -840,24 +841,24 @@ function EmailTemplatePreviewDialog({
                     {user.name} · {user.email}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
-            <label className="block text-xs font-medium text-zinc-700">
+            <label className="block text-xs font-medium text-[var(--ink)]">
               Срок выполнения
-              <input
+              <Input
+                className="mt-1"
                 value={previewDeadline}
                 onChange={(event) => onPreviewDeadlineChange(event.target.value)}
                 placeholder="Например: до 31.05.2026"
-                className="mt-1 h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-teal-500 focus:ring-2"
               />
             </label>
           </div>
-          <div className="rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm">
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-2 shadow-sm">
             <iframe
               title="Предпросмотр HTML письма"
               sandbox=""
               srcDoc={previewHtml}
-              className="h-[640px] w-full rounded-xl bg-white"
+              className="h-[640px] w-full rounded-xl bg-[var(--surface-raised)]"
             />
           </div>
         </div>
@@ -907,7 +908,7 @@ function EmailBuilderIconButton({
       title={label}
       aria-label={label}
       disabled={disabled}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </button>
@@ -916,11 +917,11 @@ function EmailBuilderIconButton({
 
 function EmailBlockPreview({ block }: { block: EmailCanvasBlock }) {
   const previewClassName =
-    "email-builder-preview text-[15px] leading-relaxed text-slate-800 [&_a]:text-[#0563c1] [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-teal-300 [&_blockquote]:bg-teal-50 [&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:text-slate-700 [&_h2]:text-[24px] [&_h2]:font-bold [&_h2]:leading-tight [&_h3]:text-[18px] [&_h3]:font-semibold [&_h3]:leading-snug [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-lg [&_li]:mb-1 [&_li]:ml-5 [&_ol]:list-decimal [&_p]:m-0 [&_strong]:font-semibold [&_ul]:list-disc";
+    "email-builder-preview text-[15px] leading-relaxed text-[var(--ink)] [&_a]:text-[#0563c1] [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-[var(--accent)] [&_blockquote]:bg-[var(--accent-soft)] [&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:text-[var(--ink)] [&_h2]:text-[24px] [&_h2]:font-bold [&_h2]:leading-tight [&_h3]:text-[18px] [&_h3]:font-semibold [&_h3]:leading-snug [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-lg [&_li]:mb-1 [&_li]:ml-5 [&_ol]:list-decimal [&_p]:m-0 [&_strong]:font-semibold [&_ul]:list-disc";
 
   if (block.kind === "image" && !/<img\b/i.test(block.html)) {
     return (
-      <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-500">
+      <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] text-sm text-[var(--ink-muted)]">
         Добавьте ссылку на изображение
       </div>
     );
@@ -1150,28 +1151,28 @@ function EmailVisualEditor({
   return (
     <div className="mt-5">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-        <label className="text-sm font-medium text-zinc-900">Письмо</label>
+        <Label>Письмо</Label>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-1">
+          <div className="inline-flex rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-1">
             {(["desktop", "mobile"] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => setViewport(mode)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                  viewport === mode ? "bg-[#0f315d] text-white" : "text-zinc-600 hover:bg-zinc-50"
+                  viewport === mode ? "bg-[var(--accent)] text-white" : "text-[var(--ink-muted)] hover:bg-[var(--accent-soft)]"
                 }`}
               >
                 {mode === "desktop" ? "ПК" : "Мобильный"}
               </button>
             ))}
           </div>
-          <label className="inline-flex h-9 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700">
+          <label className="inline-flex h-9 items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-3 text-xs font-medium text-[var(--ink)]">
             <input
               type="checkbox"
               checked={showGrid}
               onChange={(event) => setShowGrid(event.target.checked)}
-              className="h-4 w-4 rounded border-zinc-300 text-teal-600"
+              className="h-4 w-4 rounded border-[var(--line)] text-[var(--accent)]"
             />
             Сетка
           </label>
@@ -1179,8 +1180,8 @@ function EmailVisualEditor({
       </div>
 
       <div className="grid gap-4 xl:h-[calc(100vh-290px)] xl:min-h-[560px] xl:grid-cols-[260px_minmax(0,1fr)_320px]">
-        <aside className="min-h-0 overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
-          <div className="mb-3 text-xs font-semibold uppercase text-zinc-500">Готовые блоки</div>
+        <aside className="min-h-0 overflow-y-auto rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-3 shadow-sm">
+          <div className="mb-3 text-xs font-semibold uppercase text-[var(--ink-muted)]">Готовые блоки</div>
           <div className="grid gap-2">
             {EMAIL_BUILDER_BLOCKS.map((block) => (
               <button
@@ -1189,36 +1190,36 @@ function EmailVisualEditor({
                 draggable
                 onClick={() => addBuilderBlock(block)}
                 onDragStart={(event) => handlePaletteDragStart(event, block.key)}
-                className="flex min-h-14 cursor-grab items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-left transition hover:border-teal-200 hover:bg-teal-50 active:cursor-grabbing"
+                className="flex min-h-14 cursor-grab items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-left transition hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] active:cursor-grabbing"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-zinc-600 shadow-sm">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-raised)] text-[var(--ink-muted)] shadow-sm">
                   <EmailBuilderBlockIcon icon={block.icon} />
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-zinc-900">{block.label}</span>
-                  <span className="block truncate text-xs text-zinc-500">{block.description}</span>
+                  <span className="block truncate text-sm font-medium text-[var(--ink)]">{block.label}</span>
+                  <span className="block truncate text-xs text-[var(--ink-muted)]">{block.description}</span>
                 </span>
               </button>
             ))}
           </div>
         </aside>
 
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3">
             <div>
-              <div className="text-sm font-semibold text-zinc-900">Рабочее поле</div>
-              <div className="text-xs text-zinc-500">{blocks.length} блоков</div>
+              <div className="text-sm font-semibold text-[var(--ink)]">Рабочее поле</div>
+              <div className="text-xs text-[var(--ink-muted)]">{blocks.length} блоков</div>
             </div>
-            <div className="text-xs font-medium text-zinc-500">{viewport === "desktop" ? "600 px" : "360 px"}</div>
+            <div className="text-xs font-medium text-[var(--ink-muted)]">{viewport === "desktop" ? "600 px" : "360 px"}</div>
           </div>
 
           <div
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => handleCanvasDrop(event)}
-            className="min-h-0 flex-1 overflow-auto bg-slate-200 px-5 py-6"
+            className="min-h-0 flex-1 overflow-auto bg-[var(--canvas)] px-5 py-6"
           >
             <div className={`mx-auto min-h-full w-full ${canvasWidthClassName} transition-all`}>
-              <div className={`min-h-[640px] bg-white px-8 py-10 shadow-xl ${canvasGridClassName}`}>
+              <div className={`min-h-[640px] bg-[var(--surface-raised)] px-8 py-10 shadow-xl ${canvasGridClassName}`}>
                 {blocks.map((block, index) => {
                   const isSelected = block.id === selectedBlock?.id;
                   const isDragging = block.id === draggingBlockId;
@@ -1240,11 +1241,11 @@ function EmailVisualEditor({
                       onDrop={(event) => handleBlockDrop(event, index)}
                       className={`group relative -mx-3 mb-3 cursor-pointer rounded-xl border px-3 py-3 transition ${
                         isSelected
-                          ? "border-teal-400 bg-teal-50/60 ring-2 ring-teal-100"
-                          : "border-transparent hover:border-teal-200 hover:bg-teal-50/40"
+                          ? "border-[var(--accent)] bg-[var(--accent-soft)] ring-2 ring-[var(--accent-soft)]"
+                          : "border-transparent hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]"
                       } ${isDragging ? "opacity-50" : ""}`}
                     >
-                      <div className="absolute -left-3 top-3 hidden h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 shadow-sm group-hover:flex">
+                      <div className="absolute -left-3 top-3 hidden h-7 w-7 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink-muted)] shadow-sm group-hover:flex">
                         <GripVertical aria-hidden="true" className="h-4 w-4" />
                       </div>
                       <div className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex">
@@ -1269,7 +1270,7 @@ function EmailVisualEditor({
                           <Trash2 aria-hidden="true" className="h-4 w-4" />
                         </EmailBuilderIconButton>
                       </div>
-                      <div className="mb-2 inline-flex rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-500 group-hover:bg-white">
+                      <div className="mb-2 inline-flex rounded-full bg-[var(--surface)] px-2 py-1 text-[11px] font-medium text-[var(--ink-muted)] group-hover:bg-[var(--surface-raised)]">
                         {EMAIL_BLOCK_KIND_LABELS[block.kind]}
                       </div>
                       <div
@@ -1289,32 +1290,32 @@ function EmailVisualEditor({
           </div>
         </section>
 
-        <aside className="min-h-0 overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 text-xs font-semibold uppercase text-zinc-500">Настройки блока</div>
+        <aside className="min-h-0 overflow-y-auto rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4 shadow-sm">
+          <div className="mb-3 text-xs font-semibold uppercase text-[var(--ink-muted)]">Настройки блока</div>
           {selectedBlock ? (
             <div className="grid gap-4">
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                <div className="text-sm font-semibold text-zinc-900">{EMAIL_BLOCK_KIND_LABELS[selectedBlock.kind]}</div>
-                <div className="mt-1 text-xs text-zinc-500">Выбранный блок письма</div>
+              <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3">
+                <div className="text-sm font-semibold text-[var(--ink)]">{EMAIL_BLOCK_KIND_LABELS[selectedBlock.kind]}</div>
+                <div className="mt-1 text-xs text-[var(--ink-muted)]">Выбранный блок письма</div>
               </div>
 
-              <label className="block text-xs font-medium text-zinc-700">
+              <label className="block text-xs font-medium text-[var(--ink)]">
                 Тип блока
-                <select
+                <Select
+                  className="mt-1"
                   value={selectedBlock.kind}
                   onChange={(event) => updateBlockKind(selectedBlock.id, event.target.value as EmailBuilderBlockKind)}
-                  className="mt-1 h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-teal-500 focus:ring-2"
                 >
                   {EMAIL_BLOCK_KIND_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
 
               <div>
-                <div className="mb-2 text-xs font-medium text-zinc-700">Фон блока</div>
+                <div className="mb-2 text-xs font-medium text-[var(--ink)]">Фон блока</div>
                 <div className="grid grid-cols-3 gap-2">
                   {EMAIL_BLOCK_BACKGROUNDS.map((background) => (
                     <button
@@ -1324,29 +1325,29 @@ function EmailVisualEditor({
                       onClick={() => updateBlockBackground(selectedBlock.id, background.value)}
                       className={`flex h-10 items-center justify-center rounded-xl border text-xs font-medium transition ${
                         selectedBlock.backgroundColor === background.value
-                          ? "border-teal-500 ring-2 ring-teal-100"
-                          : "border-zinc-200 hover:border-zinc-300"
+                          ? "border-[var(--accent)] ring-2 ring-[var(--accent-soft)]"
+                          : "border-[var(--line)] hover:border-[var(--line)]"
                       }`}
                     >
                       <span
-                        className="h-5 w-5 rounded-md border border-zinc-300"
+                        className="h-5 w-5 rounded-md border border-[var(--line)]"
                         style={{ background: background.swatch }}
                       />
                     </button>
                   ))}
                 </div>
-                <div className="mt-3 grid gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                  <label className="block text-xs font-medium text-zinc-700">
+                <div className="mt-3 grid gap-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3">
+                  <label className="block text-xs font-medium text-[var(--ink)]">
                     Произвольный цвет
                     <div className="mt-1 grid grid-cols-[44px_minmax(0,1fr)] gap-2">
                       <input
                         type="color"
                         value={isEmailHexColor(customBackgroundDraft) ? customBackgroundDraft : "#ffffff"}
                         onChange={(event) => updateCustomBlockBackground(selectedBlock.id, event.target.value)}
-                        className="h-10 w-11 cursor-pointer rounded-lg border border-zinc-300 bg-white p-1"
+                        className="h-10 w-11 cursor-pointer rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] p-1"
                         aria-label="Выбрать произвольный цвет фона"
                       />
-                      <input
+                      <Input
                         value={customBackgroundDraft}
                         onChange={(event) => updateCustomBlockBackground(selectedBlock.id, event.target.value)}
                         onBlur={() => {
@@ -1357,40 +1358,40 @@ function EmailVisualEditor({
                           }
                         }}
                         placeholder="#eef6ff"
-                        className="h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-teal-500 focus:ring-2"
                       />
                     </div>
                   </label>
                   <button
                     type="button"
                     onClick={() => updateBlockBackground(selectedBlock.id, "transparent")}
-                    className="text-left text-xs font-medium text-zinc-500 transition hover:text-zinc-900"
+                    className="text-left text-xs font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
                   >
                     Сбросить фон
                   </button>
                 </div>
               </div>
 
-              <label className="block text-xs font-medium text-zinc-700">
+              <label className="block text-xs font-medium text-[var(--ink)]">
                 Отступы внутри блока
-                <select
+                <Select
+                  className="mt-1"
                   value={selectedBlock.padding}
                   onChange={(event) => updateBlockPadding(selectedBlock.id, event.target.value as EmailBlockPadding)}
-                  className="mt-1 h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-teal-500 focus:ring-2"
                 >
                   {EMAIL_BLOCK_PADDINGS.map((padding) => (
                     <option key={padding.value} value={padding.value}>
                       {padding.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
 
               {selectedBlock.kind === "image" && selectedImageSettings ? (
                 <div className="grid gap-3">
-                  <label className="block text-xs font-medium text-zinc-700">
+                  <label className="block text-xs font-medium text-[var(--ink)]">
                     Ссылка на картинку
-                    <input
+                    <Input
+                      className="mt-1"
                       value={selectedImageSettings.src}
                       onChange={(event) =>
                         updateImageSettings(selectedBlock.id, {
@@ -1399,12 +1400,12 @@ function EmailVisualEditor({
                         })
                       }
                       placeholder="https://example.com/banner.png"
-                      className="mt-1 h-10 w-full rounded-xl border border-zinc-300 px-3 text-sm text-zinc-900 outline-none ring-teal-500 focus:ring-2"
                     />
                   </label>
-                  <label className="block text-xs font-medium text-zinc-700">
+                  <label className="block text-xs font-medium text-[var(--ink)]">
                     Alt-текст
-                    <input
+                    <Input
+                      className="mt-1"
                       value={selectedImageSettings.alt}
                       onChange={(event) =>
                         updateImageSettings(selectedBlock.id, {
@@ -1413,10 +1414,9 @@ function EmailVisualEditor({
                         })
                       }
                       placeholder="Описание изображения"
-                      className="mt-1 h-10 w-full rounded-xl border border-zinc-300 px-3 text-sm text-zinc-900 outline-none ring-teal-500 focus:ring-2"
                     />
                   </label>
-                  <label className="block text-xs font-medium text-zinc-700">
+                  <label className="block text-xs font-medium text-[var(--ink)]">
                     Ширина: {selectedImageSettings.width}%
                     <input
                       type="range"
@@ -1430,19 +1430,19 @@ function EmailVisualEditor({
                           width: Number(event.target.value),
                         })
                       }
-                      className="mt-2 w-full accent-teal-600"
+                      className="mt-2 w-full accent-[var(--accent)]"
                     />
                   </label>
                 </div>
               ) : (
-                <label className="block text-xs font-medium text-zinc-700">
+                <label className="block text-xs font-medium text-[var(--ink)]">
                   Содержимое
-                  <textarea
+                  <Textarea
                     rows={10}
+                    className="mt-1 resize-y leading-relaxed"
                     value={blockTextFromHtml(selectedBlock.html)}
                     onChange={(event) => updateBlockText(selectedBlock.id, event.target.value)}
                     placeholder={EMAIL_BLOCK_PLACEHOLDERS[selectedBlock.kind]}
-                    className="mt-1 w-full resize-y rounded-xl border border-zinc-300 px-3 py-2 text-sm leading-relaxed text-zinc-900 outline-none ring-teal-500 focus:ring-2"
                   />
                 </label>
               )}
@@ -1450,8 +1450,8 @@ function EmailVisualEditor({
               {selectedBlock.kind !== "image" ? (
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-3">
-                    <div className="text-xs font-medium text-zinc-700">Переменные</div>
-                    <div className="text-[11px] text-zinc-500">Нажмите, чтобы вставить</div>
+                    <div className="text-xs font-medium text-[var(--ink)]">Переменные</div>
+                    <div className="text-[11px] text-[var(--ink-muted)]">Нажмите, чтобы вставить</div>
                   </div>
                   <div className="grid max-h-72 gap-2 overflow-y-auto pr-1">
                     {TEMPLATE_VARIABLES.map((item) => (
@@ -1460,15 +1460,15 @@ function EmailVisualEditor({
                         type="button"
                         title={`${item.label}: ${item.description}`}
                         onClick={() => appendVariableToSelectedBlock(item.token)}
-                        className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-left transition hover:border-teal-200 hover:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-left transition hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                       >
                         <span className="flex min-w-0 items-start justify-between gap-2">
-                          <span className="min-w-0 text-xs font-semibold text-zinc-900">{item.label}</span>
-                          <span className="shrink-0 rounded-md bg-white px-1.5 py-0.5 font-mono text-[10px] font-medium text-zinc-500 ring-1 ring-zinc-200">
+                          <span className="min-w-0 text-xs font-semibold text-[var(--ink)]">{item.label}</span>
+                          <span className="shrink-0 rounded-md bg-[var(--surface-raised)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[var(--ink-muted)] ring-1 ring-[var(--line)]">
                             {item.token}
                           </span>
                         </span>
-                        <span className="mt-1 block text-[11px] font-normal leading-snug text-zinc-500">
+                        <span className="mt-1 block text-[11px] font-normal leading-snug text-[var(--ink-muted)]">
                           {item.description}
                         </span>
                       </button>
@@ -1478,7 +1478,7 @@ function EmailVisualEditor({
               ) : null}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-zinc-300 p-4 text-sm text-zinc-500">
+            <div className="rounded-xl border border-dashed border-[var(--line)] p-4 text-sm text-[var(--ink-muted)]">
               Выберите блок
             </div>
           )}
@@ -1500,16 +1500,16 @@ function TemplateDialogHeader({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <h4 id="emailTemplateDialogTitle" className="text-lg font-semibold text-zinc-950">
+        <h4 id="emailTemplateDialogTitle" className="text-lg font-semibold text-[var(--ink)]">
           {title}
         </h4>
-        <p className="mt-1 text-sm text-zinc-500">{description}</p>
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">{description}</p>
       </div>
       <button
         type="button"
         onClick={onClose}
         aria-label="Закрыть"
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)]"
       >
         <X aria-hidden="true" className="h-4 w-4" />
       </button>
@@ -1520,13 +1520,7 @@ function TemplateDialogHeader({
 function TemplateDialogFooter({ onClose }: { onClose: () => void }) {
   return (
     <div className="mt-5 flex justify-end">
-      <button
-        type="button"
-        onClick={onClose}
-        className="rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800"
-      >
-        Готово
-      </button>
+      <Button onClick={onClose}>Готово</Button>
     </div>
   );
 }

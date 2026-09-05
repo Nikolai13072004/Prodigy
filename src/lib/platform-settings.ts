@@ -22,7 +22,7 @@ export const DEFAULT_MAINTENANCE_MESSAGE =
 
 export const DEFAULT_PLATFORM_SETTINGS = {
   id: "default",
-  siteName: "Aurora LMS",
+  siteName: "Smart LMS",
   siteDescription: "Корпоративное обучение сотрудников",
   logoUrl: DEFAULT_LOGO_URL,
   faviconUrl: null,

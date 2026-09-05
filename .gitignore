@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Internal audit (not for public repo)
+/docs/audit/
+
 # dependencies
 /node_modules
 /.pnp
@@ -49,6 +52,11 @@ next-env.d.ts
 /src/generated/prisma
 
 # local data
+# Временные pg-схемы инфра-раннера и скрипта переноса данных
+# (run-infra-tests.mjs / migrate-sqlite-to-postgres.mjs); обычно чистятся сами,
+# тут — страховка от жёсткого обрыва.
+/prisma/schema.infra-pg-*.prisma
+/prisma/schema.migrate-pg.prisma
 /prisma/dev.db
 /prisma/dev.db-journal
 /prisma/dev.db-shm
@@ -63,6 +71,7 @@ next-env.d.ts
 /e2e.db-wal
 /public/uploads/*
 !/public/uploads/.gitkeep
+/data/uploads/
 /public/branding/*
 !/public/branding/.gitkeep
 /data/storage-tmp/

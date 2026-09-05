@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Eye, X } from "lucide-react";
+import { Button } from "@/components/ui";
 import { CourseSurveyForm } from "@/components/CourseSurveyForm";
 import {
   DEFAULT_COURSE_SURVEY_TITLE,
@@ -55,34 +56,30 @@ export function CourseSurveyPreviewDialog() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={openPreview}
-        className="inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
-      >
+      <Button variant="secondary" onClick={openPreview}>
         <Eye className="h-4 w-4" aria-hidden="true" />
         Просмотр опроса
-      </button>
+      </Button>
 
       {preview ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-zinc-950/45 px-4 py-6">
-          <section className="w-full max-w-6xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/45 px-4 py-6">
+          <section className="w-full max-w-6xl overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-[var(--shadow-2)]">
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] px-5 py-4">
               <div className="min-w-0">
-                <p className="text-base font-semibold text-zinc-950">Просмотр опроса</p>
-                <p className="mt-1 text-sm text-zinc-500">Так ученик увидит опрос.</p>
+                <p className="text-base font-semibold text-[var(--ink)]">Просмотр опроса</p>
+                <p className="mt-1 text-sm text-[var(--ink-muted)]">Так ученик увидит опрос.</p>
               </div>
               <button
                 type="button"
                 aria-label="Закрыть просмотр опроса"
                 onClick={() => setPreview(null)}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-300 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[var(--line)] text-[var(--ink-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--ink)]"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
 
-            <div className="bg-[#eaf3fb] px-4 py-5">
+            <div className="bg-[var(--accent-soft)] px-4 py-5">
               <CourseSurveyForm
                 key={`${preview.title}-${preview.questions.length}`}
                 introTitle={preview.title}

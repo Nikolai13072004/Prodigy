@@ -9,7 +9,7 @@ export function QuizQuestionMediaViewer({ media, className = "" }: Props) {
   if (!media) return null;
 
   const rootClassName = [
-    "overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50",
+    "overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)]",
     className,
   ]
     .filter(Boolean)

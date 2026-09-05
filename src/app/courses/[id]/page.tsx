@@ -1,27 +1,24 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ClipboardCheck, ClipboardList, FileText, Film, Files } from "lucide-react";
 import { auth } from "@/auth";
 import { CourseLessonTracker } from "@/components/CourseLessonTracker";
 import { CoursePortalFrame } from "@/components/CoursePortalFrame";
 import { MaterialView } from "@/components/MaterialView";
 import { canManageCourse, canViewCourseContent, hasAnyCourseAssignment } from "@/lib/access";
-import { resolveEffectiveCourseAccessWindow, type CourseAccessWindow } from "@/lib/course-access-window";
-import { getCourseDeadlineMeta } from "@/lib/course-deadline";
+import { resolveEffectiveCourseAccessWindow } from "@/lib/course-access-window";
 import {
   appendCourseReturnSource,
   getCourseBackLink,
   getCourseReturnSource,
-  type CourseReturnSource,
 } from "@/lib/course-return-source";
 import {
   buildCourseModuleGroups,
   isPublishedSnapshotActive,
   parsePublishedCourseSnapshot,
 } from "@/lib/course-content";
-import { buildCourseOutline, pickActiveCourseOutlineEntry, type CourseOutlineEntry } from "@/lib/course-navigation";
+import { buildCourseOutline, pickActiveCourseOutlineEntry } from "@/lib/course-navigation";
 import { getCourseProgress, getQuizProgress } from "@/lib/course-progress";
-import { getRequiredCorrectAnswers } from "@/lib/quiz-pass-rule";
+import { findCourseCertificate } from "@/modules/certification/server/find-course-certificate";
 import { normalizePresentationViewMode } from "@/lib/constants";
 import { getPlatformSettings } from "@/lib/platform-settings";
 import prisma from "@/lib/prisma";
@@ -34,6 +31,14 @@ import {
   hasRole,
   isPlatformAdminRole,
 } from "@/lib/roles";
+import { buildCourseEntryHref, buildCourseItemHref } from "./_content/hrefs";
+import {
+  CourseContentListItem,
+  CourseDeadlineStrip,
+  NextStepCard,
+  QuizCard,
+  SurveyCard,
+} from "./_content/cards";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -332,6 +337,11 @@ export default async function CoursePage({ params, searchParams }: Props) {
       materialProgress: item.type === "QUIZ" ? 0 : item.views[0]?.progressPercent ?? 0,
     })),
   });
+  const courseCertificate = progress.isCompleted
+    ? await findCourseCertificate(session.user.id, course.id)
+    : null;
+  const certificateSerial =
+    courseCertificate?.status === "ISSUED" ? courseCertificate.serial : null;
   const learnerAccessWindow = isStudent
     ? resolveEffectiveCourseAccessWindow(
         course.directAssignments.map((assignment) => assignment.expiresAt),
@@ -415,13 +425,13 @@ export default async function CoursePage({ params, searchParams }: Props) {
       >
         <div className="space-y-4">
           {asLearnerPreview ? (
-            <div className="rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+            <div className="rounded-md bg-[var(--info-soft)] px-4 py-3 text-sm text-[var(--info)]">
               Режим просмотра как ученик. Прогресс и попытки тестов администратора не изменяются, материалы показаны с учетом опубликованной версии.
             </div>
           ) : null}
 
           {requestedItemLocked ? (
-            <p className="rounded-md border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p className="rounded-md bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)]">
               {requestedOutlineEntry?.lockReason === "QUIZ_STARTED"
                 ? "Просмотр материалов заблокирован, пока вы не завершите начатый тест."
                 : "Этот урок пока заблокирован. Сначала завершите предыдущий обязательный этап."}
@@ -431,38 +441,39 @@ export default async function CoursePage({ params, searchParams }: Props) {
           <NextStepCard
             courseId={course.id}
             entry={recommendedEntry}
-            isCourseCompleted={progress.percent >= 100}
+            isCourseCompleted={progress.isCompleted}
+            certificateSerial={certificateSerial}
             showFeedbackCta={showFeedbackTab}
-            showSurveyCta={showSurveyTab && progress.percent >= 100 && !hasSurveyResponse}
+            showSurveyCta={showSurveyTab && progress.isCompleted && !hasSurveyResponse}
             view={sp.view}
             returnSource={returnSource}
             asLearnerPreview={asLearnerPreview}
           />
 
-          <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <section className="rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-raised)] p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-base font-semibold text-zinc-950">Содержание курса</h2>
-              <span className="text-sm text-zinc-500">
+              <h2 className="text-base font-semibold text-[var(--ink)]">Содержание курса</h2>
+              <span className="text-sm text-[var(--ink-muted)]">
                 {progress.completedRequired}/{progress.requiredTotal} завершено
               </span>
             </div>
 
             {outline.length === 0 ? (
-              <p className="mt-4 text-sm text-zinc-700">Элементы курса еще не добавлены.</p>
+              <p className="mt-4 text-sm text-[var(--ink-muted)]">Элементы курса еще не добавлены.</p>
             ) : (
               <div className="mt-4 space-y-4">
                 {outlineGroups.map((group, groupIndex) => (
                   <section key={group.id ?? `outline-group-${groupIndex}`}>
                     {outlineGroups.length > 1 || group.description ? (
                       <div className="mb-2">
-                        <h3 className="text-sm font-semibold text-zinc-900">{group.title}</h3>
+                        <h3 className="text-sm font-semibold text-[var(--ink)]">{group.title}</h3>
                         {group.description ? (
-                          <p className="mt-1 text-xs text-zinc-500">{group.description}</p>
+                          <p className="mt-1 text-xs text-[var(--ink-muted)]">{group.description}</p>
                         ) : null}
                       </div>
                     ) : null}
 
-                    <ol className="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200">
+                    <ol className="divide-y divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)]">
                       {group.items.map((item) => (
                         <CourseContentListItem
                           key={item.id}
@@ -538,497 +549,5 @@ export default async function CoursePage({ params, searchParams }: Props) {
         </div>
       </CoursePortalFrame>
     </main>
-  );
-}
-
-function CourseDeadlineStrip({
-  accessWindow,
-  isCompleted,
-}: {
-  accessWindow: CourseAccessWindow | null;
-  isCompleted: boolean;
-}) {
-  const meta = getCourseDeadlineMeta(accessWindow, isCompleted);
-  if (meta.isUnlimited) return null;
-
-  const toneClass =
-    meta.tone === "danger"
-      ? "border-red-200/40 bg-red-500/15 text-red-50"
-      : meta.tone === "warning"
-        ? "border-amber-200/40 bg-amber-400/15 text-amber-50"
-        : meta.tone === "success"
-          ? "border-emerald-200/40 bg-emerald-400/15 text-emerald-50"
-          : meta.tone === "info"
-            ? "border-sky-200/40 bg-sky-400/15 text-sky-50"
-            : "border-white/20 bg-white/10 text-white";
-
-  return (
-    <div className={`max-w-3xl rounded-lg border px-4 py-3 backdrop-blur ${toneClass}`}>
-      <p className="text-sm font-semibold">{meta.title}</p>
-    </div>
-  );
-}
-
-function buildCourseItemHref(
-  courseId: string,
-  itemId: string | null,
-  view: string | undefined,
-  returnSource: CourseReturnSource | null,
-  asLearnerPreview = false
-) {
-  const params = new URLSearchParams();
-  if (itemId) params.set("item", itemId);
-  if (view) params.set("view", view);
-  if (returnSource) params.set("from", returnSource);
-  if (asLearnerPreview) params.set("asLearner", "1");
-  const suffix = params.toString();
-  return suffix ? `/courses/${courseId}?${suffix}` : `/courses/${courseId}`;
-}
-
-function buildCourseEntryResumeHref(
-  courseId: string,
-  entry: CourseOutlineEntry,
-  view: string | undefined,
-  returnSource: CourseReturnSource | null,
-  asLearnerPreview = false
-) {
-  if (entry.type === "QUIZ" && entry.quiz?.id) {
-    if (asLearnerPreview) return `/courses/${courseId}/quiz/${entry.quiz.id}/builder/preview`;
-    return appendCourseReturnSource(`/courses/${courseId}/quiz/${entry.quiz.id}`, returnSource);
-  }
-  if (entry.type === "SURVEY") {
-    if (asLearnerPreview) return buildCourseItemHref(courseId, entry.id, view, returnSource, true);
-    return appendCourseReturnSource(`/courses/${courseId}/survey/${entry.id}`, returnSource);
-  }
-
-  const params = new URLSearchParams();
-  params.set("item", entry.id);
-  params.set("resume", "1");
-  if (view) params.set("view", view);
-  if (returnSource) params.set("from", returnSource);
-  if (asLearnerPreview) params.set("asLearner", "1");
-  return `/courses/${courseId}?${params.toString()}`;
-}
-
-function buildCourseEntryHref(
-  courseId: string,
-  entry: CourseOutlineEntry,
-  view: string | undefined,
-  returnSource: CourseReturnSource | null,
-  asLearnerPreview = false
-) {
-  if (entry.type === "QUIZ" && entry.quiz?.id) {
-    if (asLearnerPreview) return `/courses/${courseId}/quiz/${entry.quiz.id}/builder/preview`;
-    return appendCourseReturnSource(`/courses/${courseId}/quiz/${entry.quiz.id}`, returnSource);
-  }
-  if (entry.type === "SURVEY") {
-    if (asLearnerPreview) return buildCourseItemHref(courseId, entry.id, view, returnSource, true);
-    return appendCourseReturnSource(`/courses/${courseId}/survey/${entry.id}`, returnSource);
-  }
-  return buildCourseItemHref(courseId, entry.id, view, returnSource, asLearnerPreview);
-}
-
-function NextStepCard({
-  courseId,
-  entry,
-  isCourseCompleted,
-  showFeedbackCta,
-  showSurveyCta,
-  view,
-  returnSource,
-  asLearnerPreview,
-}: {
-  courseId: string;
-  entry: CourseOutlineEntry | null;
-  isCourseCompleted: boolean;
-  showFeedbackCta: boolean;
-  showSurveyCta: boolean;
-  view: string | undefined;
-  returnSource: CourseReturnSource | null;
-  asLearnerPreview: boolean;
-}) {
-  if (isCourseCompleted) {
-    return (
-      <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-              Курс завершен
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-zinc-950">Все обязательные этапы пройдены</h2>
-            {showSurveyCta ? (
-              <p className="mt-2 text-sm text-zinc-600">Осталось пройти короткий опрос по результатам обучения.</p>
-            ) : null}
-          </div>
-          {showSurveyCta ? (
-            <Link
-              href={appendCourseReturnSource(`/courses/${courseId}/survey`, returnSource)}
-              className="inline-flex h-10 items-center justify-center rounded-md bg-emerald-700 px-4 text-sm font-medium text-white hover:bg-emerald-800"
-            >
-              Пройти опрос
-            </Link>
-          ) : showFeedbackCta ? (
-            <Link
-              href={appendCourseReturnSource(`/courses/${courseId}/feedback`, returnSource)}
-              className="inline-flex h-10 items-center justify-center rounded-md bg-emerald-700 px-4 text-sm font-medium text-white hover:bg-emerald-800"
-            >
-              Оценить курс
-            </Link>
-          ) : null}
-        </div>
-      </section>
-    );
-  }
-
-  if (!entry) {
-    return (
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold text-zinc-950">Следующий шаг</h2>
-        <p className="mt-2 text-sm text-zinc-600">В курсе пока нет материалов для прохождения.</p>
-      </section>
-    );
-  }
-
-  const isStarted = entry.progressPercent > 0;
-  const attemptsLabel = entry.type === "QUIZ" ? getQuizAttemptsLabel(entry.quiz) : null;
-  const showProgress = entry.type !== "QUIZ" && isStarted && entry.progressPercent < 100;
-  const showStatusSummary = !showProgress || Boolean(attemptsLabel);
-
-  return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
-            Следующий шаг
-          </p>
-          <h2 className="mt-1 truncate text-lg font-semibold text-zinc-950">{entry.title}</h2>
-          {showStatusSummary ? (
-            <p className="mt-1 text-sm text-zinc-600">
-              {entry.statusLabel}
-              {attemptsLabel ? ` · ${attemptsLabel}` : ""}
-            </p>
-          ) : null}
-
-          {showProgress ? (
-            <div className="mt-3 max-w-xl">
-              <div className="flex items-center justify-between gap-3 text-xs text-zinc-500">
-                <span>В процессе</span>
-                <span>{entry.progressPercent}%</span>
-              </div>
-              <div className="mt-1.5 h-1.5 rounded-full bg-zinc-200">
-                <div
-                  className="h-1.5 rounded-full bg-teal-600 transition-all"
-                  style={{ width: `${Math.max(0, Math.min(entry.progressPercent, 100))}%` }}
-                />
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        <Link
-          href={buildCourseEntryResumeHref(courseId, entry, view, returnSource, asLearnerPreview)}
-          prefetch={entry.type === "QUIZ" || entry.type === "SURVEY" ? false : undefined}
-          className="inline-flex justify-center rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800"
-        >
-          {isStarted ? "Продолжить" : "Начать"}
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-function CourseContentListItem({
-  courseId,
-  item,
-  isActive,
-  view,
-  returnSource,
-  asLearnerPreview,
-}: {
-  courseId: string;
-  item: CourseOutlineEntry;
-  isActive: boolean;
-  view: string | undefined;
-  returnSource: CourseReturnSource | null;
-  asLearnerPreview: boolean;
-}) {
-  const attemptsLabel = item.type === "QUIZ" ? getQuizAttemptsLabel(item.quiz) : null;
-  const showProgress = item.type !== "QUIZ" && item.progressPercent > 0 && item.progressPercent < 100;
-  const title = (
-    <div className="flex min-w-0 flex-1 items-start gap-3">
-      <span
-        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500"
-        title={item.typeLabel}
-        aria-label={item.typeLabel}
-      >
-        {getCourseItemRowIcon(item.type)}
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-zinc-950">{item.title}</p>
-        <p className="mt-1 text-xs text-zinc-500">
-          <span>Шаг {item.itemNumber}</span>
-          <span> · {item.typeLabel}</span>
-          {attemptsLabel ? <span> · {attemptsLabel}</span> : null}
-        </p>
-        {showProgress ? (
-          <div className="mt-1 flex items-center gap-2">
-            <div className="h-1.5 w-28 rounded-full bg-zinc-200">
-              <div
-                className="h-1.5 rounded-full bg-teal-600 transition-all"
-                style={{ width: `${Math.max(0, Math.min(item.progressPercent, 100))}%` }}
-              />
-            </div>
-            <span className="text-xs text-zinc-500">{item.progressPercent}%</span>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-
-  if (item.isLocked) {
-    return (
-      <li className="flex items-center justify-between gap-3 bg-zinc-50 px-3 py-3 opacity-75">
-        {title}
-        <CourseStatusPill label="Заблокирован" tone="locked" />
-      </li>
-    );
-  }
-
-  return (
-    <li>
-      <Link
-        href={buildCourseEntryResumeHref(courseId, item, view, returnSource, asLearnerPreview)}
-        prefetch={item.type === "QUIZ" || item.type === "SURVEY" ? false : undefined}
-        className={`flex items-center justify-between gap-3 px-3 py-3 transition ${
-          isActive ? "bg-sky-50" : "bg-white hover:bg-slate-50"
-        }`}
-      >
-        {title}
-        <div className="flex shrink-0 items-center gap-3">
-          <CourseStatusPill
-            label={item.statusLabel}
-            tone={item.isCompleted ? "completed" : item.progressPercent > 0 ? "progress" : "idle"}
-          />
-          <span className="hidden text-sm font-semibold text-teal-700 sm:inline">
-            {item.isCompleted
-              ? "Открыть"
-              : item.type === "QUIZ"
-                ? "Открыть тест"
-                : item.type === "SURVEY"
-                  ? "Открыть опрос"
-                : item.progressPercent > 0
-                  ? "Продолжить"
-                  : "Начать"}
-          </span>
-        </div>
-      </Link>
-    </li>
-  );
-}
-
-function CourseStatusPill({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: "completed" | "progress" | "idle" | "locked";
-}) {
-  const className =
-    tone === "completed"
-      ? "bg-emerald-50 text-emerald-700"
-      : tone === "progress"
-        ? "bg-amber-50 text-amber-700"
-        : tone === "locked"
-          ? "bg-zinc-200 text-zinc-600"
-          : "bg-slate-100 text-slate-600";
-
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${className}`}>{label}</span>;
-}
-
-function getCourseItemRowIcon(type: string) {
-  if (type === "QUIZ") return <ClipboardCheck className="h-4 w-4" aria-hidden="true" />;
-  if (type === "SURVEY") return <ClipboardList className="h-4 w-4" aria-hidden="true" />;
-  if (type === "PDF") return <Files className="h-4 w-4" aria-hidden="true" />;
-  if (type === "VIDEO") return <Film className="h-4 w-4" aria-hidden="true" />;
-  return <FileText className="h-4 w-4" aria-hidden="true" />;
-}
-
-type QuizAttemptsSummarySource = {
-  maxAttempts: number;
-  minCorrectAnswers: number;
-  attempts: {
-    outcome: string;
-    correctAnswers: number;
-    attemptNumber: number;
-    score: number;
-    completedAt: Date;
-  }[];
-};
-
-function getQuizAttemptsLabel(quiz: QuizAttemptsSummarySource | null) {
-  if (!quiz) return null;
-
-  const progress = getQuizProgress(quiz, quiz.attempts);
-  if (progress.status.code === "PASSED") {
-    return `Использовано попыток: ${progress.attemptsUsed} из ${quiz.maxAttempts}`;
-  }
-  if (progress.attemptsLeft <= 0 && !progress.hasInProgress) {
-    return "Попытки закончились";
-  }
-
-  return `Осталось попыток: ${progress.attemptsLeft} из ${quiz.maxAttempts}`;
-}
-
-function QuizCard({
-  courseId,
-  item,
-  quizStatus,
-  canOpenQuiz,
-  returnSource,
-}: {
-  courseId: string;
-  item: {
-    id: string;
-    title: string;
-    isRequired: boolean;
-    quiz: {
-      id: string;
-      maxAttempts: number;
-      minCorrectAnswers: number;
-      attempts: {
-        id: string;
-        outcome: string;
-        correctAnswers: number;
-        attemptNumber: number;
-        score: number;
-        completedAt: Date;
-      }[];
-      questions: { id: string }[];
-    };
-  };
-  quizStatus: ReturnType<typeof getQuizProgress>;
-  canOpenQuiz: boolean;
-  returnSource: CourseReturnSource | null;
-}) {
-  const badgeStyles =
-    quizStatus.status.code === "PASSED"
-      ? "bg-emerald-100 text-emerald-700"
-      : quizStatus.status.code === "IN_PROGRESS"
-        ? "bg-amber-100 text-amber-700"
-        : quizStatus.status.code === "FAILED"
-          ? "bg-red-100 text-red-700"
-          : "bg-zinc-100 text-zinc-700";
-  const requiredCorrectAnswers = getRequiredCorrectAnswers(
-    item.quiz.minCorrectAnswers,
-    item.quiz.questions.length
-  );
-  const attemptsLabel = getQuizAttemptsLabel(item.quiz);
-
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-semibold text-zinc-900">{item.title}</h3>
-          <p className="mt-2 text-sm text-zinc-700">
-            {item.isRequired ? "Обязательный тест" : "Дополнительный тест"} · минимум правильных
-            ответов: {requiredCorrectAnswers}
-            {attemptsLabel ? ` · ${attemptsLabel}` : ""}
-          </p>
-        </div>
-        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${badgeStyles}`}>
-          {quizStatus.status.label}
-        </span>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-zinc-500">
-          Вопросов: {item.quiz.questions.length}
-          {quizStatus.bestAttempt ? (
-            <span>
-              {" "}
-              · лучшая попытка: {quizStatus.bestAttempt.correctAnswers}/
-              {item.quiz.questions.length}
-            </span>
-          ) : null}
-        </div>
-        {canOpenQuiz ? (
-          <Link
-            href={appendCourseReturnSource(`/courses/${courseId}/quiz/${item.quiz.id}`, returnSource)}
-            prefetch={false}
-            className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
-          >
-            Открыть тест
-          </Link>
-        ) : (
-          <span className="text-sm text-zinc-500">Тест доступен назначенным сотрудникам</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SurveyCard({
-  courseId,
-  item,
-  canOpenSurvey,
-  returnSource,
-}: {
-  courseId: string;
-  item: {
-    id: string;
-    title: string;
-    isRequired: boolean;
-    surveyTemplate: {
-      id: string;
-      title: string;
-      isActive: boolean;
-      questions: { id: string }[];
-      responses: { id: string }[];
-    } | null;
-  };
-  canOpenSurvey: boolean;
-  returnSource: CourseReturnSource | null;
-}) {
-  const responseSent = Boolean(item.surveyTemplate?.responses.length);
-  const isAvailable = Boolean(item.surveyTemplate?.isActive && item.surveyTemplate.questions.length > 0);
-  const badgeStyles = responseSent
-    ? "bg-emerald-100 text-emerald-700"
-    : isAvailable
-      ? "bg-sky-100 text-sky-700"
-      : "bg-zinc-100 text-zinc-700";
-  const badgeLabel = responseSent ? "Ответ отправлен" : isAvailable ? "Не пройден" : "Не настроен";
-
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-semibold text-zinc-900">{item.title}</h3>
-          <p className="mt-2 text-sm text-zinc-700">
-            {item.isRequired ? "Обязательный опрос" : "Дополнительный опрос"}
-            {item.surveyTemplate ? ` · вопросов: ${item.surveyTemplate.questions.length}` : ""}
-          </p>
-        </div>
-        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${badgeStyles}`}>
-          {badgeLabel}
-        </span>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-zinc-500">
-          {responseSent ? "Можно открыть и обновить ответы." : "Опрос откроется в отдельном окне прохождения."}
-        </div>
-        {canOpenSurvey && isAvailable ? (
-          <Link
-            href={appendCourseReturnSource(`/courses/${courseId}/survey/${item.id}`, returnSource)}
-            prefetch={false}
-            className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
-          >
-            {responseSent ? "Открыть ответы" : "Пройти опрос"}
-          </Link>
-        ) : (
-          <span className="text-sm text-zinc-500">Опрос доступен назначенным сотрудникам</span>
-        )}
-      </div>
-    </div>
   );
 }

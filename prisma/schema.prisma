@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -55,9 +55,14 @@ model User {
   hrReportSchedules        HrReportSchedule[]
   learnerStates            CourseLearnerState[]
   reminderDispatches       CourseReminderDispatch[]
+  certificates             Certificate[]              @relation("CertificateOwner")
+  issuedCertificates       Certificate[]              @relation("CertificateIssuedBy")
+  revokedCertificates      Certificate[]              @relation("CertificateRevokedBy")
 
   @@index([departmentId])
   @@index([organizationId])
+  // Обратный поиск владельца аватара при авторизации выдачи `/uploads/*`.
+  @@index([avatarUrl])
 }
 
 model UserTotpCredential {
@@ -139,6 +144,9 @@ model GroupMembership {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
+  // Членство ученика по userId (learnerCourseAssignmentWhere: memberships { some { userId } }).
+  // @@unique([groupId, userId]) не покрывает — userId не leftmost.
+  @@index([userId])
 }
 
 model Course {
@@ -181,6 +189,44 @@ model Course {
   hrReportSchedules   HrReportSchedule[]
   learnerStates       CourseLearnerState[]
   reminderDispatches  CourseReminderDispatch[]
+  certificates        Certificate[]
+
+  // Обратный поиск владельца файла по URL обложки/миниатюры при авторизации
+  // выдачи `/uploads/*` (src/lib/storage/upload-access.ts).
+  @@index([coverUrl])
+  @@index([thumbnailUrl])
+  // Каталог/HR/аналитика: where { status } (+ orderBy publishedAt в каталоге).
+  @@index([status, publishedAt])
+}
+
+// Сертификат о прохождении курса — иммутабельный снимок факта завершения (ADR-012).
+// Рендерится только из snapshotJson; @@unique([courseId, userId]) — ключ идемпотентности.
+model Certificate {
+  id           String    @id @default(cuid())
+  serial       String    @unique // публичный неугадываемый идентификатор в URL
+  courseId     String
+  userId       String
+  status       String    @default("ISSUED") // ISSUED | REVOKED
+  issuedAt     DateTime  @default(now())
+  issuedVia    String // LEARNING | ASSESSMENT_SUBMIT | ASSESSMENT_REVIEW | MANUAL
+  issuedById   String? // заполняется только при MANUAL
+  completedAt  DateTime // момент фактического завершения курса
+  snapshotJson String // иммутабельный снимок (см. certificate-snapshot.ts)
+  revokedAt    DateTime?
+  revokedById  String?
+  revokeReason String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User   @relation("CertificateOwner", fields: [userId], references: [id], onDelete: Cascade)
+  issuedBy  User?  @relation("CertificateIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+  revokedBy User?  @relation("CertificateRevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
+
+  @@unique([courseId, userId])
+  @@index([userId, issuedAt])
+  @@index([courseId, issuedAt])
+  @@index([status, issuedAt])
 }
 
 model CourseUserAssignment {
@@ -196,6 +242,9 @@ model CourseUserAssignment {
   assignedBy User?  @relation("CourseAssignedByUser", fields: [assignedById], references: [id], onDelete: SetNull)
 
   @@unique([courseId, userId])
+  // «Мои назначения» ученика (where { userId }). @@unique([courseId, userId])
+  // не покрывает — userId не leftmost.
+  @@index([userId])
 }
 
 model CourseGroupAssignment {
@@ -301,6 +350,9 @@ model CourseItem {
   @@index([courseId, orderIndex])
   @@index([moduleId])
   @@index([courseId, archivedAt, orderIndex])
+  // Обратный поиск курса-владельца по URL материала при авторизации выдачи
+  // `/uploads/*` (материалы и PDF-превью презентаций).
+  @@index([fileUrl])
 }
 
 model CourseModule {
@@ -415,6 +467,8 @@ model QuizAttempt {
   @@unique([quizId, userId, attemptNumber])
   @@index([userId, completedAt])
   @@index([quizId, userId, completedAt])
+  // Очередь ручной проверки и attention-виджет: фильтр по outcome (PENDING_REVIEW) + сортировка по дате.
+  @@index([outcome, completedAt])
 }
 
 model QuizUserBestResult {
@@ -451,6 +505,8 @@ model CourseFeedback {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, userId])
+  // Очереди по статусу с сортировкой по дате: модерация (PENDING) + ленты отзывов (PUBLISHED).
+  @@index([status, createdAt])
 }
 
 model CourseSurveyTemplate {

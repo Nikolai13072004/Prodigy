@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button, Card, Select, TD, TH, THead, TR, Table, buttonStyles } from "@/components/ui";
 import { requirePermission } from "@/lib/auth-guards";
 import { getAnswersAnalysisData } from "@/lib/answers-analysis-report";
 import prisma from "@/lib/prisma";
@@ -28,63 +29,54 @@ export default async function AnswersAnalysisPage({ searchParams }: Props) {
   const data = selectedCourseId ? await getAnswersAnalysisData({ courseId: selectedCourseId }) : null;
 
   return (
-    <main className="mx-auto max-w-[1160px] text-[#203451]">
+    <main className="mx-auto max-w-[1160px] text-[var(--ink)]">
       <div className="flex flex-wrap items-center gap-4">
         <Link
           href="/admin/reports"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d6deea] bg-white text-[#61738e] transition hover:bg-[#f7fbfe]"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink-muted)] transition hover:bg-[var(--surface)]"
         >
           ←
           <span className="sr-only">К разделу «Отчеты»</span>
         </Link>
 
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-[#203451] sm:text-[38px]">Анализ ответов</h1>
-          <p className="mt-1.5 text-sm text-[#6d7f99]">
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--ink)] sm:text-[38px]">Анализ ответов</h1>
+          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
             Все попытки по тестам внутри выбранного курса: динамика, корректность ответов и удобный экспорт в Excel.
           </p>
         </div>
       </div>
 
-      <form action={REPORT_PATH} className="mt-6 rounded-3xl border border-[#dce3ec] bg-white p-5 shadow-[0_16px_32px_rgba(18,40,70,0.08)]">
+      <form action={REPORT_PATH} className="mt-6 rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-[var(--shadow-1)]">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-end">
           <label>
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#7386a3]">Курс</span>
-            <select
-              name="courseId"
-              defaultValue={selectedCourseId}
-              className="h-11 w-full rounded-2xl border border-[#d6deea] bg-white px-4 text-sm text-[#203451] outline-none ring-[#78c6e2] focus:ring-2"
-            >
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">Курс</span>
+            <Select name="courseId" defaultValue={selectedCourseId}>
               {courses.map((course) => (
                 <option key={course.id} value={course.id}>
                   {course.title}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
-          <button
-            type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#0f7c9f] px-4 text-sm font-medium text-white transition hover:bg-[#0c6986]"
-          >
-            Построить отчет
-          </button>
+          <Button type="submit">Построить отчет</Button>
 
           <Link
             href={selectedCourseId ? `${EXPORT_PATH}?courseId=${encodeURIComponent(selectedCourseId)}&format=xlsx` : EXPORT_PATH}
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-[#d6deea] bg-white px-4 text-sm font-medium text-[#203451] transition hover:bg-[#f7fbfe]"
+            className={buttonStyles("secondary")}
           >
             Экспорт XLSX
           </Link>
         </div>
 
-        <p className="mt-3 text-xs text-[#7386a3]">
+        <p className="mt-3 text-xs text-[var(--ink-muted)]">
           Отчет строится по выбранному курсу. Ссылка с текущим фильтром может использоваться как шаблон отчета.
         </p>
       </form>
 
       {!selectedCourseId || !data ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-[#d6deea] bg-white px-5 py-10 text-center text-sm text-[#6d7f99]">
+        <div className="mt-6 rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface-raised)] px-5 py-10 text-center text-sm text-[var(--ink-muted)]">
           Выберите опубликованный курс, чтобы построить отчет «Анализ ответов».
         </div>
       ) : (
@@ -98,61 +90,61 @@ export default async function AnswersAnalysisPage({ searchParams }: Props) {
             <MetricCard label="Не пройдено" value={String(data.summary.failedAttempts)} />
           </section>
 
-          <section className="mt-6 rounded-3xl border border-[#dce3ec] bg-white p-5 shadow-[0_16px_32px_rgba(18,40,70,0.08)]">
-            <h2 className="text-lg font-semibold text-[#203451]">Попытки прохождения</h2>
+          <section className="mt-6 rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-[var(--shadow-1)]">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">Попытки прохождения</h2>
             {data.attempts.length === 0 ? (
-              <p className="mt-4 text-sm text-[#6d7f99]">По выбранному курсу пока нет попыток.</p>
+              <p className="mt-4 text-sm text-[var(--ink-muted)]">По выбранному курсу пока нет попыток.</p>
             ) : (
-              <div className="mt-4 overflow-x-auto rounded-2xl border border-[#e1e8f0]">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-[#f6f9fc] text-[#6d7f99]">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-medium">Дата</th>
-                      <th className="px-4 py-3 text-left font-medium">Сотрудник</th>
-                      <th className="px-4 py-3 text-left font-medium">Материал</th>
-                      <th className="px-4 py-3 text-left font-medium">Попытка</th>
-                      <th className="px-4 py-3 text-left font-medium">Балл</th>
-                      <th className="px-4 py-3 text-left font-medium">Результат</th>
-                    </tr>
-                  </thead>
+              <div className="mt-4">
+                <Table className="min-w-full">
+                  <THead>
+                    <TR>
+                      <TH>Дата</TH>
+                      <TH>Сотрудник</TH>
+                      <TH>Материал</TH>
+                      <TH>Попытка</TH>
+                      <TH>Балл</TH>
+                      <TH>Результат</TH>
+                    </TR>
+                  </THead>
                   <tbody>
                     {data.attempts.map((attempt) => (
-                      <tr key={attempt.attemptId} className="border-t border-[#e8eef5] text-[#203451]">
-                        <td className="px-4 py-3">{formatDateTime(attempt.completedAt)}</td>
-                        <td className="px-4 py-3">{attempt.learnerName} ({attempt.learnerLogin})</td>
-                        <td className="px-4 py-3">{attempt.quizTitle}</td>
-                        <td className="px-4 py-3">{attempt.attemptNumber}</td>
-                        <td className="px-4 py-3">{attempt.score}/{attempt.maxScore} ({attempt.scorePercent}%)</td>
-                        <td className="px-4 py-3">
-                          <span className={attempt.outcome === "PASSED" ? "text-emerald-700" : "text-rose-700"}>
+                      <TR key={attempt.attemptId}>
+                        <TD>{formatDateTime(attempt.completedAt)}</TD>
+                        <TD>{attempt.learnerName} ({attempt.learnerLogin})</TD>
+                        <TD>{attempt.quizTitle}</TD>
+                        <TD>{attempt.attemptNumber}</TD>
+                        <TD>{attempt.score}/{attempt.maxScore} ({attempt.scorePercent}%)</TD>
+                        <TD>
+                          <span className={attempt.outcome === "PASSED" ? "text-[var(--success)]" : "text-[var(--danger)]"}>
                             {attempt.outcome === "PASSED" ? "Пройден" : "Не пройден"}
                           </span>
-                        </td>
-                      </tr>
+                        </TD>
+                      </TR>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
             )}
           </section>
 
-          <section className="mt-6 rounded-3xl border border-[#dce3ec] bg-white p-5 shadow-[0_16px_32px_rgba(18,40,70,0.08)]">
-            <h2 className="text-lg font-semibold text-[#203451]">Детали ответов</h2>
+          <section className="mt-6 rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-[var(--shadow-1)]">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">Детали ответов</h2>
             {data.questionRows.length === 0 ? (
-              <p className="mt-4 text-sm text-[#6d7f99]">Ответы по вопросам пока отсутствуют.</p>
+              <p className="mt-4 text-sm text-[var(--ink-muted)]">Ответы по вопросам пока отсутствуют.</p>
             ) : (
               <div className="mt-4 space-y-4">
                 {data.questionRows.map((question) => (
-                  <article key={`${question.quizId}:${question.questionId}`} className="rounded-2xl border border-[#e1e8f0] p-4">
-                    <div className="text-xs text-[#7386a3]">{question.quizTitle} · {question.questionType}</div>
-                    <h3 className="mt-1 text-sm font-semibold text-[#203451]">
+                  <article key={`${question.quizId}:${question.questionId}`} className="rounded-2xl border border-[var(--line)] p-4">
+                    <div className="text-xs text-[var(--ink-muted)]">{question.quizTitle} · {question.questionType}</div>
+                    <h3 className="mt-1 text-sm font-semibold text-[var(--ink)]">
                       {question.questionOrder + 1}. {question.prompt}
                       {question.hasImage ? " [есть изображение]" : ""}
                     </h3>
 
                     <div className="mt-3 overflow-x-auto">
                       <table className="min-w-full text-sm">
-                        <thead className="text-[#6d7f99]">
+                        <thead className="text-[var(--ink-muted)]">
                           <tr>
                             <th className="px-2 py-2 text-left font-medium">Ответ</th>
                             <th className="px-2 py-2 text-left font-medium">Процент</th>
@@ -162,11 +154,11 @@ export default async function AnswersAnalysisPage({ searchParams }: Props) {
                         </thead>
                         <tbody>
                           {question.answers.map((answer) => (
-                            <tr key={answer.value} className="border-t border-[#edf2f7]">
-                              <td className="px-2 py-2 text-[#203451]">{answer.value}</td>
-                              <td className="px-2 py-2 text-[#203451]">{answer.percent}%</td>
-                              <td className="px-2 py-2 text-[#203451]">{answer.count}</td>
-                              <td className="px-2 py-2 text-[#203451]">{answer.correctCount}/{answer.incorrectCount}/{answer.unknownCount}</td>
+                            <tr key={answer.value} className="border-t border-[var(--line)]">
+                              <td className="px-2 py-2 text-[var(--ink)]">{answer.value}</td>
+                              <td className="px-2 py-2 text-[var(--ink)]">{answer.percent}%</td>
+                              <td className="px-2 py-2 text-[var(--ink)]">{answer.count}</td>
+                              <td className="px-2 py-2 text-[var(--ink)]">{answer.correctCount}/{answer.incorrectCount}/{answer.unknownCount}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -185,10 +177,10 @@ export default async function AnswersAnalysisPage({ searchParams }: Props) {
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-[#dce3ec] bg-white p-4 shadow-[0_8px_20px_rgba(18,40,70,0.06)]">
-      <div className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7386a3]">{label}</div>
-      <div className="mt-2 text-2xl font-semibold text-[#203451]">{value}</div>
-    </div>
+    <Card padding="sm">
+      <div className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{label}</div>
+      <div className="mt-2 text-2xl font-semibold text-[var(--ink)]">{value}</div>
+    </Card>
   );
 }
 

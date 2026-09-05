@@ -1,19 +1,29 @@
 ## Public Access
 
-Приложение публикуется через общий Traefik из Docker network `traefik-public`.
-Сам контейнер не открывает host-порт `3000`; Traefik проксирует запросы на
-внутренний порт контейнера `3000`.
+Приложение публикуется через общий Traefik из Docker network `traefik-public`
+(она `external` — Traefik живёт вне этого репозитория). Контейнер не открывает
+host-порт `3000`; Traefik проксирует запросы на внутренний порт контейнера `3000`.
 
-Запуск в Docker:
+Развёртывание разведено на два контура — это **разные compose-файлы**, и они
+намеренно отличаются, а не расходятся по ошибке:
 
-```bash
-docker compose up -d --build
-```
+- **Локально и сборка — корневой `docker-compose.yml`.** Образ собирается на месте
+  (`build:`), роутер повешен на entrypoint `web` **без TLS**: HTTPS на этом контуре
+  снимает внешний шлюз. Хост задаёт `LMS_PUBLIC_HOST`.
 
-Перед production-запуском задайте `LMS_PUBLIC_HOST`, `APP_BASE_URL`,
-`NEXTAUTH_URL` и `AUTH_URL` в локальном `.env`. Значения в Compose используют
-безопасный документальный домен `lms.example.com` и не являются адресом готового
-стенда. Для выпуска TLS-сертификата нужна DNS-запись `A`/`AAAA` для выбранного host.
+  ```bash
+  docker compose up -d --build
+  ```
+
+- **Стенд и прод — [`deploy/compose.yml`](deploy/compose.yml).** Образ берётся из
+  registry и не пересобирается, окружение задаётся переменными выкатки. **TLS здесь
+  включён по умолчанию** (`TRAEFIK_ENTRYPOINT=websecure`, `TRAEFIK_TLS=true`), а
+  `APP_BASE_URL`/`NEXTAUTH_URL`/`AUTH_URL` формируются как `https://${APP_HOST}`.
+  Публичный домен задаёт `APP_HOST` (обязателен), **не** `LMS_PUBLIC_HOST`.
+
+Значения `lms.example.com` в обоих файлах — безопасный документальный домен, а не
+адрес готового стенда. Для выпуска TLS-сертификата нужна DNS-запись `A`/`AAAA` для
+выбранного host.
 
 ## Local Development
 
@@ -46,4 +56,4 @@ npm run db:check
 ## Notes
 
 - Не добавляйте `ports: - "3000:3000"` или другие прямые публикации приложения на `0.0.0.0`.
-- В текущем серверном стеке Traefik слушает HTTPS entrypoint на host-порту `8443`; для обычного URL без порта нужен свободный host-порт `443` или внешний прокси, который направляет трафик на Traefik.
+- Публичный HTTPS терминирует Traefik прод-контура (`deploy/compose.yml`, entrypoint `websecure`) — не корневой compose. В текущем серверном стеке его HTTPS entrypoint слушает host-порт `8443`; для обычного URL без порта нужен свободный host-порт `443` или внешний прокси, который направляет трафик на Traefik.

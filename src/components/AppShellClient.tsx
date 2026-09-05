@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { savePreferredRolePreference } from "@/app/actions/user-preference-actions";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   PERMISSIONS,
   ROLES,
@@ -36,6 +37,7 @@ type NavItem = {
   icon: NavIconKind;
   requiredPermission?: (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
   studentSection?: "courses" | "catalog";
+  group?: NavGroupKind;
 };
 
 type NavIconKind =
@@ -51,6 +53,19 @@ type NavIconKind =
   | "analytics"
   | "settings";
 
+// Группы бокового меню (решение F каркаса): плоский список сворачивается в
+// смысловые разделы. Порядок здесь задаёт порядок групп в сайдбаре; пустые
+// группы (у роли нет их пунктов) при рендере пропускаются.
+type NavGroupKind = "overview" | "learning" | "people" | "analytics" | "system";
+
+const NAV_GROUPS: { key: NavGroupKind; label: string }[] = [
+  { key: "overview", label: "Обзор" },
+  { key: "learning", label: "Обучение" },
+  { key: "people", label: "Люди и доступы" },
+  { key: "analytics", label: "Аналитика" },
+  { key: "system", label: "Система" },
+];
+
 type BrandingState = {
   siteName: string;
   siteDescription: string;
@@ -65,30 +80,67 @@ type RoleChoice = {
 };
 
 const BASE_NAV_ITEMS: NavItem[] = [
-  { href: "/courses", label: "Курсы", icon: "courses" },
+  { href: "/courses", label: "Курсы", icon: "courses", group: "learning" },
+  { href: "/certificates", label: "Мои сертификаты", icon: "history", group: "learning" },
+  {
+    href: "/admin/certificates",
+    label: "Реестр сертификатов",
+    icon: "reports",
+    requiredPermission: PERMISSIONS.CERTIFICATES_MANAGE,
+    group: "learning",
+  },
   {
     href: "/admin/users-groups",
     label: "Пользователи",
     icon: "users",
     requiredPermission: PERMISSIONS.USERS_VIEW,
+    group: "people",
+  },
+  // Решение C каркаса: сущности, раньше спрятанные за под-табами
+  // AdminUsersSubtabs, выведены в видимое меню. Отдельные маршруты (чистая
+  // подсветка активного пункта). «Группы» остаются внутри «Пользователей»
+  // (делят маршрут /admin/users-groups, свои внутренние табы).
+  {
+    href: "/admin/roles",
+    label: "Роли",
+    icon: "users",
+    requiredPermission: PERMISSIONS.USERS_EDIT_ACCESS_LEVEL,
+    group: "people",
+  },
+  {
+    href: "/admin/departments",
+    label: "Подразделения",
+    icon: "users",
+    requiredPermission: PERMISSIONS.DEPARTMENTS_VIEW,
+    group: "people",
+  },
+  {
+    href: "/admin/organizations",
+    label: "Организации",
+    icon: "users",
+    requiredPermission: PERMISSIONS.ORGANIZATIONS_VIEW,
+    group: "people",
   },
   {
     href: "/admin/reports",
     label: "Отчеты",
     icon: "reports",
     requiredPermission: PERMISSIONS.REPORTS_VIEW,
+    group: "analytics",
   },
   {
     href: "/admin/attention",
     label: "Внимание",
     icon: "reports",
     requiredPermission: PERMISSIONS.REPORTS_VIEW,
+    group: "analytics",
   },
   {
     href: "/analytics",
     label: "Аналитика",
     icon: "analytics",
     requiredPermission: PERMISSIONS.REPORTS_VIEW,
+    group: "analytics",
   },
 ];
 
@@ -104,6 +156,11 @@ const STUDENT_NAV_ITEMS: NavItem[] = [
     label: "Каталог",
     icon: "catalog",
     studentSection: "catalog",
+  },
+  {
+    href: "/certificates",
+    label: "Мои сертификаты",
+    icon: "history",
   },
 ];
 
@@ -221,26 +278,35 @@ export function AppShellClient({
         href: "/history",
         label: "История",
         icon: "history",
+        group: "analytics",
       });
       items.splice(4, 0, {
         href: "/admin/audit-log",
         label: "Аудит",
         icon: "audit",
+        group: "system",
       });
-      items.splice(5, 0, { href: "/admin/api", label: "API", icon: "api" });
+      items.splice(5, 0, {
+        href: "/admin/api",
+        label: "API",
+        icon: "api",
+        group: "system",
+      });
       items.splice(6, 0, {
         href: "/admin/storage",
         label: "Хранилище",
         icon: "storage",
+        group: "system",
       });
       items.push({
         href: "/admin/settings",
         label: "Настройки",
         icon: "settings",
+        group: "system",
       });
-      items.unshift({ href: "/", label: "Главная", icon: "home" });
+      items.unshift({ href: "/", label: "Главная", icon: "home", group: "overview" });
     } else if (canOpenHrHome) {
-      items.unshift({ href: "/", label: "Главная", icon: "home" });
+      items.unshift({ href: "/", label: "Главная", icon: "home", group: "overview" });
     }
 
     if (activeHasStudentRole) {
@@ -251,6 +317,7 @@ export function AppShellClient({
         label: "Мои курсы",
         icon: "courses",
         studentSection: "courses",
+        group: "learning",
       });
     }
 
@@ -274,16 +341,16 @@ export function AppShellClient({
 
   if (isTwoFactorSetupPage || user.twoFactorSetupRequired) {
     return (
-      <div className="min-h-screen bg-zinc-50">
-        <header className="border-b border-zinc-200 bg-white">
+      <div className="min-h-screen bg-[var(--surface)]">
+        <header className="border-b border-[var(--line)] bg-[var(--surface-raised)]">
           <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-            <Link href="/" className="text-sm font-semibold text-zinc-950">
+            <Link href="/" className="text-sm font-semibold text-[var(--ink)]">
               {branding.siteName}
             </Link>
             <button
               type="button"
               onClick={handleSignOut}
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50"
+              className="rounded-md border border-[var(--line)] px-3 py-1.5 text-sm hover:bg-[var(--accent-soft)]"
             >
               Выйти
             </button>
@@ -295,8 +362,8 @@ export function AppShellClient({
   }
 
   return (
-    <div className="app-shell min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="app-header sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur">
+    <div className="app-shell min-h-screen bg-[var(--canvas)] text-[var(--ink)]">
+      <header className="app-header sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--surface)] backdrop-blur">
         <div
           className={`relative mx-auto flex h-16 ${shellContainerClass} items-center gap-4 px-4 lg:px-6`}
         >
@@ -317,16 +384,19 @@ export function AppShellClient({
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <span className="text-lg font-semibold text-zinc-950">
+              <span className="text-lg font-semibold text-[var(--ink)]">
                 {branding.siteName}
               </span>
             )}
-            <span className="hidden text-sm font-medium text-zinc-500 xl:inline">
-              {branding.siteName}
-            </span>
+            {branding.logoUrl && (
+              <span className="hidden text-sm font-medium text-[var(--ink-muted)] xl:inline">
+                {branding.siteName}
+              </span>
+            )}
           </Link>
 
           <div className="ml-auto hidden items-center justify-end gap-3 md:flex">
+            <ThemeToggle />
             <div className="flex flex-col items-end gap-1 text-right">
               <div className="text-sm font-medium">{displayName}</div>
               {roleChoices.length > 1 && activeRoleChoice ? (
@@ -337,10 +407,10 @@ export function AppShellClient({
                   onSelect={handleRoleChange}
                 />
               ) : activeRoleChoice ? (
-                <div className="text-xs text-zinc-500">{activeRoleChoice.label}</div>
+                <div className="text-xs text-[var(--ink-muted)]">{activeRoleChoice.label}</div>
               ) : null}
             </div>
-            <div className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-zinc-900 text-xs font-semibold text-white">
+            <div className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[var(--accent-strong)] text-xs font-semibold text-white">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -355,7 +425,7 @@ export function AppShellClient({
             <button
               type="button"
               onClick={handleSignOut}
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50"
+              className="rounded-md border border-[var(--line)] px-3 py-1.5 text-sm hover:bg-[var(--accent-soft)]"
             >
               Выйти
             </button>
@@ -364,7 +434,7 @@ export function AppShellClient({
       </header>
 
       {isStudentPortal && showTopNav && (
-        <div className="sticky top-16 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
+        <div className="sticky top-16 z-30 border-b border-[var(--line)] bg-[var(--surface-raised)] backdrop-blur">
           <nav
             className={`mx-auto flex w-full ${shellContainerClass} gap-2 overflow-x-auto px-4 py-3 lg:px-6`}
           >
@@ -382,8 +452,8 @@ export function AppShellClient({
                   href={item.href}
                   className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition ${
                     active
-                      ? "bg-teal-600 text-white"
-                      : "text-zinc-700 hover:bg-zinc-100"
+                      ? "bg-[var(--accent)] text-white"
+                      : "text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                   }`}
                 >
                   <NavItemLabel item={item} />
@@ -395,7 +465,7 @@ export function AppShellClient({
       )}
 
       {!isStudentPortal && navItems.length > 0 && (
-        <div className="border-b border-zinc-200 bg-white lg:hidden">
+        <div className="border-b border-[var(--line)] bg-[var(--surface-raised)] lg:hidden">
           <nav className="mx-auto flex w-full max-w-[1440px] gap-2 overflow-x-auto px-4 py-3">
             {navItems.map((item) => {
               const active = isNavItemActive(
@@ -411,8 +481,8 @@ export function AppShellClient({
                   href={item.href}
                   className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition ${
                     active
-                      ? "bg-teal-600 text-white"
-                      : "text-zinc-700 hover:bg-zinc-100"
+                      ? "bg-[var(--accent)] text-white"
+                      : "text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                   }`}
                 >
                   <NavItemLabel item={item} />
@@ -431,33 +501,46 @@ export function AppShellClient({
         </main>
       ) : (
         <div className="mx-auto flex w-full max-w-[1440px]">
-          <aside className="app-sidebar hidden min-h-[calc(100vh-64px)] w-72 flex-col border-r border-zinc-200 bg-zinc-900 text-zinc-100 lg:flex">
-            <nav className="p-4">
-              <ul className="space-y-1">
-                {navItems.map((item) => {
-                  const active = isNavItemActive(
-                    pathname,
-                    currentTab,
-                    currentSource,
-                    item,
-                    hasStudentRole,
-                  );
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition ${
-                          active
-                            ? "bg-teal-600 text-white"
-                            : "text-zinc-200 hover:bg-zinc-800 hover:text-white"
-                        }`}
-                      >
-                        <NavItemLabel item={item} />
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+          <aside className="app-sidebar hidden min-h-[calc(100vh-64px)] w-72 flex-col border-r border-[var(--line)] bg-[var(--aurora-sidebar)] text-white/90 lg:flex">
+            <nav className="space-y-5 p-4">
+              {NAV_GROUPS.map((grp) => {
+                const groupItems = navItems.filter(
+                  (item) => (item.group ?? "learning") === grp.key,
+                );
+                if (groupItems.length === 0) return null;
+                return (
+                  <div key={grp.key}>
+                    <div className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+                      {grp.label}
+                    </div>
+                    <ul className="space-y-1">
+                      {groupItems.map((item) => {
+                        const active = isNavItemActive(
+                          pathname,
+                          currentTab,
+                          currentSource,
+                          item,
+                          hasStudentRole,
+                        );
+                        return (
+                          <li key={item.href}>
+                            <Link
+                              href={item.href}
+                              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition ${
+                                active
+                                  ? "bg-[var(--aurora-sidebar-active)] text-white"
+                                  : "text-white/80 hover:bg-[var(--aurora-sidebar-hover)] hover:text-white"
+                              }`}
+                            >
+                              <NavItemLabel item={item} />
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
+              })}
             </nav>
           </aside>
           <main className="app-main min-h-[calc(100vh-64px)] min-w-0 flex-1 p-4 lg:p-6">
@@ -512,18 +595,18 @@ function RoleMenu({
   }, [open]);
 
   return (
-    <div ref={menuRef} className="relative text-xs text-zinc-500">
+    <div ref={menuRef} className="relative text-xs text-[var(--ink-muted)]">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex rounded px-1 py-0.5 font-medium text-sky-700 underline-offset-2 hover:bg-sky-50 hover:underline"
+        className="inline-flex rounded px-1 py-0.5 font-medium text-[var(--info)] underline-offset-2 hover:bg-[var(--info-soft)] hover:underline"
         aria-haspopup="menu"
         aria-expanded={open}
       >
         {activeLabel}
       </button>
       {open ? (
-        <div className="absolute right-0 top-7 z-50 grid min-w-52 gap-1 rounded-lg border border-zinc-200 bg-white p-1.5 text-left shadow-lg" role="menu">
+        <div className="absolute right-0 top-7 z-50 grid min-w-52 gap-1 rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] p-1.5 text-left shadow-lg" role="menu">
           {roles.map((role) => {
             const active = role.value === activeRole;
             return (
@@ -535,7 +618,7 @@ function RoleMenu({
                   onSelect(role.value);
                 }}
                 className={`rounded-md px-3 py-2 text-left text-xs font-medium ${
-                  active ? "bg-sky-50 text-sky-800" : "text-zinc-700 hover:bg-zinc-50"
+                  active ? "bg-[var(--info-soft)] text-[var(--info)]" : "text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                 }`}
                 aria-current={active ? "true" : undefined}
                 role="menuitem"

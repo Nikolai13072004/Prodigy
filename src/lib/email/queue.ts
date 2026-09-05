@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { buildCertificateEmailTemplate } from "@/lib/email/template-certificate";
 import { buildCourseAssignedEmailTemplate } from "@/lib/email/template-course-assigned";
 import { buildCourseAccessExtendedEmailTemplate } from "@/lib/email/template-course-access-extended";
 import { buildCourseBroadcastEmailTemplate } from "@/lib/email/template-course-broadcast";
@@ -183,6 +184,55 @@ export async function enqueueCourseAssignedEmails(
       htmlBody: template.html,
       textBody: template.text,
       template: "COURSE_ASSIGNED",
+      payloadJson: JSON.stringify(payload),
+      maxAttempts: DEFAULT_MAX_ATTEMPTS,
+      nextAttemptAt: new Date(),
+    };
+  });
+
+  await client.emailJob.createMany({ data });
+}
+
+type CertificatePayload = {
+  courseTitle: string;
+  courseUrl: string;
+  certificateUrl: string;
+  certificateSerial: string;
+  issuedAt: Date | null;
+};
+
+export async function enqueueCertificateEmails(
+  recipients: Recipient[],
+  payload: CertificatePayload,
+  options?: {
+    client?: Prisma.TransactionClient;
+    settings?: Awaited<ReturnType<typeof getPlatformSettings>>;
+  },
+) {
+  if (recipients.length === 0) return;
+
+  const settings = options?.settings ?? await getPlatformSettings();
+  const client = options?.client ?? prisma;
+
+  const data = recipients.map((recipient) => {
+    const template = buildCertificateEmailTemplate({
+      recipientName: emailTemplateFullName(recipient),
+      recipientFirstName: emailTemplateName(recipient),
+      courseTitle: payload.courseTitle,
+      courseUrl: payload.courseUrl,
+      certificateUrl: payload.certificateUrl,
+      certificateSerial: payload.certificateSerial,
+      issuedAt: payload.issuedAt,
+      template: settings.certificateEmailTemplate,
+    });
+
+    return {
+      toEmail: recipient.email,
+      toName: recipient.name ?? null,
+      subject: template.subject,
+      htmlBody: template.html,
+      textBody: template.text,
+      template: "CERTIFICATE",
       payloadJson: JSON.stringify(payload),
       maxAttempts: DEFAULT_MAX_ATTEMPTS,
       nextAttemptAt: new Date(),

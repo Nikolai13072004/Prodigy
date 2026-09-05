@@ -2,54 +2,46 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth-guards";
-import { auditActorFromSessionUser, recordAuditEvent } from "@/lib/audit-log";
-import prisma from "@/lib/prisma";
+import {
+  auditActorFromSessionUser,
+  getAuditRequestContext,
+} from "@/lib/audit-log";
 import { PERMISSIONS } from "@/lib/roles";
+import { organizations } from "@/modules/org-structure/server/organizations";
 
 function asString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
+async function actorContext(
+  sessionUser: Parameters<typeof auditActorFromSessionUser>[0],
+) {
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(sessionUser);
+  return {
+    actor: { id: actor.id, login: actor.login, name: actor.name },
+    audit: {
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+    },
+  };
+}
+
 export async function createOrganization(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.ORGANIZATIONS_CREATE_EDIT);
-  const name = asString(formData, "name");
-  if (!name) throw new Error("Название организации обязательно");
-
-  const organization = await prisma.organization.create({ data: { name } });
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "organizations:create",
-    objectType: "organization",
-    objectId: organization.id,
-    objectLabel: organization.name,
-  });
+  const { actor, audit } = await actorContext(session.user);
+  await organizations.create({ name: asString(formData, "name"), actor, audit });
   revalidatePath("/admin/organizations");
 }
 
 export async function updateOrganization(organizationId: string, formData: FormData) {
   const session = await requirePermission(PERMISSIONS.ORGANIZATIONS_CREATE_EDIT);
-  const name = asString(formData, "name");
-  if (!name) throw new Error("Название организации обязательно");
-
-  const existing = await prisma.organization.findUnique({
-    where: { id: organizationId },
-    select: { id: true, name: true },
-  });
-  if (!existing) throw new Error("Организация не найдена");
-
-  await prisma.organization.update({
-    where: { id: organizationId },
-    data: { name },
-  });
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "organizations:update",
-    objectType: "organization",
-    objectId: organizationId,
-    objectLabel: name,
-    metadata: {
-      previousName: existing.name,
-    },
+  const { actor, audit } = await actorContext(session.user);
+  await organizations.update({
+    id: organizationId,
+    name: asString(formData, "name"),
+    actor,
+    audit,
   });
   revalidatePath("/admin/organizations");
 }
@@ -57,19 +49,7 @@ export async function updateOrganization(organizationId: string, formData: FormD
 export async function deleteOrganization(organizationId: string, _formData?: FormData) {
   void _formData;
   const session = await requirePermission(PERMISSIONS.ORGANIZATIONS_DELETE);
-  const organization = await prisma.organization.findUnique({
-    where: { id: organizationId },
-    select: { id: true, name: true },
-  });
-  if (!organization) throw new Error("Организация не найдена");
-
-  await prisma.organization.delete({ where: { id: organizationId } });
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "organizations:delete",
-    objectType: "organization",
-    objectId: organization.id,
-    objectLabel: organization.name,
-  });
+  const { actor, audit } = await actorContext(session.user);
+  await organizations.remove({ id: organizationId, actor, audit });
   revalidatePath("/admin/organizations");
 }

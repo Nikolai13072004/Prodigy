@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ChangeEvent } from "react";
+import { Input, Label, buttonStyles } from "@/components/ui";
 
 export type UploadedFileResult = {
   url: string;
@@ -215,20 +216,17 @@ export function FileUrlInput({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-zinc-900">
-        {label}
-      </label>
-      <p className="text-xs text-zinc-500">{hint}</p>
+      <Label className="block">{label}</Label>
+      <p className="text-xs text-[var(--ink-muted)]">{hint}</p>
       <input type="hidden" name={name} value={url} readOnly />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <input
+        <Input
           type="text"
           value={url}
           onChange={(e) => updateUrl(e.target.value)}
           placeholder="https://… или загрузите файл"
-          className="w-full rounded-md border border-black bg-white px-3 py-2 text-sm text-zinc-900"
         />
-        <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-black px-3 py-2 text-sm text-zinc-900 hover:bg-zinc-100">
+        <label className={buttonStyles("secondary", "md", "cursor-pointer")}>
           {buttonText}
           <input
             type="file"
@@ -241,26 +239,26 @@ export function FileUrlInput({
       </div>
       {busy ? (
         <div
-          className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-2"
+          className="rounded-lg border border-[var(--info-soft)] bg-[var(--info-soft)] px-3 py-2"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={uploadProgress ?? undefined}
           aria-label="Прогресс загрузки файла"
         >
-          <div className="flex items-center justify-between gap-3 text-xs text-sky-900">
+          <div className="flex items-center justify-between gap-3 text-xs text-[var(--info)]">
             <span>{uploadStatus ?? "Загружаем файл..."}</span>
             <span className="shrink-0 tabular-nums">{progressText}</span>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--surface-raised)]">
             <div
-              className="h-full rounded-full bg-sky-600 transition-[width] duration-200"
+              className="h-full rounded-full bg-[var(--info)] transition-[width] duration-200"
               style={{ width: `${progressValue}%` }}
             />
           </div>
         </div>
       ) : null}
-      {err && <p className="text-sm text-red-600">{err}</p>}
+      {err && <p className="text-sm text-[var(--danger)]">{err}</p>}
     </div>
   );
 }

@@ -27,7 +27,7 @@ export function CourseFeedbackComposer({ defaultRating, defaultComment }: Props)
         <legend className="sr-only">Оценка курса</legend>
         <input type="hidden" name="rating" value={rating ?? ""} />
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-zinc-500">Как вы оцениваете этот курс?</span>
+          <span className="text-sm text-[var(--ink-muted)]">Как вы оцениваете этот курс?</span>
           <div className="flex items-center gap-0.5" onMouseLeave={() => setHoverRating(null)}>
             {RATING_OPTIONS.map((value) => {
               const isActive = activeRating !== null && value <= activeRating;
@@ -42,14 +42,14 @@ export function CourseFeedbackComposer({ defaultRating, defaultComment }: Props)
                   onFocus={() => setHoverRating(value)}
                   onBlur={() => setHoverRating(null)}
                   onClick={() => setRating(value)}
-                  className={`relative rounded-md px-1 py-0.5 text-xl leading-none transition focus:outline-none focus:ring-2 focus:ring-amber-300 ${
-                    isActive ? "text-amber-500" : "text-zinc-300 hover:text-amber-400"
+                  className={`relative rounded-md px-1 py-0.5 text-xl leading-none transition focus:outline-none focus:ring-2 focus:ring-[var(--warning)] ${
+                    isActive ? "text-[var(--warning)]" : "text-[var(--line)] hover:text-[var(--warning)]"
                   }`}
                 >
                   {showTooltip ? (
-                    <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-zinc-900 px-2 py-1 text-xs font-medium leading-none text-white shadow-lg">
+                    <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-[var(--aurora-sidebar)] px-2 py-1 text-xs font-medium leading-none text-white shadow-lg">
                       {formatRatingTooltip(value)}
-                      <span className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1 rotate-45 bg-zinc-900" />
+                      <span className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1 rotate-45 bg-[var(--aurora-sidebar)]" />
                     </span>
                   ) : null}
                   ★
@@ -68,14 +68,14 @@ export function CourseFeedbackComposer({ defaultRating, defaultComment }: Props)
           rows={3}
           defaultValue={defaultComment}
           placeholder="Расскажите подробно о ваших впечатлениях о курсе..."
-          className="min-h-20 flex-1 resize-y border-0 bg-transparent text-sm text-zinc-800 outline-none placeholder:text-zinc-400"
+          className="min-h-20 flex-1 resize-y border-0 bg-transparent text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)]"
         />
         <button
           type="submit"
           title={rating ? "Отправить" : "Сначала выберите оценку"}
           aria-label="Отправить отзыв"
           disabled={!rating}
-          className="mb-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-zinc-300"
+          className="mb-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-lg font-semibold text-white transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:bg-[var(--line)]"
         >
           ›
         </button>

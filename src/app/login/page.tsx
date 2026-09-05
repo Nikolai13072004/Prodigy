@@ -39,22 +39,22 @@ export default async function LoginPage({ searchParams }: Props) {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="text-center text-3xl font-semibold text-zinc-950">{settings.siteName}</div>
+          <div className="text-center text-3xl font-semibold text-[var(--ink)]">{settings.siteName}</div>
         )}
       </div>
-      <p className="text-center text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">{settings.siteName}</p>
+      <p className="text-center text-sm font-medium uppercase tracking-[0.2em] text-[var(--ink-muted)]">{settings.siteName}</p>
       <h1 className="mt-2 text-center text-2xl font-semibold">Вход в систему</h1>
-      <p className="mt-3 text-center text-sm text-zinc-600">{settings.siteDescription}</p>
+      <p className="mt-3 text-center text-sm text-[var(--ink-muted)]">{settings.siteDescription}</p>
 
       {settings.maintenanceMode ? (
-        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="mt-6 rounded-2xl border border-[var(--warning)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)]">
           <p className="font-medium">Режим обслуживания включен. Вход доступен только администраторам.</p>
           <p className="mt-1">{maintenanceMessage}</p>
         </div>
       ) : null}
 
       {sp.notice ? (
-        <p className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <p className="mt-6 rounded-2xl border border-[var(--success)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)]">
           {sp.notice}
         </p>
       ) : null}
@@ -62,9 +62,9 @@ export default async function LoginPage({ searchParams }: Props) {
       <LoginClientSection callbackUrl={callbackUrl} />
 
       {settings.supportEmail ? (
-        <p className="mt-6 text-center text-sm text-zinc-500">
+        <p className="mt-6 text-center text-sm text-[var(--ink-muted)]">
           Поддержка:{" "}
-          <a className="text-zinc-700 underline-offset-2 hover:underline" href={`mailto:${settings.supportEmail}`}>
+          <a className="text-[var(--ink)] underline-offset-2 hover:underline" href={`mailto:${settings.supportEmail}`}>
             {settings.supportEmail}
           </a>
         </p>

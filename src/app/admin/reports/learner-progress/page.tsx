@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth-guards";
+import { Select } from "@/components/ui";
 import {
   getLearnerReportSortParam,
   getLearnerReportStatusParam,
@@ -82,31 +83,31 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
   );
 
   return (
-    <main className="mx-auto max-w-[1160px] text-[#203451]">
+    <main className="mx-auto max-w-[1160px] text-[var(--ink)]">
       <div className="flex flex-wrap items-center gap-4">
         <Link
           href="/admin/reports"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#d6deea] bg-white text-[#61738e] shadow-[0_8px_20px_rgba(18,40,70,0.05)] transition hover:border-[#bfd6e6] hover:bg-[#f7fbfe] hover:text-[#203451]"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink-muted)] shadow-sm transition hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--ink)]"
         >
           <ArrowLeftIcon />
           <span className="sr-only">К разделу «Отчеты»</span>
         </Link>
 
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-[#203451] sm:text-[38px]">Прогресс учащихся</h1>
-          <p className="mt-1.5 text-sm text-[#6d7f99]">
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--ink)] sm:text-[38px]">Прогресс учащихся</h1>
+          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
             HR-отчет по ученикам, назначениям и динамике обучения с быстрым переходом в карточку каждого пользователя.
           </p>
         </div>
       </div>
 
       {sp.notice ? (
-        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div className="mt-6 rounded-2xl border border-[var(--success)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)]">
           {sp.notice}
         </div>
       ) : null}
       {sp.error ? (
-        <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="mt-6 rounded-2xl border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
           {sp.error}
         </div>
       ) : null}
@@ -115,14 +116,14 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
         <input type="hidden" name="sort" value={sort} />
         <div className="flex flex-wrap items-center gap-2.5">
           <details className="relative" open={hasAdvancedFilters}>
-            <summary className="flex h-12 list-none cursor-pointer items-center gap-3 rounded-2xl border border-[#d6deea] bg-white px-4 text-sm font-medium text-[#4d617c] shadow-[0_8px_20px_rgba(18,40,70,0.04)] transition hover:border-[#bfd6e6] hover:bg-[#f7fbfe] [&::-webkit-details-marker]:hidden">
+            <summary className="flex h-12 list-none cursor-pointer items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm font-medium text-[var(--ink-muted)] shadow-sm transition hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] [&::-webkit-details-marker]:hidden">
               <FilterIcon />
               Добавить фильтр
             </summary>
-            <div className="mt-3 w-full rounded-[28px] border border-[#dce3ec] bg-white p-5 shadow-[0_16px_32px_rgba(18,40,70,0.12)] md:absolute md:left-0 md:z-20 md:mt-4 md:min-w-[760px]">
+            <div className="mt-3 w-full rounded-[28px] border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-lg md:absolute md:left-0 md:z-20 md:mt-4 md:min-w-[760px]">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#7386a3]">
+                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                     Поиск
                   </span>
                   <input
@@ -130,35 +131,35 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
                     name="q"
                     defaultValue={sp.q ?? ""}
                     placeholder="ФИО, логин, email, курс..."
-                    className="h-11 w-full rounded-2xl border border-[#d6deea] bg-white px-4 text-sm text-[#203451] outline-none ring-[#78c6e2] placeholder:text-[#9aa8bc] focus:ring-2"
+                    className="h-11 w-full rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] placeholder:text-[var(--ink-muted)] focus:ring-2"
                   />
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#7386a3]">
+                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                     Статус пользователя
                   </span>
-                  <select
+                  <Select
                     name="userStatus"
                     defaultValue={userStatusFilter}
-                    className="h-11 w-full rounded-2xl border border-[#d6deea] bg-white px-4 text-sm text-[#203451] outline-none ring-[#78c6e2] focus:ring-2"
+                    className="w-full"
                   >
                     {USER_STATUS_FILTER_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#7386a3]">
+                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                     Группа
                   </span>
-                  <select
+                  <Select
                     name="groupId"
                     defaultValue={sp.groupId ?? ""}
-                    className="h-11 w-full rounded-2xl border border-[#d6deea] bg-white px-4 text-sm text-[#203451] outline-none ring-[#78c6e2] focus:ring-2"
+                    className="w-full"
                   >
                     <option value="">Все группы</option>
                     {groups.map((group) => (
@@ -166,17 +167,17 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
                         {group.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#7386a3]">
+                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                     Подразделение
                   </span>
-                  <select
+                  <Select
                     name="departmentId"
                     defaultValue={sp.departmentId ?? ""}
-                    className="h-11 w-full rounded-2xl border border-[#d6deea] bg-white px-4 text-sm text-[#203451] outline-none ring-[#78c6e2] focus:ring-2"
+                    className="w-full"
                   >
                     <option value="">Все подразделения</option>
                     {departments.map((department) => (
@@ -184,38 +185,38 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
                         {department.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#7386a3]">
+                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                     С даты регистрации
                   </span>
                   <input
                     type="date"
                     name="registeredFrom"
                     defaultValue={sp.registeredFrom ?? ""}
-                    className="h-11 w-full rounded-2xl border border-[#d6deea] bg-white px-4 text-sm text-[#203451] outline-none ring-[#78c6e2] focus:ring-2"
+                    className="h-11 w-full rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
                   />
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#7386a3]">
+                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                     До даты регистрации
                   </span>
                   <input
                     type="date"
                     name="registeredTo"
                     defaultValue={sp.registeredTo ?? ""}
-                    className="h-11 w-full rounded-2xl border border-[#d6deea] bg-white px-4 text-sm text-[#203451] outline-none ring-[#78c6e2] focus:ring-2"
+                    className="h-11 w-full rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
                   />
                 </label>
               </div>
 
-              <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-[#edf1f7] pt-5">
+              <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-[var(--line)] pt-5">
                 <button
                   type="submit"
-                  className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#0f7c9f] px-4 text-sm font-medium text-white transition hover:bg-[#0c6986]"
+                  className="inline-flex h-10 items-center justify-center rounded-2xl bg-[var(--accent)] px-4 text-sm font-medium text-white transition hover:bg-[var(--accent-strong)]"
                 >
                   Применить фильтры
                 </button>
@@ -226,7 +227,7 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
                     courseId: reportFilters.courseId,
                     assignedRange: reportFilters.assignedRange,
                   })}
-                  className="inline-flex h-10 items-center justify-center rounded-2xl border border-[#d6deea] bg-white px-4 text-sm font-medium text-[#203451] transition hover:bg-[#f7fbfe]"
+                  className="inline-flex h-10 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--accent-soft)]"
                 >
                   Сбросить доп. фильтры
                 </Link>
@@ -254,12 +255,12 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
           />
 
           <details className="relative">
-            <summary className="flex h-12 list-none cursor-pointer items-center gap-3 rounded-2xl border border-[#d6deea] bg-white px-4 text-sm font-medium text-[#4d617c] shadow-[0_8px_20px_rgba(18,40,70,0.04)] transition hover:border-[#bfd6e6] hover:bg-[#f7fbfe] [&::-webkit-details-marker]:hidden">
+            <summary className="flex h-12 list-none cursor-pointer items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm font-medium text-[var(--ink-muted)] shadow-sm transition hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] [&::-webkit-details-marker]:hidden">
               <ExportIcon />
               Экспорт
               <ChevronDownIcon />
             </summary>
-            <div className="mt-3 min-w-[200px] rounded-2xl border border-[#dce3ec] bg-white p-2 shadow-[0_16px_32px_rgba(18,40,70,0.12)] md:absolute md:right-0 md:z-20">
+            <div className="mt-3 min-w-[200px] rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-2 shadow-lg md:absolute md:right-0 md:z-20">
               <Link
                 href={buildReportExportHref({
                   ...reportFilters,
@@ -267,7 +268,7 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
                   userStatus: userStatusFilter,
                   format: "xlsx",
                 })}
-                className="flex rounded-xl px-4 py-3 text-sm text-[#203451] transition hover:bg-[#f5f8fc]"
+                className="flex rounded-xl px-4 py-3 text-sm text-[var(--ink)] transition hover:bg-[var(--accent-soft)]"
               >
                 Excel
               </Link>
@@ -278,7 +279,7 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
                   userStatus: userStatusFilter,
                   format: "csv",
                 })}
-                className="flex rounded-xl px-4 py-3 text-sm text-[#203451] transition hover:bg-[#f5f8fc]"
+                className="flex rounded-xl px-4 py-3 text-sm text-[var(--ink)] transition hover:bg-[var(--accent-soft)]"
               >
                 CSV
               </Link>
@@ -287,34 +288,34 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
 
           <button
             type="submit"
-            className="inline-flex h-12 items-center justify-center rounded-2xl border border-[#d6deea] bg-white px-4 text-sm font-medium text-[#203451] shadow-[0_8px_20px_rgba(18,40,70,0.04)] transition hover:border-[#bfd6e6] hover:bg-[#f7fbfe]"
+            className="inline-flex h-12 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm font-medium text-[var(--ink)] shadow-sm transition hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]"
           >
             Применить
           </button>
 
           <Link
             href={LEARNER_PROGRESS_REPORT_PATH}
-            className="inline-flex h-12 items-center justify-center rounded-2xl border border-[#d6deea] bg-white px-4 text-sm font-medium text-[#203451] shadow-[0_8px_20px_rgba(18,40,70,0.04)] transition hover:border-[#bfd6e6] hover:bg-[#f7fbfe]"
+            className="inline-flex h-12 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 text-sm font-medium text-[var(--ink)] shadow-sm transition hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]"
           >
             Сбросить
           </Link>
         </div>
       </form>
 
-      <div className="mt-4 rounded-2xl border border-[#d6deea] bg-white/70 px-4 py-3 text-sm leading-6 text-[#6d7f99]">
+      <div className="mt-4 rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm leading-6 text-[var(--ink-muted)]">
         По умолчанию в отчете учтены только активные пользователи аккаунта. Чтобы добавить заблокированных
         пользователей в отчет, откройте фильтр «Статус пользователя» и выберите «Заблокированный». В отчете
         учитываются только уже назначенные пользователям материалы. Удаленные пользователи в отчете не показываются, а
         удаленные курсы не учитываются.
       </div>
 
-      <section className="mt-8 rounded-[28px] border border-[#dce3ec] bg-white shadow-[0_10px_28px_rgba(18,40,70,0.06)]">
+      <section className="mt-8 rounded-[28px] border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
         <div className="flex flex-col gap-6 px-5 py-5 lg:px-6 lg:py-6 xl:flex-row xl:items-center xl:gap-8">
           <div className="flex items-center gap-4 xl:w-[250px] xl:shrink-0">
             <ProgressRing value={metrics.learningPercent} />
             <div>
-              <div className="text-sm font-medium text-[#7c8ba3]">Обученность</div>
-              <div className="mt-1.5 text-4xl font-semibold tracking-tight text-[#203451] sm:text-[40px]">
+              <div className="text-sm font-medium text-[var(--ink-muted)]">Обученность</div>
+              <div className="mt-1.5 text-4xl font-semibold tracking-tight text-[var(--ink)] sm:text-[40px]">
                 {formatPercent(metrics.learningPercent)}
               </div>
             </div>
@@ -330,24 +331,24 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
         </div>
       </section>
 
-      <section className="mt-8 overflow-hidden rounded-[28px] border border-[#dce3ec] bg-white shadow-[0_10px_28px_rgba(18,40,70,0.06)]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf1f7] px-6 py-5">
-          <div className="text-[20px] font-semibold tracking-tight text-[#203451]">Учащихся: {data.filteredRows.length}</div>
-          <div className="flex flex-wrap gap-3 text-sm text-[#7c8ba3]">
+      <section className="mt-8 overflow-hidden rounded-[28px] border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-6 py-5">
+          <div className="text-[20px] font-semibold tracking-tight text-[var(--ink)]">Учащихся: {data.filteredRows.length}</div>
+          <div className="flex flex-wrap gap-3 text-sm text-[var(--ink-muted)]">
             <span>Заблокированы: {data.summary.blocked}</span>
             <span>Приглашения ожидают регистрации: {data.summary.pendingInvites}</span>
           </div>
         </div>
 
         {data.filteredRows.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-[#6d7f99]">
+          <div className="px-6 py-12 text-center text-sm text-[var(--ink-muted)]">
             {sp.q ? `По запросу «${sp.q}» ничего не найдено.` : "Для выбранного фильтра пока нет учеников."}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-[#dce3ec] bg-[#f7f9fc] text-[#6b7d97]">
+                <tr className="border-b border-[var(--line)] bg-[var(--surface)] text-[var(--ink-muted)]">
                   <th className="px-6 py-4 text-left font-semibold">
                     <Link
                       href={buildReportsHref({
@@ -362,11 +363,11 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
                         registeredFrom: reportFilters.registeredFrom,
                         registeredTo: reportFilters.registeredTo,
                       })}
-                      className="inline-flex items-center gap-2 rounded-lg text-[#4d617c] transition hover:text-[#0f7c9f]"
+                      className="inline-flex items-center gap-2 rounded-lg text-[var(--ink-muted)] transition hover:text-[var(--accent)]"
                       aria-label={`Сортировать по имени ${sort === "name_asc" ? "по убыванию" : "по возрастанию"}`}
                     >
                       Имя пользователя
-                      <span aria-hidden="true" className="text-sm text-[#0f7c9f]">
+                      <span aria-hidden="true" className="text-sm text-[var(--accent)]">
                         {nameSortIndicator}
                       </span>
                     </Link>
@@ -380,23 +381,23 @@ export default async function LearnerProgressReportPage({ searchParams }: Props)
               </thead>
               <tbody>
                 {data.filteredRows.map((row) => (
-                  <tr key={row.id} className="border-b border-[#edf1f7] align-top last:border-0">
+                  <tr key={row.id} className="border-b border-[var(--line)] align-top last:border-0">
                     <td className="px-6 py-4">
-                      <Link href={`/admin/reports/${row.id}`} className="text-base font-medium text-[#203451] transition hover:text-[#0f7c9f]">
+                      <Link href={`/admin/reports/${row.id}`} className="text-base font-medium text-[var(--ink)] transition hover:text-[var(--accent)]">
                         {row.name}
                       </Link>
                     </td>
                     <td className="px-4 py-4">
                       <div className="min-w-[160px]">
-                        <div className="text-base font-semibold tabular-nums text-[#203451]">
+                        <div className="text-base font-semibold tabular-nums text-[var(--ink)]">
                           {formatPercent(row.averageProgressPercent)}
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-base font-medium text-[#203451]">{row.assignedCoursesCount}</td>
-                    <td className="px-4 py-4 text-base font-medium text-[#203451]">{row.completedCoursesCount}</td>
-                    <td className="px-4 py-4 text-base font-medium text-[#203451]">{row.notStartedCoursesCount}</td>
-                    <td className="px-4 py-4 text-base font-medium text-[#203451]">{row.inProgressCoursesCount}</td>
+                    <td className="px-4 py-4 text-base font-medium text-[var(--ink)]">{row.assignedCoursesCount}</td>
+                    <td className="px-4 py-4 text-base font-medium text-[var(--ink)]">{row.completedCoursesCount}</td>
+                    <td className="px-4 py-4 text-base font-medium text-[var(--ink)]">{row.notStartedCoursesCount}</td>
+                    <td className="px-4 py-4 text-base font-medium text-[var(--ink)]">{row.inProgressCoursesCount}</td>
                   </tr>
                 ))}
               </tbody>
@@ -444,30 +445,27 @@ function ToolbarSelect({
   return (
     <label className="relative block">
       <span className="sr-only">{label}</span>
-      <select
+      <Select
         aria-label={label}
         name={name}
         defaultValue={defaultValue}
-        className="h-12 min-w-[200px] appearance-none rounded-2xl border border-[#d6deea] bg-white px-4 pr-10 text-sm font-medium text-[#4d617c] shadow-[0_8px_20px_rgba(18,40,70,0.04)] outline-none ring-[#78c6e2] transition focus:ring-2"
+        className="min-w-[200px]"
       >
         {options.map((option) => (
           <option key={`${name}:${option.value || "empty"}`} value={option.value}>
             {label}: {option.label}
           </option>
         ))}
-      </select>
-      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#8fa0b6]">
-        <ChevronDownIcon />
-      </span>
+      </Select>
     </label>
   );
 }
 
 function SummaryMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="min-w-0 rounded-3xl border border-[#edf1f7] bg-[#fbfcfe] px-4 py-4">
-      <div className="text-sm font-medium text-[#7c8ba3]">{label}</div>
-      <div className="mt-2 text-3xl font-semibold tracking-tight text-[#203451] sm:text-[34px]">{value}</div>
+    <div className="min-w-0 rounded-3xl border border-[var(--line)] bg-[var(--surface)] px-4 py-4">
+      <div className="text-sm font-medium text-[var(--ink-muted)]">{label}</div>
+      <div className="mt-2 text-3xl font-semibold tracking-tight text-[var(--ink)] sm:text-[34px]">{value}</div>
     </div>
   );
 }
@@ -481,13 +479,13 @@ function ProgressRing({ value }: { value: number }) {
   return (
     <div className="relative h-28 w-28 shrink-0 sm:h-32 sm:w-32">
       <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-        <circle cx="60" cy="60" r={radius} fill="none" stroke="#edf1f5" strokeWidth="8" />
+        <circle cx="60" cy="60" r={radius} fill="none" stroke="var(--line)" strokeWidth="8" />
         <circle
           cx="60"
           cy="60"
           r={radius}
           fill="none"
-          stroke="#37b56b"
+          stroke="var(--accent)"
           strokeLinecap="round"
           strokeWidth="8"
           strokeDasharray={circumference}
@@ -495,7 +493,7 @@ function ProgressRing({ value }: { value: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#f6f9fc] text-[#a5b1bf] sm:h-20 sm:w-20">
+        <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[var(--surface)] text-[var(--ink-muted)] sm:h-20 sm:w-20">
           <GraduationSparkIcon />
         </div>
       </div>

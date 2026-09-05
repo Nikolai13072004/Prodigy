@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { signOut } from "next-auth/react";
 import { completeAdminTotpSetup } from "@/app/actions/two-factor-actions";
+import { Button, Input, Label, Textarea } from "@/components/ui";
 
 type Props = {
   callbackUrl: string;
@@ -59,9 +60,9 @@ export function TwoFactorSetupPanel({
 
   if (recoveryCodes) {
     return (
-      <section className="mt-8 rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-zinc-950">2FA подключена</h2>
-        <p className="mt-3 text-sm text-zinc-600">
+      <section className="mt-8 rounded-3xl border border-[var(--success)] bg-[var(--surface)] p-6 shadow-sm">
+        <h2 className="text-xl font-semibold text-[var(--ink)]">2FA подключена</h2>
+        <p className="mt-3 text-sm text-[var(--ink-muted)]">
           Сохраните recovery-коды в защищенном месте. Каждый код можно использовать только один раз, если под рукой нет Google Authenticator.
         </p>
 
@@ -69,7 +70,7 @@ export function TwoFactorSetupPanel({
           {recoveryCodes.map((code) => (
             <div
               key={code}
-              className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 font-mono text-sm tracking-[0.16em] text-zinc-900"
+              className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-3 font-mono text-sm tracking-[0.16em] text-[var(--ink)]"
             >
               {code}
             </div>
@@ -77,15 +78,14 @@ export function TwoFactorSetupPanel({
         </div>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <button
+          <Button
             type="button"
             onClick={() =>
               handleLogout(buildLoginUrl(callbackUrl, "2FA подключена. Теперь войдите с кодом приложения."))
             }
-            className="rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
           >
             Я сохранил recovery-коды, войти заново
-          </button>
+          </Button>
         </div>
       </section>
     );
@@ -93,34 +93,33 @@ export function TwoFactorSetupPanel({
 
   if (alreadyConfigured || !secret || !otpAuthUrl) {
     return (
-      <section className="mt-8 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-zinc-950">2FA уже подключена</h2>
-        <p className="mt-3 text-sm text-zinc-600">
+      <section className="mt-8 rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-sm">
+        <h2 className="text-xl font-semibold text-[var(--ink)]">2FA уже подключена</h2>
+        <p className="mt-3 text-sm text-[var(--ink-muted)]">
           Для завершения входа выйдите из промежуточной сессии и авторизуйтесь заново с кодом из Google Authenticator.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <button
+          <Button
             type="button"
             onClick={() =>
               handleLogout(buildLoginUrl(callbackUrl, "Введите код из Google Authenticator или recovery-код."))
             }
-            className="rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
           >
             Вернуться ко входу
-          </button>
+          </Button>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="mt-8 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-zinc-950">Подключите Google Authenticator</h2>
-      <p className="mt-3 text-sm text-zinc-600">
+    <section className="mt-8 rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-sm">
+      <h2 className="text-xl font-semibold text-[var(--ink)]">Подключите Google Authenticator</h2>
+      <p className="mt-3 text-sm text-[var(--ink-muted)]">
         Политика безопасности {siteName} требует TOTP для всех администраторов. Добавьте новый аккаунт в Google Authenticator по ключу ниже, затем введите 6-значный код подтверждения.
       </p>
 
-      <ol className="mt-6 space-y-2 text-sm text-zinc-700">
+      <ol className="mt-6 space-y-2 text-sm text-[var(--ink-muted)]">
         <li>1. Откройте Google Authenticator и выберите «Добавить код».</li>
         <li>2. Используйте ручной ввод ключа, если QR-код вам не нужен.</li>
         <li>3. После подтверждения сохраните recovery-коды и войдите заново.</li>
@@ -128,40 +127,29 @@ export function TwoFactorSetupPanel({
 
       <div className="mt-6 grid gap-5">
         <div>
-          <label htmlFor="totpAccount" className="block text-sm font-medium text-zinc-900">
+          <Label htmlFor="totpAccount" className="block">
             Аккаунт
-          </label>
-          <input
-            id="totpAccount"
-            readOnly
-            value={accountName}
-            className="mt-2 h-11 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 text-sm text-zinc-700 outline-none"
-          />
+          </Label>
+          <Input id="totpAccount" readOnly value={accountName} className="mt-2" />
         </div>
 
         <div>
-          <label htmlFor="totpSecret" className="block text-sm font-medium text-zinc-900">
+          <Label htmlFor="totpSecret" className="block">
             Ключ для ручного ввода
-          </label>
-          <input
+          </Label>
+          <Input
             id="totpSecret"
             readOnly
             value={secret}
-            className="mt-2 h-11 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 font-mono text-sm tracking-[0.16em] text-zinc-700 outline-none"
+            className="mt-2 font-mono tracking-[0.16em]"
           />
         </div>
 
         <div>
-          <label htmlFor="otpAuthUrl" className="block text-sm font-medium text-zinc-900">
+          <Label htmlFor="otpAuthUrl" className="block">
             `otpauth://` ссылка
-          </label>
-          <textarea
-            id="otpAuthUrl"
-            readOnly
-            value={otpAuthUrl}
-            rows={3}
-            className="mt-2 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-3 text-sm text-zinc-700 outline-none"
-          />
+          </Label>
+          <Textarea id="otpAuthUrl" readOnly value={otpAuthUrl} rows={3} className="mt-2" />
         </div>
       </div>
 
@@ -169,42 +157,34 @@ export function TwoFactorSetupPanel({
         <input type="hidden" name="secret" value={secret} />
 
         <div>
-          <label htmlFor="twoFactorCode" className="block text-sm font-medium text-zinc-900">
+          <Label htmlFor="twoFactorCode" className="block">
             Код из Google Authenticator
-          </label>
-          <input
+          </Label>
+          <Input
             id="twoFactorCode"
             name="twoFactorCode"
             inputMode="numeric"
             autoComplete="one-time-code"
             required
             placeholder="123456"
-            className="mt-2 h-11 w-full rounded-xl border border-zinc-300 px-3 text-sm outline-none ring-teal-500 focus:ring-2"
+            className="mt-2"
           />
         </div>
 
         {error ? (
-          <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+          <p className="rounded-2xl border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]" role="alert">
             {error}
           </p>
         ) : null}
 
         <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
-          >
+          <Button type="submit" disabled={pending}>
             {pending ? "Подключаем 2FA…" : "Подключить Google Authenticator"}
-          </button>
+          </Button>
 
-          <button
-            type="button"
-            onClick={() => handleLogout("/login")}
-            className="rounded-xl border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-          >
+          <Button type="button" variant="secondary" onClick={() => handleLogout("/login")}>
             Отменить и выйти
-          </button>
+          </Button>
         </div>
       </form>
     </section>

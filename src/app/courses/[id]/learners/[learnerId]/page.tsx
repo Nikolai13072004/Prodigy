@@ -8,6 +8,7 @@ import { toCourseAccessDateInputValue } from "@/lib/course-access-window";
 import { getCourseLearnerDetailData } from "@/lib/course-learner-detail";
 import { formatDateTimeRu } from "@/lib/course-learners";
 import { PERMISSIONS, hasPermission } from "@/lib/roles";
+import { findCourseCertificate } from "@/modules/certification/server/find-course-certificate";
 
 type Props = {
   params: Promise<{ id: string; learnerId: string }>;
@@ -37,11 +38,13 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
     ? toCourseAccessDateInputValue(data.learner.accessExpiresAt)
     : "";
 
+  const learnerCertificate = await findCourseCertificate(data.learner.id, data.course.id);
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-teal-700">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--accent)]">
             <Link href={`/courses/${data.course.id}/learners`} className="underline">
               ← Ученики курса
             </Link>
@@ -52,7 +55,7 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">{data.learner.name}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-[var(--ink)]">{data.learner.name}</h1>
             <StatusBadge
               label={data.learner.accountStatusLabel}
               tone={data.learner.accountStatus === "ACTIVE" ? "neutral" : "warning"}
@@ -60,10 +63,10 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
             <CourseStatusBadge status={data.course.status} />
           </div>
 
-          <p className="mt-2 text-sm text-zinc-600">
-            Курс: <span className="font-medium text-zinc-900">{data.course.title}</span>
+          <p className="mt-2 text-sm text-[var(--ink-muted)]">
+            Курс: <span className="font-medium text-[var(--ink)]">{data.course.title}</span>
           </p>
-          <p className="mt-1 max-w-3xl text-sm text-zinc-600">
+          <p className="mt-1 max-w-3xl text-sm text-[var(--ink-muted)]">
             {data.course.description || "Описание курса пока не заполнено."}
           </p>
         </div>
@@ -72,7 +75,7 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
           {canEditLearnerProfile ? (
             <Link
               href={`/admin/users/${data.learner.id}/edit`}
-              className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+              className="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
             >
               Редактировать профиль
             </Link>
@@ -80,7 +83,7 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
           {data.access.canManageAssignments ? (
             <Link
               href={`/courses/${data.course.id}/manage?section=assignments`}
-              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)]"
             >
               Назначения
             </Link>
@@ -88,7 +91,7 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
           {data.access.canOpenManage ? (
             <Link
               href={`/courses/${data.course.id}/manage?section=reports`}
-              className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+              className="rounded-xl border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
             >
               Управление курсом
             </Link>
@@ -120,20 +123,20 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
       </section>
 
       {sp.accessSaved ? (
-        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="mt-6 rounded-2xl border border-[var(--success)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)]">
           {sp.accessSaved}
         </div>
       ) : null}
       {sp.accessError ? (
-        <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="mt-6 rounded-2xl border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
           {sp.accessError}
         </div>
       ) : null}
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
         <div className="space-y-6">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-zinc-950">Карточка ученика</h2>
+          <div className="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">Карточка ученика</h2>
             <dl className="mt-4 space-y-4 text-sm">
               <InfoRow label="Логин" value={data.learner.login} />
               <InfoRow label="Email" value={data.learner.email ?? "Не указан"} />
@@ -153,11 +156,11 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
             </dl>
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-zinc-950">Доступ к курсу</h2>
-                <p className="mt-1 text-sm text-zinc-500">
+                <h2 className="text-lg font-semibold text-[var(--ink)]">Доступ к курсу</h2>
+                <p className="mt-1 text-sm text-[var(--ink-muted)]">
                   Текущий статус доступа, быстрые продления и ручная установка точной даты.
                 </p>
               </div>
@@ -182,8 +185,8 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
             </dl>
 
             {data.accessAudit ? (
-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-                <div className="text-xs font-medium uppercase tracking-wide text-amber-800">
+              <div className="mt-5 rounded-2xl border border-[var(--warning)] bg-[var(--warning-soft)] p-4">
+                <div className="text-xs font-medium uppercase tracking-wide text-[var(--warning)]">
                   Последнее изменение доступа
                 </div>
                 <dl className="mt-3 space-y-3 text-sm">
@@ -197,7 +200,7 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
 
             {data.access.canManageAssignments ? (
               <div className="mt-5 space-y-3">
-                <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">Быстрые действия</div>
+                <div className="text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">Быстрые действия</div>
                 <div className="flex flex-wrap gap-2">
                   {[30, 60, 90].map((days) => (
                     <form
@@ -209,7 +212,7 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
                       <button
                         type="submit"
                         disabled={data.learner.hasUnlimitedAccess}
-                        className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Продлить на {days} дней
                       </button>
@@ -220,7 +223,7 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
                       <input type="hidden" name="mode" value="UNLIMITED" />
                       <button
                         type="submit"
-                        className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                        className="rounded-xl bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)]"
                       >
                         Сделать бессрочным
                       </button>
@@ -229,27 +232,27 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
                 </div>
                 <form
                   action={updateCourseLearnerAccess.bind(null, data.course.id, data.learner.id)}
-                  className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
+                  className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4"
                 >
                   <input type="hidden" name="mode" value="SET_DATE" />
                   <div className="flex flex-wrap items-end gap-3">
                     <label className="flex min-w-[220px] flex-1 flex-col gap-1 text-sm">
-                      <span className="font-medium text-zinc-700">Точная дата окончания доступа</span>
+                      <span className="font-medium text-[var(--ink)]">Точная дата окончания доступа</span>
                       <input
                         type="date"
                         name="accessExpiresOn"
                         defaultValue={exactAccessDateValue}
-                        className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-800 outline-none ring-emerald-500 focus:ring-2"
+                        className="h-10 rounded-xl border border-[var(--line)] bg-white px-3 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
                       />
                     </label>
                     <button
                       type="submit"
-                      className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                      className="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                     >
                       Установить дату
                     </button>
                   </div>
-                  <p className="mt-2 text-xs text-zinc-500">
+                  <p className="mt-2 text-xs text-[var(--ink-muted)]">
                     Этой формой можно перевести даже бессрочный доступ в доступ до выбранной даты.
                   </p>
                 </form>
@@ -258,20 +261,32 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
           </div>
 
           {data.access.canManageAssignments ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-5 shadow-sm">
+            <div className="rounded-2xl border border-[var(--danger)] bg-[var(--danger-soft)] p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-zinc-950">Отчисление с курса</h2>
-                  <p className="mt-1 text-sm text-rose-800">
+                  <h2 className="text-lg font-semibold text-[var(--ink)]">Отчисление с курса</h2>
+                  <p className="mt-1 text-sm text-[var(--danger)]">
                     Подтверждение попросит выбрать, нужно ли удалить прогресс по этому курсу.
                   </p>
                 </div>
               </div>
 
-              <p className="mt-4 text-sm text-rose-900">
+              <p className="mt-4 text-sm text-[var(--danger)]">
                 После отчисления ученик потеряет доступ к контенту курса и может лишиться сертификата. При желании можно
                 сохранить прогресс для аудита или очистить его полностью только в рамках этого курса.
               </p>
+
+              {learnerCertificate ? (
+                <p className="mt-2 text-sm text-[var(--danger)]">
+                  Сертификат по курсу:{" "}
+                  <Link href={`/certificates/${learnerCertificate.serial}`} className="underline">
+                    {learnerCertificate.status === "REVOKED" ? "аннулирован" : "выдан"}
+                  </Link>
+                  {learnerCertificate.status === "ISSUED"
+                    ? ". По умолчанию сохраняется; при отчислении можно аннулировать."
+                    : "."}
+                </p>
+              ) : null}
 
               <div className="mt-4">
                 <CourseLearnerUnenrollDialog
@@ -279,16 +294,17 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
                   learnerName={data.learner.name}
                   courseTitle={data.course.title}
                   buttonLabel="Отчислить ученика"
+                  hasCertificate={learnerCertificate?.status === "ISSUED"}
                 />
               </div>
             </div>
           ) : null}
 
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-zinc-950">Доступ к платформе</h2>
-                <p className="mt-1 text-sm text-zinc-500">
+                <h2 className="text-lg font-semibold text-[var(--ink)]">Доступ к платформе</h2>
+                <p className="mt-1 text-sm text-[var(--ink-muted)]">
                   Если сотрудник больше не должен входить в систему, его можно заблокировать без потери истории обучения.
                 </p>
               </div>
@@ -298,7 +314,7 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
               />
             </div>
 
-            <p className="mt-4 text-sm text-zinc-600">
+            <p className="mt-4 text-sm text-[var(--ink-muted)]">
               После блокировки ученик исчезнет из активных списков курса и будет доступен в архиве HR-отчетов.
             </p>
 
@@ -306,7 +322,7 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
               <button
                 type="submit"
                 disabled={data.learner.accountStatus !== "ACTIVE" && data.learner.accountStatus !== "PENDING"}
-                className="rounded-xl border border-rose-300 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-xl border border-[var(--danger)] px-4 py-2 text-sm font-medium text-[var(--danger)] hover:bg-[var(--danger-soft)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Заблокировать ученика
               </button>
@@ -314,42 +330,42 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
           </div>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-zinc-950">Элементы курса</h2>
-              <p className="mt-1 text-sm text-zinc-500">
+              <h2 className="text-lg font-semibold text-[var(--ink)]">Элементы курса</h2>
+              <p className="mt-1 text-sm text-[var(--ink-muted)]">
                 Детальный статус по материалам и тестам ученика в этом курсе.
               </p>
             </div>
-            <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600">
+            <span className="rounded-full bg-[var(--surface)] px-3 py-1 text-xs font-medium text-[var(--ink-muted)]">
               {data.itemDetails.length} элементов
             </span>
           </div>
 
           <div className="mt-5 space-y-4">
             {data.itemDetails.map((item) => (
-              <article key={item.id} className="rounded-2xl border border-zinc-200 p-4">
+              <article key={item.id} className="rounded-2xl border border-[var(--line)] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-semibold text-zinc-950">{item.title}</h3>
+                      <h3 className="text-base font-semibold text-[var(--ink)]">{item.title}</h3>
                       <StatusBadge label={getItemTypeLabel(item.type)} tone="neutral" />
                       {item.isRequired ? <StatusBadge label="Обязательный" tone="info" /> : null}
                     </div>
-                    <p className="mt-2 text-sm text-zinc-500">
-                      Статус: <span className="font-medium text-zinc-700">{item.statusLabel}</span>
+                    <p className="mt-2 text-sm text-[var(--ink-muted)]">
+                      Статус: <span className="font-medium text-[var(--ink)]">{item.statusLabel}</span>
                       {item.viewedAt ? ` · Последняя активность: ${formatDateTimeRu(item.viewedAt)}` : ""}
                     </p>
                   </div>
                   <div className="min-w-[180px]">
-                    <div className="flex items-center justify-between gap-3 text-xs text-zinc-500">
+                    <div className="flex items-center justify-between gap-3 text-xs text-[var(--ink-muted)]">
                       <span>Прогресс</span>
                       <span>{item.progressPercent}%</span>
                     </div>
-                    <div className="mt-2 h-2 rounded-full bg-zinc-200">
+                    <div className="mt-2 h-2 rounded-full bg-[var(--line)]">
                       <div
-                        className="h-2 rounded-full bg-emerald-600"
+                        className="h-2 rounded-full bg-[var(--accent)]"
                         style={{ width: `${Math.max(0, Math.min(item.progressPercent, 100))}%` }}
                       />
                     </div>
@@ -388,27 +404,27 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
         </div>
       </section>
 
-      <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <section className="mt-6 rounded-2xl border border-[var(--line)] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-950">Результаты тестов и заданий</h2>
-            <p className="mt-1 text-sm text-zinc-500">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">Результаты тестов и заданий</h2>
+            <p className="mt-1 text-sm text-[var(--ink-muted)]">
               Последние оценки по каждому тесту и заданию курса, включая порог прохождения и комментарии проверяющего.
             </p>
           </div>
-          <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600">
+          <span className="rounded-full bg-[var(--surface)] px-3 py-1 text-xs font-medium text-[var(--ink-muted)]">
             {data.assessmentDetails.length} элементов
           </span>
         </div>
 
         {data.assessmentDetails.length === 0 ? (
-          <div className="mt-5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/70 p-6 text-center text-sm text-zinc-600">
+          <div className="mt-5 rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--ink-muted)]">
             В этом курсе пока нет тестов или заданий с оценкой.
           </div>
         ) : (
           <div className="mt-5 overflow-x-auto">
             <table className="min-w-full border-collapse text-sm">
-              <thead className="bg-zinc-50 text-zinc-600">
+              <thead className="bg-[var(--surface)] text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Элемент</th>
                   <th className="px-4 py-3 text-left font-medium">Тип</th>
@@ -421,8 +437,8 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
               </thead>
               <tbody>
                 {data.assessmentDetails.map((assessment) => (
-                  <tr key={assessment.id} className="border-t border-zinc-200 align-top text-zinc-700">
-                    <td className="px-4 py-4 font-medium text-zinc-950">{assessment.title}</td>
+                  <tr key={assessment.id} className="border-t border-[var(--line)] align-top text-[var(--ink)]">
+                    <td className="px-4 py-4 font-medium text-[var(--ink)]">{assessment.title}</td>
                     <td className="px-4 py-4">
                       <StatusBadge label={assessment.assessmentKindLabel} tone="neutral" />
                     </td>
@@ -430,12 +446,12 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
                       {assessment.latestAttemptAt ? (
                         <div>
                           <div>Попытка {assessment.latestAttemptNumber}</div>
-                          <div className="mt-1 text-xs text-zinc-500">
+                          <div className="mt-1 text-xs text-[var(--ink-muted)]">
                             {formatDateTimeRu(assessment.latestAttemptAt)}
                           </div>
                         </div>
                       ) : (
-                        <span className="text-zinc-400">Не отправлено</span>
+                        <span className="text-[var(--ink-muted)]">Не отправлено</span>
                       )}
                     </td>
                     <td className="px-4 py-4">
@@ -446,13 +462,13 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
                             {assessment.latestScorePercent !== null ? ` (${assessment.latestScorePercent}%)` : ""}
                           </div>
                           {assessment.latestCorrectAnswers !== null ? (
-                            <div className="mt-1 text-xs text-zinc-500">
+                            <div className="mt-1 text-xs text-[var(--ink-muted)]">
                               Верных ответов: {assessment.latestCorrectAnswers}/{assessment.totalQuestions}
                             </div>
                           ) : null}
                         </div>
                       ) : (
-                        <span className="text-zinc-400">—</span>
+                        <span className="text-[var(--ink-muted)]">—</span>
                       )}
                     </td>
                     <td className="px-4 py-4">
@@ -474,9 +490,9 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
                     </td>
                     <td className="px-4 py-4">
                       {assessment.reviewComment ? (
-                        <p className="max-w-md whitespace-pre-wrap text-sm text-zinc-700">{assessment.reviewComment}</p>
+                        <p className="max-w-md whitespace-pre-wrap text-sm text-[var(--ink)]">{assessment.reviewComment}</p>
                       ) : (
-                        <span className="text-zinc-400">—</span>
+                        <span className="text-[var(--ink-muted)]">—</span>
                       )}
                     </td>
                   </tr>
@@ -487,27 +503,27 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
         )}
       </section>
 
-      <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <section className="mt-6 rounded-2xl border border-[var(--line)] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-950">История попыток</h2>
-            <p className="mt-1 text-sm text-zinc-500">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">История попыток</h2>
+            <p className="mt-1 text-sm text-[var(--ink-muted)]">
               Хронология попыток ученика по тестам курса.
             </p>
           </div>
-          <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600">
+          <span className="rounded-full bg-[var(--surface)] px-3 py-1 text-xs font-medium text-[var(--ink-muted)]">
             {data.attemptHistory.length} попыток
           </span>
         </div>
 
         {data.attemptHistory.length === 0 ? (
-          <div className="mt-5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/70 p-6 text-center text-sm text-zinc-600">
+          <div className="mt-5 rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--ink-muted)]">
             Ученик еще не выполнял тесты в этом курсе.
           </div>
         ) : (
           <div className="mt-5 overflow-x-auto">
             <table className="min-w-full border-collapse text-sm">
-              <thead className="bg-zinc-50 text-zinc-600">
+              <thead className="bg-[var(--surface)] text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Элемент</th>
                   <th className="px-4 py-3 text-left font-medium">Тип</th>
@@ -521,8 +537,8 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
               </thead>
               <tbody>
                 {data.attemptHistory.map((attempt) => (
-                  <tr key={attempt.id} className="border-t border-zinc-200 text-zinc-700">
-                    <td className="px-4 py-4 font-medium text-zinc-950">{attempt.quizTitle}</td>
+                  <tr key={attempt.id} className="border-t border-[var(--line)] text-[var(--ink)]">
+                    <td className="px-4 py-4 font-medium text-[var(--ink)]">{attempt.quizTitle}</td>
                     <td className="px-4 py-4">
                       <StatusBadge label={attempt.assessmentKindLabel} tone="neutral" />
                     </td>
@@ -532,7 +548,7 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
                         <div>
                           {attempt.score}/{attempt.maxScore} ({attempt.scorePercent}%)
                         </div>
-                        <div className="mt-1 text-xs text-zinc-500">
+                        <div className="mt-1 text-xs text-[var(--ink-muted)]">
                           Верных ответов: {attempt.correctAnswers}/{attempt.totalQuestions}
                         </div>
                       </div>
@@ -553,12 +569,12 @@ export default async function CourseLearnerDetailPage({ params, searchParams }: 
                     </td>
                     <td className="px-4 py-4">
                       {attempt.reviewComment ? (
-                        <p className="max-w-md whitespace-pre-wrap text-sm text-zinc-700">{attempt.reviewComment}</p>
+                        <p className="max-w-md whitespace-pre-wrap text-sm text-[var(--ink)]">{attempt.reviewComment}</p>
                       ) : (
-                        <span className="text-zinc-400">—</span>
+                        <span className="text-[var(--ink-muted)]">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-4 text-xs text-zinc-500">{formatDateTimeRu(attempt.completedAt)}</td>
+                    <td className="px-4 py-4 text-xs text-[var(--ink-muted)]">{formatDateTimeRu(attempt.completedAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -580,18 +596,18 @@ function SummaryCard({
   compact?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className={`font-semibold tracking-tight text-zinc-950 ${compact ? "text-lg" : "text-3xl"}`}>{value}</div>
-      <div className="mt-1 text-sm text-zinc-500">{label}</div>
+    <div className="rounded-xl border border-[var(--line)] bg-white p-5 shadow-sm">
+      <div className={`font-semibold tracking-tight text-[var(--ink)] ${compact ? "text-lg" : "text-3xl"}`}>{value}</div>
+      <div className="mt-1 text-sm text-[var(--ink-muted)]">{label}</div>
     </div>
   );
 }
 
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3">
-      <div className="text-xs text-zinc-500">{label}</div>
-      <div className="mt-1 text-sm font-medium text-zinc-900">{value}</div>
+    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-3">
+      <div className="text-xs text-[var(--ink-muted)]">{label}</div>
+      <div className="mt-1 text-sm font-medium text-[var(--ink)]">{value}</div>
     </div>
   );
 }
@@ -599,8 +615,8 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-zinc-500">{label}</dt>
-      <dd className="mt-1 text-zinc-900">{value}</dd>
+      <dt className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">{label}</dt>
+      <dd className="mt-1 text-[var(--ink)]">{value}</dd>
     </div>
   );
 }
@@ -610,7 +626,7 @@ function CourseStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${
-        isPublished ? "bg-emerald-100 text-emerald-700" : "bg-zinc-100 text-zinc-600"
+        isPublished ? "bg-[var(--success-soft)] text-[var(--success)]" : "bg-[var(--surface)] text-[var(--ink-muted)]"
       }`}
     >
       {isPublished ? "Опубликован" : "Черновик"}
@@ -627,14 +643,14 @@ function StatusBadge({
 }) {
   const className =
     tone === "success"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "bg-[var(--success-soft)] text-[var(--success)]"
       : tone === "danger"
-        ? "bg-rose-100 text-rose-700"
+        ? "bg-[var(--danger-soft)] text-[var(--danger)]"
         : tone === "warning"
-          ? "bg-amber-100 text-amber-700"
+          ? "bg-[var(--warning-soft)] text-[var(--warning)]"
           : tone === "info"
-            ? "bg-sky-100 text-sky-700"
-            : "bg-zinc-100 text-zinc-600";
+            ? "bg-[var(--info-soft)] text-[var(--info)]"
+            : "bg-[var(--surface)] text-[var(--ink-muted)]";
 
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${className}`}>{label}</span>;
 }

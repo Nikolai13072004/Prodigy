@@ -50,7 +50,7 @@ export function FormAutosaveWatcher({ formId, intervalMs = 30_000, visible = tru
   if (!visible) return null;
 
   return (
-    <p className="text-xs text-zinc-500">
+    <p className="text-xs text-[var(--ink-muted)]">
       {autosaving
         ? "Автосохранение..."
         : dirty

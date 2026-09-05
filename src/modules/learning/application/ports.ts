@@ -5,6 +5,7 @@ export type LearningMaterialRecord = {
   courseId: string;
   type: string;
   totalSlides: number | null;
+  isRequired: boolean;
 };
 
 export type StoredMaterialProjection = {
@@ -21,7 +22,7 @@ export interface LearningRepository {
     userId: string;
     event: MaterialLearningEvent;
     project(previous: StoredMaterialProjection): MaterialLearningProjection;
-  }): Promise<MaterialLearningProjection>;
+  }): Promise<{ projection: MaterialLearningProjection; previousProgressPercent: number | null }>;
 }
 
 export interface LearningAccessPolicy {

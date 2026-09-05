@@ -22,25 +22,25 @@ export function NavClient({ displayName, email, role, roles }: Props) {
   };
 
   return (
-    <header className="border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
+    <header className="border-b border-[var(--line)] bg-[var(--surface-raised)] backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
         <Link
           href="/"
-          className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+          className="text-sm font-semibold tracking-tight text-[var(--ink)]"
         >
           Корпоративное обучение
         </Link>
         <div className="flex flex-wrap items-center justify-end gap-3 text-sm">
           <Link
             href="/"
-            className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            className="text-[var(--ink-muted)] hover:text-[var(--ink)]"
           >
             Курсы
           </Link>
           {email && (
             <Link
               href="/history"
-              className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              className="text-[var(--ink-muted)] hover:text-[var(--ink)]"
             >
               История
             </Link>
@@ -48,20 +48,20 @@ export function NavClient({ displayName, email, role, roles }: Props) {
           {staff && (
             <Link
               href="/courses/new"
-              className="rounded-md bg-zinc-900 px-3 py-1.5 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+              className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-white hover:bg-[var(--accent-strong)]"
             >
               Новый курс
             </Link>
           )}
           {email ? (
             <>
-              <span className="hidden max-w-[200px] truncate text-xs text-zinc-500 sm:inline" title={email ?? ""}>
+              <span className="hidden max-w-[200px] truncate text-xs text-[var(--ink-muted)] sm:inline" title={email ?? ""}>
                 {displayName ?? email}
               </span>
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="text-zinc-600 underline decoration-zinc-400 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                className="text-[var(--ink-muted)] underline decoration-[var(--ink-muted)] hover:text-[var(--ink)]"
               >
                 Выйти
               </button>
@@ -70,7 +70,7 @@ export function NavClient({ displayName, email, role, roles }: Props) {
             !onLoginPage && (
               <Link
                 href="/login"
-                className="text-zinc-600 underline hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                className="text-[var(--ink-muted)] underline hover:text-[var(--ink)]"
               >
                 Войти
               </Link>

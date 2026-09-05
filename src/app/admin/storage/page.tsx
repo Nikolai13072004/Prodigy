@@ -4,6 +4,7 @@ import {
   deleteOrphanStorageFiles,
   deleteStorageFile,
 } from "@/app/actions/storage-actions";
+import { Badge, Button, Input, Select } from "@/components/ui";
 import { requirePlatformAdmin } from "@/lib/auth-guards";
 import { type StorageCategoryKey, getStorageOverview } from "@/lib/storage-overview";
 
@@ -79,34 +80,11 @@ function MetricCard({
   hint: string;
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-zinc-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950">{value}</p>
-      <p className="mt-2 text-xs text-zinc-500">{hint}</p>
+    <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-sm">
+      <p className="text-sm font-medium text-[var(--ink-muted)]">{label}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-[var(--ink)]">{value}</p>
+      <p className="mt-2 text-xs text-[var(--ink-muted)]">{hint}</p>
     </div>
-  );
-}
-
-function StorageBadge({
-  tone,
-  children,
-}: {
-  tone: "neutral" | "emerald" | "amber" | "sky";
-  children: React.ReactNode;
-}) {
-  const className =
-    tone === "emerald"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : tone === "amber"
-        ? "border-amber-200 bg-amber-50 text-amber-800"
-        : tone === "sky"
-          ? "border-sky-200 bg-sky-50 text-sky-800"
-          : "border-zinc-200 bg-zinc-100 text-zinc-700";
-
-  return (
-    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${className}`}>
-      {children}
-    </span>
   );
 }
 
@@ -162,7 +140,7 @@ function DeleteStorageFileForm({
       <HiddenReturnFields filters={filters} selectedFileUrl={selectedFileUrl} />
       <button
         type="submit"
-        className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100"
+        className="rounded-lg border border-[var(--danger)] bg-[var(--danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--danger)] hover:opacity-90"
       >
         Удалить
       </button>
@@ -229,8 +207,8 @@ export default async function AdminStoragePage({ searchParams }: Props) {
     <main className="mx-auto max-w-7xl">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">Хранилище файлов</h1>
-          <p className="mt-2 max-w-3xl text-sm text-zinc-600">
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--ink)]">Хранилище файлов</h1>
+          <p className="mt-2 max-w-3xl text-sm text-[var(--ink-muted)]">
             Обзор загруженных файлов LMS: объём по типам, крупнейшие объекты и безопасная навигация по файлам с
             фильтрацией по имени, типу и зоне хранения.
           </p>
@@ -242,7 +220,7 @@ export default async function AdminStoragePage({ searchParams }: Props) {
               <HiddenReturnFields filters={filters} selectedFileUrl={selectedFile?.url ?? null} />
               <button
                 type="submit"
-                className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
+                className="rounded-xl border border-[var(--warning)] bg-[var(--warning-soft)] px-4 py-2 text-sm font-medium text-[var(--warning)] hover:opacity-90"
               >
                 Очистить индекс ({overview.summary.metadataOrphanRecords})
               </button>
@@ -253,7 +231,7 @@ export default async function AdminStoragePage({ searchParams }: Props) {
               <HiddenReturnFields filters={filters} selectedFileUrl={selectedFile?.url ?? null} />
               <button
                 type="submit"
-                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
+                className="rounded-xl border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-2 text-sm font-medium text-[var(--danger)] hover:opacity-90"
               >
                 Очистить сиротские файлы ({overview.summary.unreferencedFiles})
               </button>
@@ -261,13 +239,13 @@ export default async function AdminStoragePage({ searchParams }: Props) {
           ) : null}
           <Link
             href="/admin/settings?tab=general"
-            className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+            className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
           >
             Брендинг
           </Link>
           <Link
             href="/courses"
-            className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)]"
           >
             Курсы
           </Link>
@@ -275,33 +253,33 @@ export default async function AdminStoragePage({ searchParams }: Props) {
       </div>
 
       {sp.notice ? (
-        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div className="mt-4 rounded-2xl border border-[var(--success)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)]">
           {sp.notice}
         </div>
       ) : null}
       {sp.error ? (
-        <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="mt-4 rounded-2xl border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
           {sp.error}
         </div>
       ) : null}
 
-      <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-        В обзор входят файлы из `public/uploads` и `public/branding`. Встроенные статические ассеты и демо-файлы вне
+      <div className="mt-4 rounded-2xl border border-[var(--info)] bg-[var(--info-soft)] px-4 py-3 text-sm text-[var(--info)]">
+        В обзор входят файлы из `data/uploads` и `public/branding`. Встроенные статические ассеты и демо-файлы вне
         этих папок сюда не попадают.
       </div>
 
       {overview.summary.metadataOrphanRecords > 0 ? (
-        <section className="mt-6 overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm">
-          <div className="border-b border-amber-200 bg-amber-50 px-6 py-4">
-            <h2 className="text-lg font-semibold text-amber-950">Битые записи индекса StorageFile</h2>
-            <p className="mt-1 max-w-3xl text-sm text-amber-800">
+        <section className="mt-6 overflow-hidden rounded-3xl border border-[var(--warning)] bg-[var(--surface-raised)] shadow-sm">
+          <div className="border-b border-[var(--warning)] bg-[var(--warning-soft)] px-6 py-4">
+            <h2 className="text-lg font-semibold text-[var(--warning)]">Битые записи индекса StorageFile</h2>
+            <p className="mt-1 max-w-3xl text-sm text-[var(--warning)]">
               Эти записи есть в БД, но соответствующих файлов на диске уже нет. Они не занимают место, но могут мешать
               дедупликации и повторной загрузке.
             </p>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-amber-100 text-sm">
-              <thead className="bg-amber-50 text-left text-xs font-semibold uppercase tracking-wide text-amber-700">
+            <table className="min-w-full divide-y divide-[var(--line)] text-sm">
+              <thead className="bg-[var(--warning-soft)] text-left text-xs font-semibold uppercase tracking-wide text-[var(--warning)]">
                 <tr>
                   <th className="px-6 py-3">Запись</th>
                   <th className="px-6 py-3">Зона</th>
@@ -309,25 +287,25 @@ export default async function AdminStoragePage({ searchParams }: Props) {
                   <th className="px-6 py-3">Последняя фиксация</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-amber-100">
+              <tbody className="divide-y divide-[var(--line)]">
                 {overview.metadataOrphans.slice(0, 20).map((record) => (
                   <tr key={record.id} className="align-top">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-zinc-950">{record.fileName}</div>
-                      <div className="mt-1 break-all font-mono text-xs text-zinc-500">{record.relativePath}</div>
+                      <div className="font-medium text-[var(--ink)]">{record.fileName}</div>
+                      <div className="mt-1 break-all font-mono text-xs text-[var(--ink-muted)]">{record.relativePath}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <StorageBadge tone="amber">{record.storageAreaLabel}</StorageBadge>
+                      <Badge tone="warning">{record.storageAreaLabel}</Badge>
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-zinc-900">{formatBytes(record.sizeBytes)}</td>
-                    <td className="px-6 py-4 text-sm text-zinc-600">{formatDateTime(record.lastSeenAt)}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-[var(--ink)]">{formatBytes(record.sizeBytes)}</td>
+                    <td className="px-6 py-4 text-sm text-[var(--ink-muted)]">{formatDateTime(record.lastSeenAt)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           {overview.metadataOrphans.length > 20 ? (
-            <div className="border-t border-amber-100 px-6 py-3 text-sm text-amber-800">
+            <div className="border-t border-[var(--line)] px-6 py-3 text-sm text-[var(--warning)]">
               Показаны первые 20 записей из {overview.metadataOrphans.length}. Очистка удалит весь найденный список.
             </div>
           ) : null}
@@ -335,38 +313,38 @@ export default async function AdminStoragePage({ searchParams }: Props) {
       ) : null}
 
       {selectedFile ? (
-        <section className="mt-6 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <section className="mt-6 rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] p-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-zinc-950">Зависимости файла</h2>
-              <p className="mt-1 max-w-3xl text-sm text-zinc-600">
+              <h2 className="text-lg font-semibold text-[var(--ink)]">Зависимости файла</h2>
+              <p className="mt-1 max-w-3xl text-sm text-[var(--ink-muted)]">
                 Полный список найденных связей для выбранного файла. Это помогает оценить влияние перед отвязкой или
                 удалением.
               </p>
             </div>
             <Link
               href={buildStoragePageHref(filters)}
-              className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+              className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
             >
               Сбросить выбор
             </Link>
           </div>
 
           <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5">
+            <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-semibold text-zinc-950">{selectedFile.fileName}</h3>
-                <StorageBadge tone={selectedFile.isReferenced ? "emerald" : "amber"}>
+                <h3 className="text-base font-semibold text-[var(--ink)]">{selectedFile.fileName}</h3>
+                <Badge tone={selectedFile.isReferenced ? "success" : "warning"}>
                   {selectedFile.isReferenced ? "Связан с объектами" : "Сиротский файл"}
-                </StorageBadge>
+                </Badge>
                 {matchesFilter(selectedFile, filters) ? null : (
-                  <StorageBadge tone="sky">Вне текущего фильтра</StorageBadge>
+                  <Badge tone="info">Вне текущего фильтра</Badge>
                 )}
               </div>
-              <p className="mt-2 break-all font-mono text-xs text-zinc-500">{selectedFile.relativePath}</p>
+              <p className="mt-2 break-all font-mono text-xs text-[var(--ink-muted)]">{selectedFile.relativePath}</p>
 
               {selectedFile.isReferenced ? (
-                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <div className="mt-4 rounded-2xl border border-[var(--warning)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)]">
                   Удаление напрямую сейчас недоступно: файл используется в платформе. Сначала отвяжите его от курса,
                   урока, ответа ученика или настроек брендинга.
                 </div>
@@ -381,7 +359,7 @@ export default async function AdminStoragePage({ searchParams }: Props) {
                     href={selectedFile.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                    className="rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                   >
                     Открыть файл
                   </a>
@@ -390,22 +368,22 @@ export default async function AdminStoragePage({ searchParams }: Props) {
 
               <div className="mt-5 space-y-3">
                 {selectedFile.usages.length === 0 ? (
-                  <p className="text-sm text-zinc-600">
+                  <p className="text-sm text-[var(--ink-muted)]">
                     Ссылки на этот файл не найдены. Его можно удалить по одной кнопке или через массовую очистку
                     сиротских файлов.
                   </p>
                 ) : (
                   selectedFile.usages.map((usage) => (
-                    <div key={usage.key} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+                    <div key={usage.key} className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <StorageBadge tone="emerald">{usage.label}</StorageBadge>
+                        <Badge tone="success">{usage.label}</Badge>
                         {usage.href ? (
-                          <Link href={usage.href} className="text-xs font-medium text-teal-700 hover:text-teal-800">
+                          <Link href={usage.href} className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-strong)]">
                             Открыть контекст
                           </Link>
                         ) : null}
                       </div>
-                      <p className="mt-2 text-sm text-zinc-800">{usage.detail}</p>
+                      <p className="mt-2 text-sm text-[var(--ink)]">{usage.detail}</p>
                     </div>
                   ))
                 )}
@@ -413,34 +391,34 @@ export default async function AdminStoragePage({ searchParams }: Props) {
             </div>
 
             <aside className="space-y-4">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-                <h3 className="text-sm font-semibold text-zinc-950">Сводка</h3>
+              <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-5">
+                <h3 className="text-sm font-semibold text-[var(--ink)]">Сводка</h3>
                 <dl className="mt-4 space-y-3 text-sm">
                   <div>
-                    <dt className="text-zinc-500">Размер</dt>
-                    <dd className="mt-1 font-medium text-zinc-950">{formatBytes(selectedFile.sizeBytes)}</dd>
+                    <dt className="text-[var(--ink-muted)]">Размер</dt>
+                    <dd className="mt-1 font-medium text-[var(--ink)]">{formatBytes(selectedFile.sizeBytes)}</dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Зона хранения</dt>
-                    <dd className="mt-1 text-zinc-900">{selectedFile.storageAreaLabel}</dd>
+                    <dt className="text-[var(--ink-muted)]">Зона хранения</dt>
+                    <dd className="mt-1 text-[var(--ink)]">{selectedFile.storageAreaLabel}</dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Тип</dt>
-                    <dd className="mt-1 text-zinc-900">
+                    <dt className="text-[var(--ink-muted)]">Тип</dt>
+                    <dd className="mt-1 text-[var(--ink)]">
                       {selectedFile.categoryLabel}
                       {selectedFile.extension ? ` · ${selectedFile.extension}` : ""}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Найдено связей</dt>
-                    <dd className="mt-1 text-zinc-900">{selectedFile.usages.length}</dd>
+                    <dt className="text-[var(--ink-muted)]">Найдено связей</dt>
+                    <dd className="mt-1 text-[var(--ink)]">{selectedFile.usages.length}</dd>
                   </div>
                 </dl>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-                <h3 className="text-sm font-semibold text-zinc-950">Что делать дальше</h3>
-                <p className="mt-3 text-sm text-zinc-600">
+              <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-5">
+                <h3 className="text-sm font-semibold text-[var(--ink)]">Что делать дальше</h3>
+                <p className="mt-3 text-sm text-[var(--ink-muted)]">
                   {selectedFile.isReferenced
                     ? "Если файл больше не нужен, сначала уберите ссылку на него в источнике использования, затем вернитесь в хранилище."
                     : "Файл не используется. Его можно удалять точечно или через массовую очистку сиротских файлов."}
@@ -483,27 +461,27 @@ export default async function AdminStoragePage({ searchParams }: Props) {
           value={String(overview.summary.metadataOrphanRecords)}
           hint="Записи StorageFile без файла на диске"
         />
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-zinc-500">Зоны хранения</p>
+        <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-5 shadow-sm">
+          <p className="text-sm font-medium text-[var(--ink-muted)]">Зоны хранения</p>
           <div className="mt-4 space-y-3">
             {overview.areaSummaries.map((summary) => (
               <div key={summary.key} className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-sm font-medium text-zinc-900">{summary.label}</div>
-                  <div className="text-xs text-zinc-500">{summary.filesCount} файлов</div>
+                  <div className="text-sm font-medium text-[var(--ink)]">{summary.label}</div>
+                  <div className="text-xs text-[var(--ink-muted)]">{summary.filesCount} файлов</div>
                 </div>
-                <div className="text-sm font-semibold text-zinc-900">{formatBytes(summary.sizeBytes)}</div>
+                <div className="text-sm font-semibold text-[var(--ink)]">{formatBytes(summary.sizeBytes)}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mt-6 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="mt-6 rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-950">Поиск и фильтры</h2>
-            <p className="mt-1 max-w-3xl text-sm text-zinc-600">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">Поиск и фильтры</h2>
+            <p className="mt-1 max-w-3xl text-sm text-[var(--ink-muted)]">
               Отбирайте файлы по имени или пути, типу контента и зоне хранения. Все действия ниже сохраняют выбранный
               срез.
             </p>
@@ -512,7 +490,7 @@ export default async function AdminStoragePage({ searchParams }: Props) {
           {currentFiltersActive ? (
             <Link
               href="/admin/storage"
-              className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+              className="rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
             >
               Сбросить фильтры
             </Link>
@@ -521,77 +499,64 @@ export default async function AdminStoragePage({ searchParams }: Props) {
 
         <form method="get" className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_220px_220px_auto]">
           <label className="block">
-            <span className="text-sm font-medium text-zinc-800">Имя или путь файла</span>
-            <input
+            <span className="text-sm font-medium text-[var(--ink)]">Имя или путь файла</span>
+            <Input
               type="search"
               name="q"
               defaultValue={filters.q}
               placeholder="Например: intro, cover, quiz-attachments"
-              className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              className="mt-2"
             />
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-zinc-800">Тип</span>
-            <select
-              name="category"
-              defaultValue={filters.category}
-              className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-            >
+            <span className="text-sm font-medium text-[var(--ink)]">Тип</span>
+            <Select name="category" defaultValue={filters.category} className="mt-2">
               {CATEGORY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-zinc-800">Зона</span>
-            <select
-              name="area"
-              defaultValue={filters.area}
-              className="mt-2 w-full rounded-xl border border-zinc-300 px-4 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-            >
+            <span className="text-sm font-medium text-[var(--ink)]">Зона</span>
+            <Select name="area" defaultValue={filters.area} className="mt-2">
               {AREA_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <div className="flex items-end gap-3">
-            <button
-              type="submit"
-              className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
-            >
-              Применить
-            </button>
+            <Button type="submit">Применить</Button>
           </div>
         </form>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          <StorageBadge tone="neutral">Найдено файлов: {filteredFiles.length}</StorageBadge>
-          <StorageBadge tone="neutral">Объём среза: {formatBytes(filteredSizeBytes)}</StorageBadge>
-          <StorageBadge tone="emerald">Со ссылками: {filteredReferencedFiles.length}</StorageBadge>
-          <StorageBadge tone="amber">Сиротские: {filteredOrphanFiles.length}</StorageBadge>
-          {filters.q ? <StorageBadge tone="sky">Поиск: {filters.q}</StorageBadge> : null}
+          <Badge tone="neutral">Найдено файлов: {filteredFiles.length}</Badge>
+          <Badge tone="neutral">Объём среза: {formatBytes(filteredSizeBytes)}</Badge>
+          <Badge tone="success">Со ссылками: {filteredReferencedFiles.length}</Badge>
+          <Badge tone="warning">Сиротские: {filteredOrphanFiles.length}</Badge>
+          {filters.q ? <Badge tone="info">Поиск: {filters.q}</Badge> : null}
           {filters.category !== "all" ? (
-            <StorageBadge tone="sky">
+            <Badge tone="info">
               Тип: {CATEGORY_OPTIONS.find((option) => option.value === filters.category)?.label}
-            </StorageBadge>
+            </Badge>
           ) : null}
           {filters.area !== "all" ? (
-            <StorageBadge tone="sky">Зона: {AREA_OPTIONS.find((option) => option.value === filters.area)?.label}</StorageBadge>
+            <Badge tone="info">Зона: {AREA_OPTIONS.find((option) => option.value === filters.area)?.label}</Badge>
           ) : null}
         </div>
       </section>
 
-      <section className="mt-6 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 bg-zinc-50 px-6 py-4">
-          <h2 className="text-lg font-semibold text-zinc-950">Инвентарь файлов</h2>
-          <p className="mt-1 text-sm text-zinc-600">
+      <section className="mt-6 overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
+        <div className="border-b border-[var(--line)] bg-[var(--surface)] px-6 py-4">
+          <h2 className="text-lg font-semibold text-[var(--ink)]">Инвентарь файлов</h2>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
             Полный список файлов в текущем срезе. Из него удобно быстро открыть зависимость, найти сиротский файл или
             проверить конкретную папку.
           </p>
@@ -599,15 +564,15 @@ export default async function AdminStoragePage({ searchParams }: Props) {
 
         {filteredFiles.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="text-base font-medium text-zinc-950">По текущему фильтру файлы не найдены.</p>
-            <p className="mt-2 text-sm text-zinc-600">
+            <p className="text-base font-medium text-[var(--ink)]">По текущему фильтру файлы не найдены.</p>
+            <p className="mt-2 text-sm text-[var(--ink-muted)]">
               Измените поисковый запрос или сбросьте фильтры, чтобы вернуться ко всему инвентарю.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-zinc-200 text-sm">
-              <thead className="bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <table className="min-w-full divide-y divide-[var(--line)] text-sm">
+              <thead className="bg-[var(--surface)] text-left text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-6 py-3">Файл</th>
                   <th className="px-6 py-3">Зона и тип</th>
@@ -616,27 +581,27 @@ export default async function AdminStoragePage({ searchParams }: Props) {
                   <th className="px-6 py-3 text-right">Действия</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100">
+              <tbody className="divide-y divide-[var(--line)]">
                 {filteredFiles.map((file) => (
                   <tr key={file.url} className="align-top">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-zinc-950">{file.fileName}</div>
-                      <div className="mt-1 break-all font-mono text-xs text-zinc-500">{file.relativePath}</div>
+                      <div className="font-medium text-[var(--ink)]">{file.fileName}</div>
+                      <div className="mt-1 break-all font-mono text-xs text-[var(--ink-muted)]">{file.relativePath}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-2">
-                        <StorageBadge tone="neutral">{file.storageAreaLabel}</StorageBadge>
-                        <StorageBadge tone="sky">
+                        <Badge tone="neutral">{file.storageAreaLabel}</Badge>
+                        <Badge tone="info">
                           {file.categoryLabel}
                           {file.extension ? ` · ${file.extension}` : ""}
-                        </StorageBadge>
-                        {!file.isReferenced ? <StorageBadge tone="amber">Сиротский файл</StorageBadge> : null}
+                        </Badge>
+                        {!file.isReferenced ? <Badge tone="warning">Сиротский файл</Badge> : null}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-zinc-900">{formatBytes(file.sizeBytes)}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-[var(--ink)]">{formatBytes(file.sizeBytes)}</td>
                     <td className="px-6 py-4">
                       {file.usages.length === 0 ? (
-                        <p className="max-w-md text-sm text-zinc-500">
+                        <p className="max-w-md text-sm text-[var(--ink-muted)]">
                           Ссылки на файл не найдены в курсах, ответах учеников и настройках платформы.
                         </p>
                       ) : (
@@ -644,18 +609,18 @@ export default async function AdminStoragePage({ searchParams }: Props) {
                           {file.usages.slice(0, 2).map((usage) => (
                             <div key={usage.key} className="max-w-xl">
                               <div className="flex flex-wrap items-center gap-2">
-                                <StorageBadge tone="emerald">{usage.label}</StorageBadge>
+                                <Badge tone="success">{usage.label}</Badge>
                                 {usage.href ? (
-                                  <Link href={usage.href} className="text-xs font-medium text-teal-700 hover:text-teal-800">
+                                  <Link href={usage.href} className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-strong)]">
                                     Открыть контекст
                                   </Link>
                                 ) : null}
                               </div>
-                              <p className="mt-2 text-sm text-zinc-800">{usage.detail}</p>
+                              <p className="mt-2 text-sm text-[var(--ink)]">{usage.detail}</p>
                             </div>
                           ))}
                           {file.usages.length > 2 ? (
-                            <p className="text-xs text-zinc-500">Еще связей: {file.usages.length - 2}</p>
+                            <p className="text-xs text-[var(--ink-muted)]">Еще связей: {file.usages.length - 2}</p>
                           ) : null}
                         </div>
                       )}
@@ -664,7 +629,7 @@ export default async function AdminStoragePage({ searchParams }: Props) {
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           href={buildStoragePageHref(filters, { file: file.url })}
-                          className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                          className="rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                         >
                           Подробнее
                         </Link>
@@ -672,7 +637,7 @@ export default async function AdminStoragePage({ searchParams }: Props) {
                           href={file.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                          className="rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                         >
                           Открыть
                         </a>
@@ -693,11 +658,11 @@ export default async function AdminStoragePage({ searchParams }: Props) {
         )}
       </section>
 
-      <section className="mt-6 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-200 bg-zinc-50 px-6 py-4">
+      <section className="mt-6 overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--line)] bg-[var(--surface)] px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-950">Сиротские файлы</h2>
-            <p className="mt-1 max-w-3xl text-sm text-zinc-600">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">Сиротские файлы</h2>
+            <p className="mt-1 max-w-3xl text-sm text-[var(--ink-muted)]">
               Файлы без найденных ссылок в текущем срезе. Перед удалением система повторно перепроверяет зависимости на
               сервере.
             </p>
@@ -708,7 +673,7 @@ export default async function AdminStoragePage({ searchParams }: Props) {
               <HiddenReturnFields filters={filters} selectedFileUrl={selectedFile?.url ?? null} />
               <button
                 type="submit"
-                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+                className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)]"
               >
                 Удалить все сиротские файлы
               </button>
@@ -718,10 +683,10 @@ export default async function AdminStoragePage({ searchParams }: Props) {
 
         {filteredOrphanFiles.length === 0 ? (
           <div className="px-6 py-10">
-            <StorageBadge tone="emerald">
+            <Badge tone="success">
               {currentFiltersActive ? "В текущем фильтре сиротских файлов не найдено" : "Сиротских файлов не найдено"}
-            </StorageBadge>
-            <p className="mt-3 text-sm text-zinc-600">
+            </Badge>
+            <p className="mt-3 text-sm text-[var(--ink-muted)]">
               {currentFiltersActive
                 ? "Попробуйте изменить фильтры, если хотите проверить другую зону хранения или тип файлов."
                 : "По текущему снимку все обнаруженные файлы имеют связь с объектами платформы."}
@@ -729,8 +694,8 @@ export default async function AdminStoragePage({ searchParams }: Props) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-zinc-200 text-sm">
-              <thead className="bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <table className="min-w-full divide-y divide-[var(--line)] text-sm">
+              <thead className="bg-[var(--surface)] text-left text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-6 py-3">Файл</th>
                   <th className="px-6 py-3">Зона</th>
@@ -739,28 +704,28 @@ export default async function AdminStoragePage({ searchParams }: Props) {
                   <th className="px-6 py-3 text-right">Действия</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100">
+              <tbody className="divide-y divide-[var(--line)]">
                 {filteredOrphanFiles.map((file) => (
                   <tr key={file.url} className="align-top">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-zinc-950">{file.fileName}</div>
-                      <div className="mt-1 break-all font-mono text-xs text-zinc-500">{file.relativePath}</div>
+                      <div className="font-medium text-[var(--ink)]">{file.fileName}</div>
+                      <div className="mt-1 break-all font-mono text-xs text-[var(--ink-muted)]">{file.relativePath}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <StorageBadge tone="amber">{file.storageAreaLabel}</StorageBadge>
+                      <Badge tone="warning">{file.storageAreaLabel}</Badge>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-zinc-900">{file.categoryLabel}</div>
-                      <div className="mt-1 text-xs uppercase tracking-wide text-zinc-500">
+                      <div className="text-sm font-medium text-[var(--ink)]">{file.categoryLabel}</div>
+                      <div className="mt-1 text-xs uppercase tracking-wide text-[var(--ink-muted)]">
                         {file.extension || "без расширения"}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-zinc-900">{formatBytes(file.sizeBytes)}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-[var(--ink)]">{formatBytes(file.sizeBytes)}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           href={buildStoragePageHref(filters, { file: file.url })}
-                          className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                          className="rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                         >
                           Подробнее
                         </Link>
@@ -768,7 +733,7 @@ export default async function AdminStoragePage({ searchParams }: Props) {
                           href={file.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                          className="rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                         >
                           Открыть
                         </a>
@@ -787,10 +752,10 @@ export default async function AdminStoragePage({ searchParams }: Props) {
         )}
       </section>
 
-      <section className="mt-6 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 bg-zinc-50 px-6 py-4">
-          <h2 className="text-lg font-semibold text-zinc-950">Самые большие файлы</h2>
-          <p className="mt-1 text-sm text-zinc-600">
+      <section className="mt-6 overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
+        <div className="border-b border-[var(--line)] bg-[var(--surface)] px-6 py-4">
+          <h2 className="text-lg font-semibold text-[var(--ink)]">Самые большие файлы</h2>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
             {currentFiltersActive
               ? "Топ-20 по размеру в текущем фильтре."
               : "Топ-20 по размеру с попыткой привязать каждый файл к курсу, уроку, ответу ученика или настройкам брендинга."}
@@ -799,15 +764,15 @@ export default async function AdminStoragePage({ searchParams }: Props) {
 
         {filteredLargestFiles.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="text-base font-medium text-zinc-950">Папки загрузок пока пусты.</p>
-            <p className="mt-2 text-sm text-zinc-600">
+            <p className="text-base font-medium text-[var(--ink)]">Папки загрузок пока пусты.</p>
+            <p className="mt-2 text-sm text-[var(--ink-muted)]">
               После загрузки обложек, материалов, видео и вложений файлы появятся в этом разделе.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-zinc-200 text-sm">
-              <thead className="bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <table className="min-w-full divide-y divide-[var(--line)] text-sm">
+              <thead className="bg-[var(--surface)] text-left text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-6 py-3">Файл</th>
                   <th className="px-6 py-3">Тип</th>
@@ -815,44 +780,44 @@ export default async function AdminStoragePage({ searchParams }: Props) {
                   <th className="px-6 py-3">Контекст</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100">
+              <tbody className="divide-y divide-[var(--line)]">
                 {filteredLargestFiles.map((file) => (
                   <tr key={file.url} className="align-top">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-zinc-950">{file.fileName}</div>
-                      <div className="mt-1 break-all font-mono text-xs text-zinc-500">{file.relativePath}</div>
+                      <div className="font-medium text-[var(--ink)]">{file.fileName}</div>
+                      <div className="mt-1 break-all font-mono text-xs text-[var(--ink-muted)]">{file.relativePath}</div>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <StorageBadge tone="neutral">{file.storageAreaLabel}</StorageBadge>
+                        <Badge tone="neutral">{file.storageAreaLabel}</Badge>
                         <a
                           href={file.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center text-xs font-medium text-teal-700 hover:text-teal-800"
+                          className="inline-flex items-center text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-strong)]"
                         >
                           Открыть файл
                         </a>
                         <Link
                           href={buildStoragePageHref(filters, { file: file.url })}
-                          className="inline-flex items-center rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                          className="inline-flex items-center rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                         >
                           Подробнее
                         </Link>
-                        {!file.isReferenced ? <StorageBadge tone="amber">Сиротский файл</StorageBadge> : null}
+                        {!file.isReferenced ? <Badge tone="warning">Сиротский файл</Badge> : null}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-zinc-900">{file.categoryLabel}</div>
-                      <div className="mt-1 text-xs uppercase tracking-wide text-zinc-500">
+                      <div className="text-sm font-medium text-[var(--ink)]">{file.categoryLabel}</div>
+                      <div className="mt-1 text-xs uppercase tracking-wide text-[var(--ink-muted)]">
                         {file.extension || "без расширения"}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-zinc-900">{formatBytes(file.sizeBytes)}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-[var(--ink)]">{formatBytes(file.sizeBytes)}</td>
                     <td className="px-6 py-4">
                       {file.usages.length === 0 ? (
                         <div className="space-y-3">
                           <div>
-                            <StorageBadge tone="amber">Нет найденных ссылок</StorageBadge>
-                            <p className="mt-2 max-w-md text-xs text-zinc-500">
+                            <Badge tone="warning">Нет найденных ссылок</Badge>
+                            <p className="mt-2 max-w-md text-xs text-[var(--ink-muted)]">
                               Файл найден на диске, но ссылка на него не обнаружена в курсах, ответах учеников или
                               настройках платформы.
                             </p>
@@ -868,18 +833,18 @@ export default async function AdminStoragePage({ searchParams }: Props) {
                           {file.usages.slice(0, 3).map((usage) => (
                             <div key={usage.key} className="max-w-xl">
                               <div className="flex flex-wrap items-center gap-2">
-                                <StorageBadge tone="emerald">{usage.label}</StorageBadge>
+                                <Badge tone="success">{usage.label}</Badge>
                                 {usage.href ? (
-                                  <Link href={usage.href} className="text-xs font-medium text-teal-700 hover:text-teal-800">
+                                  <Link href={usage.href} className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-strong)]">
                                     Открыть контекст
                                   </Link>
                                 ) : null}
                               </div>
-                              <p className="mt-2 text-sm text-zinc-800">{usage.detail}</p>
+                              <p className="mt-2 text-sm text-[var(--ink)]">{usage.detail}</p>
                             </div>
                           ))}
                           {file.usages.length > 3 ? (
-                            <p className="text-xs text-zinc-500">Еще связей: {file.usages.length - 3}</p>
+                            <p className="text-xs text-[var(--ink-muted)]">Еще связей: {file.usages.length - 3}</p>
                           ) : null}
                         </div>
                       )}
@@ -892,9 +857,9 @@ export default async function AdminStoragePage({ searchParams }: Props) {
         )}
       </section>
 
-      <section className="mt-6 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-950">Что дальше</h2>
-        <p className="mt-2 max-w-3xl text-sm text-zinc-600">
+      <section className="mt-6 rounded-3xl border border-[var(--line)] bg-[var(--surface-raised)] p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-[var(--ink)]">Что дальше</h2>
+        <p className="mt-2 max-w-3xl text-sm text-[var(--ink-muted)]">
           Раздел уже закрывает обзор объёма, крупные файлы, безопасную очистку сиротских файлов и поиск по инвентарю.
           Следующим шагом можно добавить принудительное удаление связанных файлов с жёстким подтверждением риска.
         </p>

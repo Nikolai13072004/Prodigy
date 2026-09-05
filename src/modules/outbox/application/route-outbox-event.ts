@@ -1,5 +1,6 @@
 import {
   OUTBOX_TOPICS,
+  type CertificateIssuedEmailEvent,
   type CourseAssignedEmailEvent,
   type CourseInviteEmailEvent,
 } from "../domain/topics";
@@ -9,6 +10,7 @@ type OutboxRecord = { topic: string; payloadJson: string };
 export type OutboxEventHandlers = {
   courseAssignedEmail(payload: CourseAssignedEmailEvent): Promise<void>;
   courseInviteEmail(payload: CourseInviteEmailEvent): Promise<void>;
+  certificateIssuedEmail(payload: CertificateIssuedEmailEvent): Promise<void>;
 };
 
 function parsePayload(payloadJson: string) {
@@ -35,6 +37,10 @@ export function createRouteOutboxEvent(handlers: OutboxEventHandlers) {
     }
     if (event.topic === OUTBOX_TOPICS.COURSE_INVITE_EMAIL) {
       await handlers.courseInviteEmail(payload as CourseInviteEmailEvent);
+      return;
+    }
+    if (event.topic === OUTBOX_TOPICS.CERTIFICATE_ISSUED_EMAIL) {
+      await handlers.certificateIssuedEmail(payload as CertificateIssuedEmailEvent);
       return;
     }
     throw new Error(`Unsupported outbox topic: ${event.topic}`);

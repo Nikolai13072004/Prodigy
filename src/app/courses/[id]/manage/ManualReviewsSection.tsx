@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { reviewQuizAttempt } from "@/app/actions/course-assessment-actions";
 import { QuizQuestionMediaViewer } from "@/components/QuizQuestionMediaViewer";
+import { Badge, Button, Input, Label, Select, Textarea } from "@/components/ui";
 import type {
   CourseManualReviewStatusFilter,
   CourseManualReviewsData,
@@ -59,15 +60,15 @@ export function ManualReviewsSection({ courseId, data, statusFilter }: Props) {
                   href={buildReviewsHref(courseId, { status: statusFilter, attempt: row.id })}
                   className={`block rounded-xl border px-4 py-4 transition ${
                     active
-                      ? "border-emerald-300 bg-emerald-50"
-                      : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                      : "border-[var(--line)] bg-[var(--surface-raised)] hover:border-[var(--line)] hover:bg-[var(--accent-soft)]"
                   }`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-wide text-zinc-500">{row.quizTitle}</p>
-                      <h3 className="mt-1 font-semibold text-zinc-950">{row.learnerName}</h3>
-                      <p className="mt-1 text-sm text-zinc-600">
+                      <p className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">{row.quizTitle}</p>
+                      <h3 className="mt-1 font-semibold text-[var(--ink)]">{row.learnerName}</h3>
+                      <p className="mt-1 text-sm text-[var(--ink-muted)]">
                         {row.learnerLogin} · попытка {row.attemptNumber}
                       </p>
                     </div>
@@ -76,22 +77,22 @@ export function ManualReviewsSection({ courseId, data, statusFilter }: Props) {
 
                   <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                     <div>
-                      <dt className="text-xs uppercase tracking-wide text-zinc-500">Сдано</dt>
-                      <dd className="mt-1 text-zinc-700">{row.submittedAt.toLocaleString("ru-RU")}</dd>
+                      <dt className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">Сдано</dt>
+                      <dd className="mt-1 text-[var(--ink)]">{row.submittedAt.toLocaleString("ru-RU")}</dd>
                     </div>
                     <div>
-                      <dt className="text-xs uppercase tracking-wide text-zinc-500">Ручных вопросов</dt>
-                      <dd className="mt-1 text-zinc-700">{row.manualQuestionsCount}</dd>
+                      <dt className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">Ручных вопросов</dt>
+                      <dd className="mt-1 text-[var(--ink)]">{row.manualQuestionsCount}</dd>
                     </div>
                     <div>
-                      <dt className="text-xs uppercase tracking-wide text-zinc-500">Проверено</dt>
-                      <dd className="mt-1 text-zinc-700">
+                      <dt className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">Проверено</dt>
+                      <dd className="mt-1 text-[var(--ink)]">
                         {row.reviewedAt ? row.reviewedAt.toLocaleString("ru-RU") : "Еще нет"}
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs uppercase tracking-wide text-zinc-500">Комментарий</dt>
-                      <dd className="mt-1 text-zinc-700">{row.reviewCommentPreview ?? "Без комментария"}</dd>
+                      <dt className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">Комментарий</dt>
+                      <dd className="mt-1 text-[var(--ink)]">{row.reviewCommentPreview ?? "Без комментария"}</dd>
                     </div>
                   </dl>
                 </Link>
@@ -101,7 +102,7 @@ export function ManualReviewsSection({ courseId, data, statusFilter }: Props) {
 
           <section
             aria-label="Детали проверки работы"
-            className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm"
+            className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-6 shadow-sm"
           >
             {data.selectedAttempt ? (
               <ReviewDetail
@@ -110,7 +111,7 @@ export function ManualReviewsSection({ courseId, data, statusFilter }: Props) {
                 attempt={data.selectedAttempt}
               />
             ) : (
-              <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/70 p-8 text-center text-sm text-zinc-700">
+              <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-8 text-center text-sm text-[var(--ink)]">
                 Выберите работу в списке слева, чтобы открыть ответ и выставить оценку.
               </div>
             )}
@@ -136,9 +137,9 @@ function ReviewDetail({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-zinc-500">{attempt.quizTitle}</p>
-          <h3 className="mt-1 text-xl font-semibold text-zinc-950">{attempt.learnerName}</h3>
-          <p className="mt-2 text-sm text-zinc-600">
+          <p className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">{attempt.quizTitle}</p>
+          <h3 className="mt-1 text-xl font-semibold text-[var(--ink)]">{attempt.learnerName}</h3>
+          <p className="mt-2 text-sm text-[var(--ink-muted)]">
             {attempt.learnerLogin}
             {attempt.learnerEmail ? ` · ${attempt.learnerEmail}` : ""}
           </p>
@@ -159,7 +160,7 @@ function ReviewDetail({
         />
       </div>
 
-      <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-4 text-sm text-zinc-700">
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 text-sm text-[var(--ink)]">
         <p>Работа отправлена: {attempt.submittedAt.toLocaleString("ru-RU")}</p>
         {attempt.reviewedAt ? (
           <p className="mt-1">
@@ -173,25 +174,25 @@ function ReviewDetail({
         <input type="hidden" name="reviewStatus" value={statusFilter} />
 
         {attempt.questions.map((question, index) => (
-          <article key={question.id} className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-5">
+          <article key={question.id} className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-wide text-zinc-500">
+                <p className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">
                   Вопрос {index + 1} · {QUESTION_LABELS[question.type as keyof typeof QUESTION_LABELS] ?? question.type}
                 </p>
-                <h4 className="mt-2 font-semibold text-zinc-950">{question.prompt}</h4>
+                <h4 className="mt-2 font-semibold text-[var(--ink)]">{question.prompt}</h4>
                 <QuizQuestionMediaViewer
                   media={parseQuizQuestionMediaFromConfig(question.config)}
                   className="mt-4"
                 />
               </div>
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-zinc-700">
+              <span className="rounded-full bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium text-[var(--ink)]">
                 До {question.points} б.
               </span>
             </div>
 
-            <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700">
-              <p className="font-medium text-zinc-950">Ответ ученика</p>
+            <div className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--ink)]">
+              <p className="font-medium text-[var(--ink)]">Ответ ученика</p>
               {question.fileUrl && question.fileName ? (
                 <div className="mt-2 space-y-2">
                   <p>{question.fileName}</p>
@@ -199,7 +200,7 @@ function ReviewDetail({
                     href={question.fileUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex rounded-md border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+                    className="inline-flex rounded-md border border-[var(--line)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
                   >
                     Открыть файл
                   </a>
@@ -211,19 +212,19 @@ function ReviewDetail({
 
             <div className="mt-4 grid gap-4 md:grid-cols-[0.8fr_0.8fr]">
               <div>
-                <label className="block text-sm font-medium text-zinc-800">Решение</label>
-                <select
+                <Label className="block">Решение</Label>
+                <Select
                   name={`reviewAccepted_${question.id}`}
                   defaultValue={question.accepted === true ? "accepted" : "rejected"}
-                  className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
+                  className="mt-1"
                 >
                   <option value="accepted">Зачтено</option>
                   <option value="rejected">Не зачтено</option>
-                </select>
+                </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-800">Баллы</label>
-                <input
+                <Label className="block">Баллы</Label>
+                <Input
                   name={`reviewPoints_${question.id}`}
                   type="number"
                   min={0}
@@ -231,7 +232,7 @@ function ReviewDetail({
                   step={1}
                   required
                   defaultValue={question.awardedPoints ?? question.points}
-                  className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
+                  className="mt-1"
                 />
               </div>
             </div>
@@ -239,29 +240,26 @@ function ReviewDetail({
         ))}
 
         <div>
-          <label className="block text-sm font-medium text-zinc-800">Комментарий ученику</label>
-          <textarea
+          <Label className="block">Комментарий ученику</Label>
+          <Textarea
             name="reviewComment"
             rows={4}
             defaultValue={attempt.reviewComment}
             placeholder="Например: сильная аргументация, но в файле не хватает итоговых выводов."
-            className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none ring-emerald-500 focus:ring-2"
+            className="mt-1"
           />
-          <p className="mt-2 text-xs text-zinc-500">
+          <p className="mt-2 text-xs text-[var(--ink-muted)]">
             Этот комментарий попадет в письмо ученику и будет виден ему на странице результата.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-[var(--ink-muted)]">
             После сохранения итог попытки пересчитается, а ученику уйдет email-уведомление.
           </p>
-          <button
-            type="submit"
-            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-          >
+          <Button type="submit">
             {attempt.status === "pending" ? "Сохранить проверку" : "Обновить оценку"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -277,8 +275,8 @@ function SectionIntro({
 }) {
   return (
     <div>
-      <h2 className="text-xl font-semibold text-zinc-950">{title}</h2>
-      <p className="mt-2 max-w-4xl text-sm text-zinc-600">{description}</p>
+      <h2 className="text-xl font-semibold text-[var(--ink)]">{title}</h2>
+      <p className="mt-2 max-w-4xl text-sm text-[var(--ink-muted)]">{description}</p>
     </div>
   );
 }
@@ -294,10 +292,10 @@ function MetricCard({
 }) {
   const classes =
     accent === "amber"
-      ? "bg-amber-50 text-amber-700 border-amber-200"
+      ? "bg-[var(--warning-soft)] text-[var(--warning)] border-[var(--warning-soft)]"
       : accent === "emerald"
-        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-        : "bg-zinc-50 text-zinc-700 border-zinc-200";
+        ? "bg-[var(--success-soft)] text-[var(--success)] border-[var(--success-soft)]"
+        : "bg-[var(--surface)] text-[var(--ink)] border-[var(--line)]";
 
   return (
     <div className={`rounded-xl border p-5 ${classes}`}>
@@ -308,13 +306,9 @@ function MetricCard({
 }
 
 function ReviewStatusBadge({ status }: { status: "pending" | "reviewed" }) {
-  const classes =
-    status === "pending"
-      ? "bg-amber-100 text-amber-700"
-      : "bg-emerald-100 text-emerald-700";
   const label = status === "pending" ? "На проверке" : "Проверено";
 
-  return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${classes}`}>{label}</span>;
+  return <Badge tone={status === "pending" ? "warning" : "success"}>{label}</Badge>;
 }
 
 function FilterLink({
@@ -331,8 +325,8 @@ function FilterLink({
       href={href}
       className={`rounded-full border px-3 py-2 text-sm ${
         active
-          ? "border-emerald-300 bg-emerald-50 font-medium text-emerald-700"
-          : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+          ? "border-[var(--accent)] bg-[var(--accent-soft)] font-medium text-[var(--accent-strong)]"
+          : "border-[var(--line)] bg-[var(--surface-raised)] text-[var(--ink)] hover:bg-[var(--accent-soft)]"
       }`}
     >
       {label}
@@ -342,9 +336,9 @@ function FilterLink({
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-4">
-      <div className="text-xs uppercase tracking-wide text-zinc-500">{label}</div>
-      <div className="mt-2 font-semibold text-zinc-950">{value}</div>
+    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+      <div className="text-xs uppercase tracking-wide text-[var(--ink-muted)]">{label}</div>
+      <div className="mt-2 font-semibold text-[var(--ink)]">{value}</div>
     </div>
   );
 }
@@ -358,7 +352,7 @@ function EmptyState({ statusFilter }: { statusFilter: CourseManualReviewStatusFi
         : "По этому курсу пока не поступало заданий с ручной проверкой.";
 
   return (
-    <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/70 p-8 text-center text-sm text-zinc-700">
+    <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-8 text-center text-sm text-[var(--ink)]">
       {message}
     </div>
   );

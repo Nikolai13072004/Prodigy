@@ -2,8 +2,9 @@ import "server-only";
 
 import { stat } from "fs/promises";
 import path from "path";
+import { storage } from "@/lib/storage";
 
-const UPLOADS_ROOT = path.resolve(process.cwd(), "public", "uploads");
+const UPLOADS_ROOT = storage.rootPath("uploads");
 
 export async function getCoursePresentationPreviewUrls(
   items: Array<{ id: string; fileUrl: string | null }>

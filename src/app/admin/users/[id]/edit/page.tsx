@@ -24,6 +24,19 @@ import {
 } from "@/app/actions/user-actions";
 import { UserAvatarInput } from "@/components/UserAvatarInput";
 import { SystemRoleMarker } from "@/components/SystemRoleMarker";
+import {
+  Badge,
+  type BadgeTone,
+  Button,
+  buttonStyles,
+  Input,
+  Select,
+  TD,
+  TH,
+  THead,
+  TR,
+  Table,
+} from "@/components/ui";
 import { requirePermission } from "@/lib/auth-guards";
 import { assignedCourseWhere } from "@/lib/access";
 import { getCourseProgress } from "@/lib/course-progress";
@@ -222,8 +235,8 @@ export default async function EditUserPage({ params, searchParams }: Props) {
   const activeTab = resolveUserCardTab(sp.tab, canEditAccessLevel);
   const tabClass = (tab: UserCardTab) =>
     tab === activeTab
-      ? "shrink-0 border-b-2 border-[#2dbf6e] px-5 py-3 font-semibold text-[#0f315d] dark:text-sky-100"
-      : "shrink-0 px-5 py-3 text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
+      ? "shrink-0 border-b-2 border-[var(--accent)] px-5 py-3 font-semibold text-[var(--accent-strong)]"
+      : "shrink-0 px-5 py-3 text-[var(--ink-muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]";
   const assignCourseFormId = "user-assign-course-form";
   const courseStatusFilter = asUserCourseStatusFilter(sp.courseStatus);
   const [assignedCourseRows, availableCourses] =
@@ -240,17 +253,17 @@ export default async function EditUserPage({ params, searchParams }: Props) {
     <main className="mx-auto max-w-6xl">
       <Link
         href="/admin/users-groups?tab=users"
-        className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100"
+        className="inline-flex items-center gap-2 text-sm font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Назад к списку
       </Link>
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[var(--ink)]">
         {canEditAccessLevel ? "Редактировать пользователя" : "Редактировать ученика"}
       </h1>
 
-      <section className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
-        <div className="border-b border-zinc-200 bg-gradient-to-r from-white via-sky-50/80 to-white p-5 dark:border-zinc-800 dark:from-zinc-900 dark:via-sky-950/20 dark:to-zinc-900 sm:p-6">
+      <section className="mt-4 overflow-hidden rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
+        <div className="border-b border-[var(--line)] bg-gradient-to-r from-[var(--surface-raised)] via-[var(--accent-soft)] to-[var(--surface-raised)] p-5 sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 items-start gap-4">
               <UserAvatarInput
@@ -265,23 +278,21 @@ export default async function EditUserPage({ params, searchParams }: Props) {
               />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="truncate text-2xl font-semibold text-zinc-950 dark:text-zinc-50">
+                  <h2 className="truncate text-2xl font-semibold text-[var(--ink)]">
                     {user.name}
                   </h2>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${getUserStatusBadgeClass(user.status)}`}
-                  >
+                  <Badge tone={getUserStatusBadgeTone(user.status)}>
                     {USER_STATUS_LABELS[
                       user.status as keyof typeof USER_STATUS_LABELS
                     ] ?? user.status}
-                  </span>
+                  </Badge>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[var(--ink-muted)]">
                   <span className="inline-flex items-center gap-1.5">
                     <UserRound className="h-4 w-4" aria-hidden="true" />
                     {user.login}
                   </span>
-                  <span className="hidden text-zinc-300 sm:inline">·</span>
+                  <span className="hidden text-[var(--line)] sm:inline">·</span>
                   <span>{roleSummary}</span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -308,7 +319,7 @@ export default async function EditUserPage({ params, searchParams }: Props) {
               {user.email ? (
                 <a
                   href={`mailto:${user.email}`}
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  className={buttonStyles("secondary")}
                 >
                   <Mail className="h-4 w-4" aria-hidden="true" />
                   Написать
@@ -317,7 +328,7 @@ export default async function EditUserPage({ params, searchParams }: Props) {
               {isStudentUser ? (
                 <Link
                   href={`/admin/reports/${user.id}?fromUser=1`}
-                  className="inline-flex h-9 items-center gap-2 rounded-md bg-[#0f315d] px-3 text-sm font-medium text-white transition hover:bg-[#0b2547]"
+                  className={buttonStyles("primary")}
                 >
                   <BookOpen className="h-4 w-4" aria-hidden="true" />
                   Отчет
@@ -348,7 +359,7 @@ export default async function EditUserPage({ params, searchParams }: Props) {
             />
           </div>
         </div>
-        <div className="flex overflow-x-auto border-b border-zinc-200 bg-white text-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex overflow-x-auto border-b border-[var(--line)] bg-[var(--surface-raised)] text-sm">
           <Link
             href={userEditTabHref(user.id, "personal")}
             className={tabClass("personal")}
@@ -378,17 +389,17 @@ export default async function EditUserPage({ params, searchParams }: Props) {
         </div>
         <div className="min-h-[34rem] p-5 sm:min-h-[35rem] sm:p-6">
           {sp.notice ? (
-            <div className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <div className="mb-4 rounded-[var(--radius-control)] bg-[var(--success-soft)] px-3 py-2 text-sm text-[var(--success)]">
               {sp.notice}
             </div>
           ) : null}
           {sp.error ? (
-            <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+            <div className="mb-4 rounded-[var(--radius-control)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger)]">
               {sp.error}
             </div>
           ) : null}
           {!canEditAccessLevel ? (
-            <div className="mb-4 rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-300">
+            <div className="mb-4 rounded-[var(--radius-control)] bg-[var(--info-soft)] px-4 py-3 text-sm text-[var(--info)]">
               В этой форме HR может менять только имя, фамилию, email, группу и
               подразделение. Логин, роли, статус и пароль здесь недоступны.
             </div>
@@ -445,57 +456,47 @@ export default async function EditUserPage({ params, searchParams }: Props) {
             ) : null}
             {activeTab === "personal" ? (
               <section id="personal-info" className="scroll-mt-24">
-                <div className="flex flex-col gap-4 border-b border-zinc-200 pb-5 dark:border-zinc-800 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-col gap-4 border-b border-[var(--line)] pb-5 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
+                    <h3 className="text-base font-semibold text-[var(--ink)]">
                       Общая информация о пользователе
                     </h3>
                   </div>
-                  <button
-                    type="submit"
-                    className="inline-flex h-9 items-center justify-center rounded-md bg-[#2dbf6e] px-4 text-sm font-semibold text-white hover:bg-[#27a860]"
-                  >
+                  <Button type="submit">
                     {canEditAccessLevel ? "Сохранить изменения" : "Сохранить профиль"}
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="grid gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
                   <div className="space-y-4">
                     <ProfileFieldRow label="Имя" required>
-                      <input
+                      <Input
                         name="firstName"
                         required
                         defaultValue={user.firstName || user.name}
                         autoComplete="given-name"
-                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                       />
                     </ProfileFieldRow>
 
                     <ProfileFieldRow label="Фамилия">
-                      <input
+                      <Input
                         name="lastName"
                         defaultValue={user.lastName ?? ""}
                         autoComplete="family-name"
-                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                       />
                     </ProfileFieldRow>
 
                     <ProfileFieldRow label="Login" required>
                       {canEditAccessLevel ? (
-                        <input
+                        <Input
                           name="login"
                           required
                           defaultValue={user.login}
-                          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                         />
                       ) : (
                         <>
-                          <input
-                            defaultValue={user.login}
-                            disabled
-                            className="w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950"
-                          />
-                          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                          <Input defaultValue={user.login} disabled />
+                          <p className="mt-1 text-xs text-[var(--ink-muted)]">
                             Логин используется для входа на платформу и доступен для изменения только администратору.
                           </p>
                         </>
@@ -503,24 +504,22 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                     </ProfileFieldRow>
 
                     <ProfileFieldRow label="Email">
-                      <input
+                      <Input
                         name="email"
                         type="email"
                         defaultValue={user.email ?? ""}
-                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                       />
                     </ProfileFieldRow>
 
                     {!canEditAccessLevel ? (
                       <div className="grid gap-4 md:grid-cols-2">
                         <label className="block">
-                          <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">
+                          <span className="mb-1 block text-sm text-[var(--ink)]">
                             Подразделение
                           </span>
-                          <select
+                          <Select
                             name="departmentId"
                             defaultValue={user.departmentId ?? ""}
-                            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                           >
                             <option value="">Не выбрано</option>
                             {departments.map((department) => (
@@ -528,16 +527,15 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                                 {department.name}
                               </option>
                             ))}
-                          </select>
+                          </Select>
                         </label>
                         <label className="block">
-                          <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">
+                          <span className="mb-1 block text-sm text-[var(--ink)]">
                             Группа
                           </span>
-                          <select
+                          <Select
                             name="groupId"
                             defaultValue={user.groupMemberships[0]?.groupId ?? ""}
-                            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                           >
                             <option value="">Не выбрана</option>
                             {groups.map((group) => (
@@ -545,63 +543,61 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                                 {group.name}
                               </option>
                             ))}
-                          </select>
+                          </Select>
                         </label>
                       </div>
                     ) : null}
 
                     {canEditAccessLevel ? (
-                      <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
-                        <h4 className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                      <div className="mt-6 rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface)] p-4">
+                        <h4 className="text-sm font-semibold text-[var(--ink)]">
                           Пароль
                         </h4>
                         <div className="mt-4 space-y-4">
                           <ProfileFieldRow label="Новый пароль">
-                            <input
+                            <Input
                               name="password"
                               type="password"
                               autoComplete="new-password"
                               disabled={isArchivedUser}
-                              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-100 disabled:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:disabled:bg-zinc-950"
                             />
                           </ProfileFieldRow>
                           <ProfileFieldRow label="Повторите пароль">
-                            <input
+                            <Input
                               name="passwordConfirm"
                               type="password"
                               autoComplete="new-password"
                               disabled={isArchivedUser}
-                              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-100 disabled:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:disabled:bg-zinc-950"
                             />
                           </ProfileFieldRow>
                         </div>
-                        <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+                        <p className="mt-3 text-xs text-[var(--ink-muted)]">
                           Оставьте поля пустыми, если пароль менять не нужно.
                         </p>
-                        <button
+                        <Button
                           type="submit"
                           disabled={isArchivedUser}
-                          className="mt-4 inline-flex h-9 items-center justify-center rounded-md bg-[#0f315d] px-4 text-sm font-semibold text-white hover:bg-[#0b2547] disabled:cursor-not-allowed disabled:bg-zinc-300"
+                          className="mt-4"
                         >
                           Сохранить новый пароль
-                        </button>
+                        </Button>
                       </div>
                     ) : null}
                   </div>
 
-                  <aside className="space-y-5 border-t border-zinc-200 pt-6 dark:border-zinc-800 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                  <aside className="space-y-5 border-t border-[var(--line)] pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
                     {canEditAccessLevel ? (
                       <div>
                         <button
                           type="submit"
                           form={resetPasswordFormId}
                           disabled={!user.email || isArchivedUser}
-                          className="inline-flex items-center gap-2 text-sm font-medium text-[#0f7896] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-zinc-400 disabled:no-underline"
+                          className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent)] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-[var(--ink-muted)] disabled:no-underline"
                         >
                           <KeyRound className="h-4 w-4" aria-hidden="true" />
                           Сбросить пароль и отправить временный пароль
                         </button>
-                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                        <p className="mt-1 text-xs text-[var(--ink-muted)]">
                           Сгенерируем временный пароль и отправим на email.
                         </p>
                       </div>
@@ -609,13 +605,12 @@ export default async function EditUserPage({ params, searchParams }: Props) {
 
                     {canEditAccessLevel ? (
                       <div>
-                        <label className="block text-sm font-medium text-zinc-800 dark:text-zinc-100">
+                        <label className="block text-sm font-medium text-[var(--ink)]">
                           <span className="mb-1 block">Статус</span>
-                          <select
+                          <Select
                             name="status"
                             defaultValue={user.status}
                             disabled={isSelfUser || isArchivedUser}
-                            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:disabled:bg-zinc-950"
                           >
                             <option value={USER_STATUSES.ACTIVE}>
                               {USER_STATUS_LABELS[USER_STATUSES.ACTIVE]}
@@ -631,9 +626,9 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                                 {USER_STATUS_LABELS[USER_STATUSES.ARCHIVED]}
                               </option>
                             ) : null}
-                          </select>
+                          </Select>
                         </label>
-                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                        <p className="mt-1 text-xs text-[var(--ink-muted)]">
                           {isArchivedUser
                             ? "Архивированного пользователя можно вернуть через восстановление."
                             : isSelfUser
@@ -644,13 +639,13 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                     ) : null}
 
                     {canDeleteUser ? (
-                      <div className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
+                      <div className="border-t border-[var(--line)] pt-5">
                         {isArchivedUser ? (
                           <button
                             type="submit"
                             form={restoreUserFormId}
                             disabled={isSelfUser}
-                            className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-zinc-400 disabled:no-underline dark:text-emerald-300"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-[var(--success)] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-[var(--ink-muted)] disabled:no-underline"
                           >
                             <RotateCcw className="h-4 w-4" aria-hidden="true" />
                             Восстановить пользователя
@@ -660,13 +655,13 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                             type="submit"
                             form={archiveUserFormId}
                             disabled={isSelfUser}
-                            className="inline-flex items-center gap-2 text-sm font-medium text-red-600 underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-zinc-400 disabled:no-underline dark:text-red-300"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-[var(--danger)] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-[var(--ink-muted)] disabled:no-underline"
                           >
                             <Archive className="h-4 w-4" aria-hidden="true" />
                             Архивировать пользователя
                           </button>
                         )}
-                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                        <p className="mt-1 text-xs text-[var(--ink-muted)]">
                           {isArchivedUser
                             ? "Пользователь снова получит доступ после восстановления."
                             : isSelfUser
@@ -677,21 +672,21 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                     ) : null}
 
                     {canDeleteUser && isArchivedUser ? (
-                      <section className="border-t border-red-200 pt-5 dark:border-red-900/70">
-                        <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-red-900 dark:text-red-100">
+                      <section className="border-t border-[var(--danger-soft)] pt-5">
+                        <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--danger)]">
                           <Trash2 className="h-4 w-4" aria-hidden="true" />
                           Окончательное удаление
                         </h3>
-                        <p className="mt-2 text-xs leading-relaxed text-red-700 dark:text-red-200">
+                        <p className="mt-2 text-xs leading-relaxed text-[var(--danger)]">
                           Профиль пользователя, назначения, прогресс, ответы
                           тестов, отзывы и история входов будут удалены. Логин
                           и email освободятся для повторного создания.
                         </p>
-                        <p className="mt-2 text-xs leading-relaxed text-red-700/80 dark:text-red-200/80">
+                        <p className="mt-2 text-xs leading-relaxed text-[var(--danger)]">
                           Старые ожидающие письма и приглашения по этому email
                           тоже будут удалены. Действие нельзя отменить.
                         </p>
-                        <label className="mt-3 flex items-start gap-2 text-xs text-red-800 dark:text-red-100">
+                        <label className="mt-3 flex items-start gap-2 text-xs text-[var(--danger)]">
                           <input
                             form={permanentDeleteFormId}
                             type="checkbox"
@@ -709,7 +704,7 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                           form={permanentDeleteFormId}
                           type="submit"
                           disabled={isSelfUser}
-                          className="mt-3 inline-flex items-center gap-2 rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="mt-3 inline-flex items-center gap-2 rounded-[var(--radius-control)] bg-[var(--danger)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <Trash2 className="h-4 w-4" aria-hidden="true" />
                           Удалить окончательно
@@ -723,25 +718,20 @@ export default async function EditUserPage({ params, searchParams }: Props) {
 
             {canEditAccessLevel && activeTab === "access" ? (
               <section id="access-level" className="scroll-mt-24">
-                <div className="mb-5 flex flex-col gap-4 border-b border-zinc-200 pb-5 dark:border-zinc-800 sm:flex-row sm:items-start sm:justify-between">
+                <div className="mb-5 flex flex-col gap-4 border-b border-[var(--line)] pb-5 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
+                    <h3 className="text-base font-semibold text-[var(--ink)]">
                       Уровень доступа
                     </h3>
-                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    <p className="mt-1 text-sm text-[var(--ink-muted)]">
                       Роли пользователя в системе.
                     </p>
                   </div>
-                  <button
-                    type="submit"
-                    className="inline-flex h-9 items-center justify-center rounded-md bg-[#2dbf6e] px-4 text-sm font-semibold text-white hover:bg-[#27a860]"
-                  >
-                    Сохранить
-                  </button>
+                  <Button type="submit">Сохранить</Button>
                 </div>
                 <fieldset>
                   <legend className="sr-only">Роли</legend>
-                  <div className="grid gap-2 rounded-md border border-zinc-300 px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900">
+                  <div className="grid gap-2 rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-3 text-sm">
                     {roles.map((role) => (
                       <label key={role.id} className="flex items-center gap-2">
                         <input
@@ -757,7 +747,7 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                       </label>
                     ))}
                   </div>
-                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  <p className="mt-2 text-xs text-[var(--ink-muted)]">
                     Можно выбрать несколько ролей. Основной будет первая
                     сохраненная роль.
                   </p>
@@ -771,31 +761,25 @@ export default async function EditUserPage({ params, searchParams }: Props) {
 
             {activeTab === "structure" ? (
               <section id="structure" className="scroll-mt-24">
-                <div className="mb-5 flex flex-col gap-4 border-b border-zinc-200 pb-5 dark:border-zinc-800 sm:flex-row sm:items-start sm:justify-between">
+                <div className="mb-5 flex flex-col gap-4 border-b border-[var(--line)] pb-5 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
+                    <h3 className="text-base font-semibold text-[var(--ink)]">
                       Группы и структура
                     </h3>
-                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    <p className="mt-1 text-sm text-[var(--ink-muted)]">
                       Группа обучения, подразделение и организация пользователя.
                     </p>
                   </div>
-                  <button
-                    type="submit"
-                    className="inline-flex h-9 items-center justify-center rounded-md bg-[#2dbf6e] px-4 text-sm font-semibold text-white hover:bg-[#27a860]"
-                  >
-                    Сохранить
-                  </button>
+                  <Button type="submit">Сохранить</Button>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="block">
-                    <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">
+                    <span className="mb-1 block text-sm text-[var(--ink)]">
                       Группа
                     </span>
-                    <select
+                    <Select
                       name="groupId"
                       defaultValue={user.groupMemberships[0]?.groupId ?? ""}
-                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                     >
                       <option value="">Не выбрана</option>
                       {groups.map((group) => (
@@ -803,17 +787,16 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                           {group.name}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
 
                   <label className="block">
-                    <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">
+                    <span className="mb-1 block text-sm text-[var(--ink)]">
                       Подразделение
                     </span>
-                    <select
+                    <Select
                       name="departmentId"
                       defaultValue={user.departmentId ?? ""}
-                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                     >
                       <option value="">Не выбрано</option>
                       {departments.map((department) => (
@@ -821,16 +804,15 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                           {department.name}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-200">
+                    <span className="mb-1 block text-sm text-[var(--ink)]">
                       Организация
                     </span>
-                    <select
+                    <Select
                       name="organizationId"
                       defaultValue={user.organizationId ?? ""}
-                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                     >
                       <option value="">Не выбрана</option>
                       {organizations.map((organization) => (
@@ -838,7 +820,7 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                           {organization.name}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                 </div>
               </section>
@@ -846,24 +828,23 @@ export default async function EditUserPage({ params, searchParams }: Props) {
 
             {activeTab === "courses" ? (
               <section id="assigned-courses" className="scroll-mt-24">
-                <div className="mb-5 flex flex-col items-end gap-3 border-b border-zinc-200 pb-5 dark:border-zinc-800">
+                <div className="mb-5 flex flex-col items-end gap-3 border-b border-[var(--line)] pb-5">
                   {canManageAssignments ? (
                     <details className="group relative">
-                      <summary className="inline-flex h-9 cursor-pointer list-none items-center justify-center rounded-md bg-[#2dbf6e] px-4 text-sm font-semibold text-white hover:bg-[#27a860] group-open:bg-[#27a860] [&::-webkit-details-marker]:hidden">
+                      <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center rounded-[var(--radius-control)] bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-strong)] group-open:bg-[var(--accent-strong)] [&::-webkit-details-marker]:hidden">
                         Назначить курс
                       </summary>
-                      <div className="absolute right-0 z-10 mt-2 w-[min(28rem,calc(100vw-3rem))] rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+                      <div className="absolute right-0 z-10 mt-2 w-[min(28rem,calc(100vw-3rem))] rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-raised)] p-3 shadow-lg">
                         <label className="block">
-                          <span className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                          <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">
                             Курс
                           </span>
-                          <select
+                          <Select
                             id="assign-course-id"
                             name="courseId"
                             form={assignCourseFormId}
                             defaultValue=""
                             disabled={isArchivedUser || availableCourses.length === 0}
-                            className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-800 disabled:bg-zinc-100 disabled:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:disabled:bg-zinc-900"
                           >
                             <option value="">
                               {availableCourses.length > 0
@@ -875,28 +856,27 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                                 {course.title}
                               </option>
                             ))}
-                          </select>
+                          </Select>
                         </label>
                         <label className="mt-3 block">
-                          <span className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                          <span className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">
                             Выполнить до
                           </span>
-                          <input
+                          <Input
                             type="date"
                             name="accessExpiresOn"
                             form={assignCourseFormId}
                             disabled={isArchivedUser || availableCourses.length === 0}
-                            className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-800 disabled:bg-zinc-100 disabled:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:disabled:bg-zinc-900"
                           />
                         </label>
-                        <button
+                        <Button
                           type="submit"
                           form={assignCourseFormId}
                           disabled={isArchivedUser || availableCourses.length === 0}
-                          className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-md bg-[#2dbf6e] px-4 text-sm font-semibold text-white hover:bg-[#27a860] disabled:cursor-not-allowed disabled:bg-zinc-300"
+                          className="mt-3 w-full"
                         >
                           Назначить курс
-                        </button>
+                        </Button>
                       </div>
                     </details>
                   ) : null}
@@ -930,7 +910,7 @@ export default async function EditUserPage({ params, searchParams }: Props) {
                     returnUserId={user.id}
                   />
                 ) : (
-                  <div className="rounded-lg border border-zinc-200 bg-white px-4 py-10 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                  <div className="rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-10 text-center text-sm text-[var(--ink-muted)]">
                     Назначенных курсов нет.
                   </div>
                 )}
@@ -1197,18 +1177,16 @@ function getUserCourseStatusLabel(status: UserCourseStatus) {
   return "Не начат";
 }
 
-function getCourseStatusBadgeClass(status: UserCourseStatus) {
-  if (status === "completed")
-    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300";
-  if (status === "in_progress")
-    return "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300";
-  return "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300";
+function getCourseStatusBadgeTone(status: UserCourseStatus): BadgeTone {
+  if (status === "completed") return "success";
+  if (status === "in_progress") return "warning";
+  return "neutral";
 }
 
 function getCourseStatusFilterClass(isActive: boolean) {
   return isActive
-    ? "rounded-full bg-[#0f315d] px-3 py-1.5 font-medium text-white"
-    : "rounded-full bg-zinc-100 px-3 py-1.5 font-medium text-zinc-600 transition hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700";
+    ? "rounded-full bg-[var(--accent)] px-3 py-1.5 font-medium text-white"
+    : "rounded-full bg-[var(--surface)] px-3 py-1.5 font-medium text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)]";
 }
 
 function getUserCourseCompletionDate(
@@ -1256,109 +1234,99 @@ function AssignedCoursesTable({
   returnUserId: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
-      <div className="overflow-x-auto">
-        <table className="min-w-[50rem] divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
-          <thead className="bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-950/40 dark:text-zinc-400">
-            <tr>
-              <th className="px-4 py-3">Название</th>
-              <th className="whitespace-nowrap px-4 py-3">Статус</th>
-              <th className="whitespace-nowrap px-4 py-3">Прогресс</th>
-              <th className="whitespace-nowrap px-4 py-3">
-                Дата назначения
-              </th>
-              <th className="whitespace-nowrap px-4 py-3">
-                Дата завершения
-              </th>
-              <th className="whitespace-nowrap px-4 py-3">Выполнить до</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
-            {rows.map((row) => (
-              <tr
-                key={row.id}
-                className="group transition hover:bg-sky-50/70 dark:hover:bg-sky-950/20"
+    <Table className="min-w-[50rem]">
+      <THead>
+        <TR>
+          <TH>Название</TH>
+          <TH className="whitespace-nowrap">Статус</TH>
+          <TH className="whitespace-nowrap">Прогресс</TH>
+          <TH className="whitespace-nowrap">Дата назначения</TH>
+          <TH className="whitespace-nowrap">Дата завершения</TH>
+          <TH className="whitespace-nowrap">Выполнить до</TH>
+        </TR>
+      </THead>
+      <tbody>
+        {rows.map((row) => (
+          <TR
+            key={row.id}
+            className="group transition hover:bg-[var(--accent-soft)]"
+          >
+            <TD className="min-w-64">
+              <Link
+                href={courseManageFromUserHref(row.id, returnUserId)}
+                className="-m-4 block px-4 py-3"
               >
-                <td className="min-w-64 px-4 py-3">
-                  <Link
-                    href={courseManageFromUserHref(row.id, returnUserId)}
-                    className="-m-4 block px-4 py-3"
-                  >
-                    <span className="block font-medium text-zinc-950 group-hover:text-[#0b76a8] dark:text-zinc-50 dark:group-hover:text-sky-300">
-                      {row.title}
-                    </span>
-                    {row.description ? (
-                      <span className="mt-1 block line-clamp-1 text-xs text-zinc-500 dark:text-zinc-400">
-                        {row.description}
-                      </span>
-                    ) : null}
-                  </Link>
-                </td>
-                <td className="whitespace-nowrap px-4 py-3">
-                  <Link
-                    href={courseManageFromUserHref(row.id, returnUserId)}
-                    className="-m-4 block px-4 py-3"
-                  >
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${getCourseStatusBadgeClass(row.status)}`}
-                    >
-                      {getUserCourseStatusLabel(row.status)}
-                    </span>
-                  </Link>
-                </td>
-                <td className="min-w-36 px-4 py-3">
-                  <Link
-                    href={courseManageFromUserHref(row.id, returnUserId)}
-                    className="-m-4 block px-4 py-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-                        <div
-                          className="h-full rounded-full bg-[#0b8db3]"
-                          style={{ width: `${row.progressPercent}%` }}
-                        />
-                      </div>
-                      <span className="whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400">
-                        {row.progressPercent}%
-                      </span>
-                    </div>
-                    <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      {row.completedRequired}/{row.requiredTotal || 0} этапов
-                    </div>
-                  </Link>
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 text-zinc-600 dark:text-zinc-300">
-                  <Link
-                    href={courseManageFromUserHref(row.id, returnUserId)}
-                    className="-m-4 block px-4 py-3"
-                  >
-                    {row.assignedAt
-                      ? formatDateRu(row.assignedAt)
-                      : "Не указана"}
-                  </Link>
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 text-zinc-600 dark:text-zinc-300">
-                  <Link
-                    href={courseManageFromUserHref(row.id, returnUserId)}
-                    className="-m-4 block px-4 py-3"
-                  >
-                    {row.completedAt ? formatDateRu(row.completedAt) : "-"}
-                  </Link>
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 text-zinc-600 dark:text-zinc-300">
-                  <Link
-                    href={courseManageFromUserHref(row.id, returnUserId)}
-                    className="-m-4 block px-4 py-3"
-                  >
-                    {row.expiresAt ? formatDateRu(row.expiresAt) : "-"}
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                <span className="block font-medium text-[var(--ink)] group-hover:text-[var(--accent)]">
+                  {row.title}
+                </span>
+                {row.description ? (
+                  <span className="mt-1 block line-clamp-1 text-xs text-[var(--ink-muted)]">
+                    {row.description}
+                  </span>
+                ) : null}
+              </Link>
+            </TD>
+            <TD className="whitespace-nowrap">
+              <Link
+                href={courseManageFromUserHref(row.id, returnUserId)}
+                className="-m-4 block px-4 py-3"
+              >
+                <Badge tone={getCourseStatusBadgeTone(row.status)}>
+                  {getUserCourseStatusLabel(row.status)}
+                </Badge>
+              </Link>
+            </TD>
+            <TD className="min-w-36">
+              <Link
+                href={courseManageFromUserHref(row.id, returnUserId)}
+                className="-m-4 block px-4 py-3"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-24 overflow-hidden rounded-full bg-[var(--line)]">
+                    <div
+                      className="h-full rounded-full bg-[var(--accent)]"
+                      style={{ width: `${row.progressPercent}%` }}
+                    />
+                  </div>
+                  <span className="whitespace-nowrap text-xs text-[var(--ink-muted)]">
+                    {row.progressPercent}%
+                  </span>
+                </div>
+                <div className="mt-1 text-xs text-[var(--ink-muted)]">
+                  {row.completedRequired}/{row.requiredTotal || 0} этапов
+                </div>
+              </Link>
+            </TD>
+            <TD className="whitespace-nowrap text-[var(--ink-muted)]">
+              <Link
+                href={courseManageFromUserHref(row.id, returnUserId)}
+                className="-m-4 block px-4 py-3"
+              >
+                {row.assignedAt
+                  ? formatDateRu(row.assignedAt)
+                  : "Не указана"}
+              </Link>
+            </TD>
+            <TD className="whitespace-nowrap text-[var(--ink-muted)]">
+              <Link
+                href={courseManageFromUserHref(row.id, returnUserId)}
+                className="-m-4 block px-4 py-3"
+              >
+                {row.completedAt ? formatDateRu(row.completedAt) : "-"}
+              </Link>
+            </TD>
+            <TD className="whitespace-nowrap text-[var(--ink-muted)]">
+              <Link
+                href={courseManageFromUserHref(row.id, returnUserId)}
+                className="-m-4 block px-4 py-3"
+              >
+                {row.expiresAt ? formatDateRu(row.expiresAt) : "-"}
+              </Link>
+            </TD>
+          </TR>
+        ))}
+      </tbody>
+    </Table>
   );
 }
 
@@ -1373,29 +1341,25 @@ function getInitials(input: string) {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-function getUserStatusBadgeClass(status: string) {
-  if (status === USER_STATUSES.ACTIVE)
-    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300";
-  if (status === USER_STATUSES.PENDING)
-    return "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300";
-  if (status === USER_STATUSES.BLOCKED)
-    return "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300";
-  if (status === USER_STATUSES.ARCHIVED)
-    return "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
-  return "bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300";
+function getUserStatusBadgeTone(status: string): BadgeTone {
+  if (status === USER_STATUSES.ACTIVE) return "success";
+  if (status === USER_STATUSES.PENDING) return "warning";
+  if (status === USER_STATUSES.BLOCKED) return "danger";
+  if (status === USER_STATUSES.ARCHIVED) return "neutral";
+  return "info";
 }
 
 function getUserStatusDotClass(status: string) {
-  if (status === USER_STATUSES.ACTIVE) return "bg-emerald-500";
-  if (status === USER_STATUSES.PENDING) return "bg-amber-500";
-  if (status === USER_STATUSES.BLOCKED) return "bg-red-500";
-  if (status === USER_STATUSES.ARCHIVED) return "bg-zinc-400";
-  return "bg-sky-500";
+  if (status === USER_STATUSES.ACTIVE) return "bg-[var(--success)]";
+  if (status === USER_STATUSES.PENDING) return "bg-[var(--warning)]";
+  if (status === USER_STATUSES.BLOCKED) return "bg-[var(--danger)]";
+  if (status === USER_STATUSES.ARCHIVED) return "bg-[var(--ink-muted)]";
+  return "bg-[var(--info)]";
 }
 
 function InfoPill({ icon, label }: { icon: ReactNode; label: string }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-sky-100 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 shadow-sm dark:border-sky-900/60 dark:bg-zinc-950 dark:text-zinc-300">
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--surface-raised)] px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)] shadow-sm">
       {icon}
       <span className="truncate">{label}</span>
     </span>
@@ -1412,14 +1376,14 @@ function ProfileMetric({
   hint: string;
 }) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/60">
-      <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+    <div className="rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-3 shadow-sm">
+      <div className="text-xs font-medium text-[var(--ink-muted)]">
         {label}
       </div>
-      <div className="mt-1 text-xl font-semibold text-zinc-950 dark:text-zinc-50">
+      <div className="mt-1 text-xl font-semibold text-[var(--ink)]">
         {value}
       </div>
-      <div className="mt-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
+      <div className="mt-1 truncate text-xs text-[var(--ink-muted)]">
         {hint}
       </div>
     </div>
@@ -1441,20 +1405,20 @@ function UserPermissionsDisclosure({
   );
 
   return (
-    <details className="group mt-5 rounded-lg border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-700 dark:bg-zinc-950/30">
-      <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-[#0f315d] transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-sky-100 dark:hover:bg-zinc-800 [&::-webkit-details-marker]:hidden">
+    <details className="group mt-5 rounded-[var(--radius-panel)] border border-[var(--line)] bg-[var(--surface)] p-4">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm font-semibold text-[var(--accent-strong)] transition hover:bg-[var(--accent-soft)] [&::-webkit-details-marker]:hidden">
         <ShieldCheck className="h-4 w-4" aria-hidden="true" />
         <span className="group-open:hidden">Показать права пользователя</span>
         <span className="hidden group-open:inline">
           Скрыть права пользователя
         </span>
-        <span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-sky-950/40 dark:text-zinc-300">
+        <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-medium text-[var(--accent-strong)]">
           {permissionsCount}
         </span>
       </summary>
 
       <div className="mt-4">
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs text-[var(--ink-muted)]">
           Список рассчитан по сохраненным ролям пользователя.
         </p>
 
@@ -1463,15 +1427,15 @@ function UserPermissionsDisclosure({
             {permissionGroups.map(({ group, permissions }) => (
               <section
                 key={group}
-                className="rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900"
+                className="rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] p-3"
               >
-                <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                <h4 className="text-sm font-semibold text-[var(--ink)]">
                   {ACCESS_GROUP_LABELS[group]}
                 </h4>
-                <ul className="mt-2 space-y-1 text-sm text-zinc-700 dark:text-zinc-300">
+                <ul className="mt-2 space-y-1 text-sm text-[var(--ink)]">
                   {permissions.map((permission) => (
                     <li key={permission} className="flex gap-2">
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2dbf6e]" />
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]" />
                       <span>
                         {permissionLabelByKey.get(permission) ?? permission}
                       </span>
@@ -1482,7 +1446,7 @@ function UserPermissionsDisclosure({
             ))}
           </div>
         ) : (
-          <p className="mt-3 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+          <p className="mt-3 rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--ink-muted)]">
             Для сохраненных ролей права не настроены.
           </p>
         )}
@@ -1502,8 +1466,8 @@ function ProfileFieldRow({
 }) {
   return (
     <label className="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-center">
-      <span className="grid grid-cols-[0.75rem_minmax(0,1fr)] items-center text-sm text-zinc-700 dark:text-zinc-200">
-        <span className="text-red-600 dark:text-red-400" aria-hidden="true">
+      <span className="grid grid-cols-[0.75rem_minmax(0,1fr)] items-center text-sm text-[var(--ink)]">
+        <span className="text-[var(--danger)]" aria-hidden="true">
           {required ? "*" : ""}
         </span>
         <span>{label}:</span>

@@ -82,7 +82,7 @@ export function PresentationUploadFields({
       />
       <input type="hidden" name={totalSlidesName} value={totalSlides ?? ""} />
       {previewUrlName ? <input type="hidden" name={previewUrlName} value={previewUrl ?? ""} /> : null}
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-[var(--ink-muted)]">
         {totalSlides && sourcePdfUrl
           ? `Определено слайдов: ${totalSlides}`
           : totalSlides && hasLocalPresentation
@@ -92,13 +92,13 @@ export function PresentationUploadFields({
               : "Загрузите PDF или PPTX, количество слайдов заполнится автоматически."}
       </p>
       {html5Url ? (
-        <p className="text-xs text-zinc-500">HTML5-плеер подготовлен: {html5Url}</p>
+        <p className="text-xs text-[var(--ink-muted)]">HTML5-плеер подготовлен: {html5Url}</p>
       ) : null}
       {sourcePdfUrl ? (
-        <p className="text-xs text-zinc-500">PDF для предпросмотра: {sourcePdfUrl}</p>
+        <p className="text-xs text-[var(--ink-muted)]">PDF для предпросмотра: {sourcePdfUrl}</p>
       ) : null}
       {hasLocalPresentation && !sourcePdfUrl ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        <p className="rounded-lg border border-[var(--warning-soft)] bg-[var(--warning-soft)] px-3 py-2 text-xs text-[var(--warning)]">
           PDF для предпросмотра не найден. Перезагрузите презентацию или загрузите файл сразу в PDF.
         </p>
       ) : null}

@@ -1,31 +1,21 @@
 "use server";
 
-import bcrypt from "bcryptjs";
+import { appBaseUrl } from "@/lib/app-base-url";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { recordAuditEvent } from "@/lib/audit-log";
 import { enqueuePasswordResetLinkEmails } from "@/lib/email/queue";
-import {
-  getPlatformSecuritySettings,
-  validatePasswordAgainstPolicy,
-} from "@/lib/platform-settings";
+import { getPlatformSecuritySettings, validatePasswordAgainstPolicy } from "@/lib/platform-settings";
 import {
   createPasswordResetToken,
-  hashPasswordResetToken,
   passwordResetExpiresAt,
   passwordResetTtlLabel,
 } from "@/lib/password-resets";
-import prisma from "@/lib/prisma";
-import { USER_STATUSES, isAccessRevokedUserStatus } from "@/lib/users";
-
-function appBaseUrl() {
-  return (
-    process.env.APP_BASE_URL?.trim() ||
-    process.env.NEXTAUTH_URL?.trim() ||
-    process.env.AUTH_URL?.trim() ||
-    "http://127.0.0.1:3002"
-  );
-}
+import { SelfServicePasswordResetError } from "@/modules/user/application/self-service-password-reset-errors";
+import {
+  requestPasswordReset as issuePasswordResetToken,
+  resetPasswordWithToken as applyPasswordResetWithToken,
+} from "@/modules/user/server/self-service-password-reset";
 
 function asString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -68,48 +58,22 @@ export async function requestPasswordReset(formData: FormData) {
     redirect(forgotPasswordUrl({ error: "Введите логин или email." }));
   }
 
-  const variants = identifierVariants(identifier);
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ login: { in: variants } }, { email: { in: variants } }],
-    },
-    select: {
-      id: true,
-      email: true,
-      login: true,
-      name: true,
-      firstName: true,
-      status: true,
-    },
+  const resetToken = createPasswordResetToken();
+  const { user, issued } = await issuePasswordResetToken({
+    identifierVariants: identifierVariants(identifier),
+    tokenHash: resetToken.tokenHash,
+    expiresAt: passwordResetExpiresAt(),
   });
 
-  if (user?.email && user.status === USER_STATUSES.ACTIVE) {
-    const email = user.email;
-    const resetToken = createPasswordResetToken();
+  if (issued && user?.email) {
     const resetUrl = `${appBaseUrl()}/reset-password/${resetToken.token}`;
-
-    await prisma.$transaction(async (tx) => {
-      await tx.passwordResetToken.updateMany({
-        where: { userId: user.id, status: "PENDING" },
-        data: { status: "CANCELLED" },
-      });
-
-      await tx.passwordResetToken.create({
-        data: {
-          userId: user.id,
-          email,
-          tokenHash: resetToken.tokenHash,
-          expiresAt: passwordResetExpiresAt(),
-        },
-      });
-    });
 
     let emailQueued = true;
     try {
       await enqueuePasswordResetLinkEmails(
         [
           {
-            email,
+            email: user.email,
             name: user.name,
             firstName: user.firstName,
             login: user.login,
@@ -130,7 +94,7 @@ export async function requestPasswordReset(formData: FormData) {
       objectLabel: user.name,
       metadata: {
         login: user.login,
-        email,
+        email: user.email,
         emailQueued,
       },
     });
@@ -171,88 +135,35 @@ export async function resetPasswordWithToken(formData: FormData) {
   const passwordError = validatePasswordAgainstPolicy(password, securitySettings);
   if (passwordError) resetPasswordError(token, passwordError);
 
-  const reset = await prisma.passwordResetToken.findUnique({
-    where: { tokenHash: hashPasswordResetToken(token) },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          login: true,
-          email: true,
-          status: true,
-        },
-      },
-    },
-  });
-
-  if (!reset) resetPasswordError(token, "Ссылка сброса пароля не найдена или уже недействительна.");
-  if (reset.status !== "PENDING") {
-    resetPasswordError(token, "Эта ссылка сброса пароля уже использована или отменена.");
+  let result;
+  try {
+    result = await applyPasswordResetWithToken({ token, password });
+  } catch (error) {
+    if (error instanceof SelfServicePasswordResetError) {
+      resetPasswordError(token, error.message);
+    }
+    throw error;
   }
 
-  if (reset.expiresAt.getTime() < Date.now()) {
-    await prisma.passwordResetToken.update({
-      where: { id: reset.id },
-      data: { status: "EXPIRED" },
-    });
-    resetPasswordError(token, "Срок действия ссылки сброса пароля истек. Запросите новую ссылку.");
-  }
-
-  if (isAccessRevokedUserStatus(reset.user.status)) {
-    resetPasswordError(token, "Для восстановления доступа обратитесь к администратору.");
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10);
-  const usedAt = new Date();
-
-  await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: reset.userId },
-      data: {
-        passwordHash,
-        failedLoginAttempts: 0,
-        loginLockedUntil: null,
-        status: reset.user.status === USER_STATUSES.PENDING ? USER_STATUSES.ACTIVE : reset.user.status,
-      },
-    });
-
-    await tx.passwordResetToken.update({
-      where: { id: reset.id },
-      data: {
-        status: "USED",
-        usedAt,
-      },
-    });
-
-    await tx.passwordResetToken.updateMany({
-      where: {
-        userId: reset.userId,
-        status: "PENDING",
-        NOT: { id: reset.id },
-      },
-      data: { status: "CANCELLED" },
-    });
-  });
-
+  const { user, tokenId } = result;
   await recordAuditEvent({
     actor: {
-      id: reset.user.id,
-      login: reset.user.login,
-      name: reset.user.name,
+      id: user.id,
+      login: user.login,
+      name: user.name,
     },
     action: "users:reset_password_self_service",
     objectType: "user",
-    objectId: reset.user.id,
-    objectLabel: reset.user.name,
+    objectId: user.id,
+    objectLabel: user.name,
     metadata: {
-      login: reset.user.login,
-      email: reset.user.email,
-      passwordResetTokenId: reset.id,
+      login: user.login,
+      email: user.email,
+      passwordResetTokenId: tokenId,
     },
   });
 
   revalidatePath("/admin/users-groups");
-  revalidatePath(`/admin/users/${reset.user.id}/edit`);
+  revalidatePath(`/admin/users/${user.id}/edit`);
   redirect(loginNoticeUrl("Пароль обновлен. Теперь войдите с новым паролем."));
 }

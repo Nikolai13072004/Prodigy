@@ -86,11 +86,11 @@ export async function getFeedbackReportData(filters: FeedbackReportFilters): Pro
       ...(q
         ? {
             OR: [
-              { comment: { contains: q } },
-              { course: { title: { contains: q } } },
-              { user: { name: { contains: q } } },
-              { user: { login: { contains: q } } },
-              { user: { email: { contains: q } } },
+              { comment: { contains: q, mode: "insensitive" as const } },
+              { course: { title: { contains: q, mode: "insensitive" as const } } },
+              { user: { name: { contains: q, mode: "insensitive" as const } } },
+              { user: { login: { contains: q, mode: "insensitive" as const } } },
+              { user: { email: { contains: q, mode: "insensitive" as const } } },
             ],
           }
         : {}),

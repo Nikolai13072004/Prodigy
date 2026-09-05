@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { UserCsvImportPanel } from "@/app/admin/users/import/UserCsvImportPanel";
 import { AdminUsersSubtabs } from "@/components/AdminUsersSubtabs";
+import { buttonStyles } from "@/components/ui";
 import { requirePermission } from "@/lib/auth-guards";
 import prisma from "@/lib/prisma";
 import { ensureSystemRoleProfiles } from "@/lib/role-profiles";
@@ -41,7 +42,7 @@ export default async function UserImportPage() {
           <h1 className="text-2xl font-semibold tracking-tight">
             {canEditAccessLevel ? "Импорт пользователей" : "Импорт учеников"}
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
             {canEditAccessLevel
               ? "Массовое создание пользователей через CSV с preview, проверкой строк и отчетом по результату."
               : "Массовое создание учеников через CSV с автоматической отправкой письма и временного пароля."}
@@ -51,14 +52,11 @@ export default async function UserImportPage() {
         <div className="flex flex-wrap gap-2">
           <Link
             href="/admin/users-groups?tab=users#users-section"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            className={buttonStyles("secondary")}
           >
             К списку пользователей
           </Link>
-          <Link
-            href="/admin/users/new"
-            className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-          >
+          <Link href="/admin/users/new" className={buttonStyles("primary")}>
             {canEditAccessLevel ? "Создать вручную" : "Создать ученика вручную"}
           </Link>
         </div>

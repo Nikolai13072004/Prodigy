@@ -25,12 +25,12 @@ export function CourseReviewsSection({ courseId, data, statusFilter, messages }:
   return (
     <div className="space-y-6">
       {messages.saved ? (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="rounded-xl border border-[var(--success)] bg-[var(--success-soft)] px-3 py-2 text-sm text-[var(--success)]">
           {messages.saved}
         </p>
       ) : null}
       {messages.error ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="rounded-xl border border-[var(--danger)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger)]">
           {messages.error}
         </p>
       ) : null}

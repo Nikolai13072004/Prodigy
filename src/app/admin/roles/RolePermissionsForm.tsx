@@ -6,6 +6,7 @@ import {
   type RolePermissionsFormState,
   type RolePermissionsFormValues,
 } from "@/app/admin/roles/role-permissions-form-state";
+import { Button, Card, Field, Input } from "@/components/ui";
 import {
   ACCESS_GROUP_LABELS,
   GROUP_PERMISSIONS,
@@ -52,64 +53,63 @@ function RolePermissionsFormBody({
       {state.error ? (
         <p
           role="alert"
-          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
+          className="rounded-[var(--radius-panel)] border border-[var(--danger)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]"
         >
           {state.error}
         </p>
       ) : null}
 
       {!state.error && pending ? (
-        <p className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200">
+        <p className="rounded-[var(--radius-panel)] border border-[var(--info)] bg-[var(--info-soft)] px-4 py-3 text-sm text-[var(--info)]">
           Сохраняем изменения роли...
         </p>
       ) : null}
 
       {!state.error && !pending && isDirty ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+        <p className="rounded-[var(--radius-panel)] border border-[var(--warning)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)]">
           Есть несохраненные изменения.
         </p>
       ) : null}
 
       {!state.error && !pending && !isDirty && state.success ? (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+        <p className="rounded-[var(--radius-panel)] border border-[var(--success)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)]">
           {state.success}
         </p>
       ) : null}
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/60">
-        <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-200" htmlFor="role-name">
-          Название роли
-        </label>
-        <input
-          id="role-name"
-          name="name"
-          required
-          defaultValue={initialValues.name}
-          readOnly={disableName}
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          placeholder="Например: Методист"
-        />
-        {disableName ? (
-          <p className="mt-2 text-xs text-zinc-500">Системные роли нельзя переименовывать.</p>
-        ) : null}
-      </div>
+      <Card>
+        <Field
+          label="Название роли"
+          htmlFor="role-name"
+          hint={disableName ? "Системные роли нельзя переименовывать." : undefined}
+        >
+          <Input
+            id="role-name"
+            name="name"
+            required
+            defaultValue={initialValues.name}
+            readOnly={disableName}
+            placeholder="Например: Методист"
+          />
+        </Field>
+      </Card>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/60">
+      <Card>
         <h2 className="text-lg font-semibold">Разрешения доступа</h2>
         <div className="mt-4 grid gap-5 lg:grid-cols-2">
           {groupOrder.map((group) => (
             <section
               key={group}
-              className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900/40"
+              className="rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface)] p-4"
             >
-              <h3 className="mb-3 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+              <h3 className="mb-3 text-sm font-semibold text-[var(--ink)]">
                 {ACCESS_GROUP_LABELS[group]}
               </h3>
               <div className="space-y-2">
                 {GROUP_PERMISSIONS[group].map((permission) => (
                   <label
                     key={permission}
-                    className="flex items-start gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                    className="flex items-start gap-2 rounded-[var(--radius-control)] border border-[var(--line)] bg-[var(--surface-raised)] px-3 py-2 text-sm"
                   >
                     <input
                       type="checkbox"
@@ -124,17 +124,12 @@ function RolePermissionsFormBody({
             </section>
           ))}
         </div>
-      </div>
+      </Card>
 
       <div className="flex flex-wrap gap-3">
-        <button
-          type="submit"
-          form={formId}
-          disabled={pending}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-70 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-        >
+        <Button type="submit" form={formId} disabled={pending}>
           {pending ? "Сохраняем..." : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -67,9 +67,9 @@ export default async function TwoFactorSetupPage({ searchParams }: Props) {
   return (
     <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-3xl flex-col justify-center px-4 py-10">
       <div>
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">Безопасность платформы</p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950">Подключение двухфакторной аутентификации</h1>
-        <p className="mt-3 text-sm text-zinc-600">
+        <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--ink-muted)]">Безопасность платформы</p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--ink)]">Подключение двухфакторной аутентификации</h1>
+        <p className="mt-3 text-sm text-[var(--ink-muted)]">
           После подключения 2FA администратор будет входить в {branding.siteName} только по паролю и одноразовому коду из Google Authenticator.
         </p>
       </div>

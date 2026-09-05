@@ -30,6 +30,9 @@ export class LearningApplicationError extends Error {
 export function createRecordMaterialLearningEvent(dependencies: {
   repository: LearningRepository;
   accessPolicy: LearningAccessPolicy;
+  // Необязательный хук: вызывается ПОСЛЕ транзакции сохранения прогресса, когда
+  // обязательный материал впервые перешёл через 100% — точка выдачи сертификата (ADR-012).
+  onCourseProgressAdvanced?: (args: { userId: string; courseId: string }) => Promise<void>;
 }) {
   return async function recordMaterialLearningEvent(
     command: RecordMaterialLearningEventCommand,
@@ -50,8 +53,9 @@ export function createRecordMaterialLearningEvent(dependencies: {
     }
 
     let projection;
+    let previousProgressPercent: number | null;
     try {
-      projection = await dependencies.repository.saveEventAndProject({
+      const saved = await dependencies.repository.saveEventAndProject({
         material,
         userId: command.actor.id,
         event: command.event,
@@ -64,12 +68,33 @@ export function createRecordMaterialLearningEvent(dependencies: {
           event: command.event,
         }),
       });
+      projection = saved.projection;
+      previousProgressPercent = saved.previousProgressPercent;
     } catch (error) {
       if (!(error instanceof MaterialLearningDomainError)) throw error;
       throw new LearningApplicationError(
         "INVALID_EVENT",
         error instanceof Error ? error.message : "Некорректное событие обучения.",
       );
+    }
+
+    // Выдачу сертификата триггерим ТОЛЬКО при первом переходе обязательного
+    // материала через 100% — иначе проверка гоняется на каждое событие страницы.
+    // Хук после транзакции и в try/catch: провал выдачи не должен ронять прогресс.
+    if (
+      dependencies.onCourseProgressAdvanced &&
+      material.isRequired &&
+      projection.progressPercent >= 100 &&
+      (previousProgressPercent ?? 0) < 100
+    ) {
+      try {
+        await dependencies.onCourseProgressAdvanced({
+          userId: command.actor.id,
+          courseId: material.courseId,
+        });
+      } catch (error) {
+        console.error("Не удалось обработать завершение курса после прогресса материала:", error);
+      }
     }
 
     return toMaterialLearningStateDto(projection);

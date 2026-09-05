@@ -1,22 +1,32 @@
 "use server";
 
+import { appBaseUrl } from "@/lib/app-base-url";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
 import { requireCourseWorkspaceAccess, requireSession } from "@/lib/auth-guards";
-import { auditActorFromSessionUser, recordAuditEvent } from "@/lib/audit-log";
-import { isUserAssignedToCourse } from "@/lib/access";
-import { buildCourseOutline } from "@/lib/course-navigation";
-import { getCourseProgress } from "@/lib/course-progress";
+import {
+  auditActorFromSessionUser,
+  getAuditRequestContext,
+} from "@/lib/audit-log";
 import { enqueueCourseSurveyReportEmails } from "@/lib/email/queue";
 import {
-  type CourseSurveyQuestionType,
   formatCourseSurveyTitle,
   parseCourseSurveyQuestionOptionsJson,
   parseCourseSurveyQuestionsJson,
   serializeCourseSurveyQuestionOptions,
 } from "@/lib/course-surveys";
 import { canTrackMaterialProgress, ROLES, hasRole } from "@/lib/roles";
+import { SurveyApplicationError } from "@/modules/survey/application/errors";
+import {
+  applyReusableCourseItemSurveyTemplate as applyReusableCourseItemSurveyTemplateUseCase,
+  applyReusableCourseSurveyTemplate as applyReusableCourseSurveyTemplateUseCase,
+  saveCourseItemSurveyTemplate as saveCourseItemSurveyTemplateUseCase,
+  saveCourseSurveyTemplate as saveCourseSurveyTemplateUseCase,
+} from "@/modules/survey/server/templates";
+import {
+  submitCourseItemSurvey as submitCourseItemSurveyUseCase,
+  submitCourseSurvey as submitCourseSurveyUseCase,
+} from "@/modules/survey/server/submissions";
 
 function asString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -79,15 +89,6 @@ function courseItemSurveyPageUrl(courseId: string, itemId: string, params?: Reco
   return suffix ? `/courses/${courseId}/survey/${itemId}?${suffix}` : `/courses/${courseId}/survey/${itemId}`;
 }
 
-function appBaseUrl() {
-  return (
-    process.env.APP_BASE_URL?.trim() ||
-    process.env.NEXTAUTH_URL?.trim() ||
-    process.env.AUTH_URL?.trim() ||
-    "http://127.0.0.1:3002"
-  );
-}
-
 function revalidateCourseSurveyPaths(courseId: string) {
   revalidatePath("/courses");
   revalidatePath(`/courses/${courseId}`);
@@ -105,191 +106,60 @@ function revalidateCourseItemSurveyPaths(courseId: string, itemId: string) {
   revalidatePath(`/courses/${courseId}/survey/${itemId}/builder`);
 }
 
-async function markCourseContentChanged(courseId: string) {
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: { status: true },
-  });
-
-  if (!course || course.status !== "PUBLISHED") return;
-
-  await prisma.course.update({
-    where: { id: courseId },
-    data: { hasUnpublishedChanges: true },
-  });
-}
-
 export async function saveCourseSurveyTemplate(courseId: string, formData: FormData) {
   const access = await requireCourseWorkspaceAccess(courseId);
   if (!access.canEditCourse) {
     redirect("/");
   }
 
-  const title = formatCourseSurveyTitle(asString(formData, "title"));
-  const description = asOptionalString(formData, "description");
-  const introImageUrl = asOptionalString(formData, "introImageUrl");
-  const introImageUploadBusy = formData.get("introImageUrlUploadBusy") === "1";
-  const isActive = asChecked(formData, "isActive");
-  const isRequired = asChecked(formData, "isRequired");
-  const saveAsReusableTemplate = formData.get("saveAsReusableTemplate") === "1";
   const questions = parseCourseSurveyQuestionsJson(asString(formData, "questionsJson"));
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(access.session.user);
 
-  if (introImageUploadBusy) {
-    redirect(
-      manageCourseUrl(courseId, {
-        section: "survey",
-        surveyError: "Дождитесь окончания загрузки фонового изображения и сохраните опрос еще раз.",
-      })
-    );
-  }
-
-  if (questions.length === 0) {
-    redirect(
-      manageCourseUrl(courseId, {
-        section: "survey",
-        surveyError: "Добавьте хотя бы один вопрос в опрос.",
-      })
-    );
-  }
-
-  const existingTemplate = await prisma.courseSurveyTemplate.findUnique({
-    where: { courseId },
-    include: {
-      questions: {
-        select: { id: true },
-      },
-    },
-  });
-
-  const result = await prisma.$transaction(async (tx) => {
-    const template = existingTemplate
-      ? await tx.courseSurveyTemplate.update({
-          where: { id: existingTemplate.id },
-          data: {
-            title,
-            description,
-            introImageUrl,
-            isActive,
-            isRequired,
-          },
-        })
-      : await tx.courseSurveyTemplate.create({
-          data: {
-            courseId,
-            title,
-            description,
-            introImageUrl,
-            isActive,
-            isRequired,
-          },
-        });
-
-    const existingQuestionIds = new Set(existingTemplate?.questions.map((question) => question.id) ?? []);
-    const incomingExistingIds = questions.map((question) => question.id).filter((id): id is string => Boolean(id));
-    const incomingExistingIdsSet = new Set(incomingExistingIds);
-
-    for (const [index, question] of questions.entries()) {
-      if (question.id && existingQuestionIds.has(question.id)) {
-        await tx.courseSurveyQuestion.update({
-          where: { id: question.id },
-          data: {
-            title: question.title,
-            type: question.type,
-            optionsJson: serializeCourseSurveyQuestionOptions(question.options),
-            isRequired: question.isRequired,
-            orderIndex: index,
-          },
-        });
-      } else {
-        await tx.courseSurveyQuestion.create({
-          data: {
-            templateId: template.id,
-            title: question.title,
-            type: question.type,
-            optionsJson: serializeCourseSurveyQuestionOptions(question.options),
-            isRequired: question.isRequired,
-            orderIndex: index,
-          },
-        });
-      }
-    }
-
-    const removableQuestionIds = [...existingQuestionIds].filter((id) => !incomingExistingIdsSet.has(id));
-    if (removableQuestionIds.length > 0) {
-      await tx.courseSurveyQuestion.deleteMany({
-        where: {
-          templateId: template.id,
-          id: { in: removableQuestionIds },
-        },
-      });
-    }
-
-    const reusableTemplate = saveAsReusableTemplate
-      ? await tx.reusableCourseSurveyTemplate.create({
-          data: {
-            title,
-            description,
-            introImageUrl,
-            isRequired,
-            sourceCourseId: courseId,
-            createdById: access.session.user.id,
-            questions: {
-              create: questions.map((question, index) => ({
-                title: question.title,
-                type: question.type,
-                optionsJson: serializeCourseSurveyQuestionOptions(question.options),
-                isRequired: question.isRequired,
-                orderIndex: index,
-              })),
-            },
-          },
-        })
-      : null;
-
-    return { template, reusableTemplate };
-  });
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(access.session.user),
-    action: existingTemplate ? "course_survey:update" : "course_survey:create",
-    objectType: "course_survey",
-    objectId: result.template.id,
-    objectLabel: title,
-    metadata: {
+  let result;
+  try {
+    result = await saveCourseSurveyTemplateUseCase({
       courseId,
-      isActive,
-      isRequired,
-      hasIntroImage: Boolean(introImageUrl),
-      questionsCount: questions.length,
-      savedAsReusableTemplate: Boolean(result.reusableTemplate),
-    },
-  });
-
-  if (result.reusableTemplate) {
-    await recordAuditEvent({
-      actor: auditActorFromSessionUser(access.session.user),
-      action: "course_survey_template:create",
-      objectType: "course_survey_template",
-      objectId: result.reusableTemplate.id,
-      objectLabel: title,
-      metadata: {
-        courseId,
-        sourceCourseId: courseId,
-        hasIntroImage: Boolean(introImageUrl),
-        questionsCount: questions.length,
+      actor: { id: actor.id, login: actor.login, name: actor.name },
+      audit: {
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
       },
+      title: asString(formData, "title"),
+      description: asOptionalString(formData, "description"),
+      introImageUrl: asOptionalString(formData, "introImageUrl"),
+      introImageUploadBusy: formData.get("introImageUrlUploadBusy") === "1",
+      isActive: asChecked(formData, "isActive"),
+      isRequired: asChecked(formData, "isRequired"),
+      saveAsReusableTemplate: formData.get("saveAsReusableTemplate") === "1",
+      questions: questions.map((question) => ({
+        id: question.id,
+        title: question.title,
+        type: question.type,
+        optionsJson: serializeCourseSurveyQuestionOptions(question.options),
+        isRequired: question.isRequired,
+      })),
     });
+  } catch (error) {
+    if (error instanceof SurveyApplicationError) {
+      redirect(
+        manageCourseUrl(courseId, {
+          section: "survey",
+          surveyError: error.message,
+        }),
+      );
+    }
+    throw error;
   }
 
   revalidateCourseSurveyPaths(courseId);
-
   redirect(
     manageCourseUrl(courseId, {
       section: "survey",
-      surveySaved: result.reusableTemplate
+      surveySaved: result.reusableTemplateId
         ? "Опрос курса сохранен и добавлен в шаблоны."
         : "Опрос курса сохранен.",
-    })
+    }),
   );
 }
 
@@ -299,102 +169,38 @@ export async function applyReusableCourseSurveyTemplate(courseId: string, formDa
     redirect("/");
   }
 
-  const reusableTemplateId = asString(formData, "reusableTemplateId");
-  if (!reusableTemplateId) {
-    redirect(
-      manageCourseUrl(courseId, {
-        section: "survey",
-        surveyError: "Выберите шаблон опроса.",
-      })
-    );
-  }
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(access.session.user);
 
-  const reusableTemplate = await prisma.reusableCourseSurveyTemplate.findUnique({
-    where: { id: reusableTemplateId },
-    include: {
-      questions: {
-        orderBy: { orderIndex: "asc" },
-      },
-    },
-  });
-
-  if (!reusableTemplate || reusableTemplate.questions.length === 0) {
-    redirect(
-      manageCourseUrl(courseId, {
-        section: "survey",
-        surveyError: "Шаблон опроса не найден или не содержит вопросов.",
-      })
-    );
-  }
-
-  const existingTemplate = await prisma.courseSurveyTemplate.findUnique({
-    where: { courseId },
-    select: { id: true },
-  });
-
-  const savedTemplate = await prisma.$transaction(async (tx) => {
-    const reusableTemplateTitle = formatCourseSurveyTitle(reusableTemplate.title);
-    const template = existingTemplate
-      ? await tx.courseSurveyTemplate.update({
-          where: { id: existingTemplate.id },
-          data: {
-            title: reusableTemplateTitle,
-            description: reusableTemplate.description,
-            introImageUrl: reusableTemplate.introImageUrl,
-            isActive: true,
-            isRequired: reusableTemplate.isRequired,
-          },
-        })
-      : await tx.courseSurveyTemplate.create({
-          data: {
-            courseId,
-            title: reusableTemplateTitle,
-            description: reusableTemplate.description,
-            introImageUrl: reusableTemplate.introImageUrl,
-            isActive: true,
-            isRequired: reusableTemplate.isRequired,
-          },
-        });
-
-    await tx.courseSurveyQuestion.deleteMany({
-      where: { templateId: template.id },
-    });
-
-    await tx.courseSurveyQuestion.createMany({
-      data: reusableTemplate.questions.map((question, index) => ({
-        templateId: template.id,
-        title: question.title,
-        type: question.type,
-        optionsJson: question.optionsJson,
-        isRequired: question.isRequired,
-        orderIndex: index,
-      })),
-    });
-
-    return template;
-  });
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(access.session.user),
-    action: "course_survey_template:apply",
-    objectType: "course_survey_template",
-    objectId: reusableTemplate.id,
-    objectLabel: formatCourseSurveyTitle(reusableTemplate.title),
-    metadata: {
+  let result;
+  try {
+    result = await applyReusableCourseSurveyTemplateUseCase({
       courseId,
-      targetSurveyTemplateId: savedTemplate.id,
-      hasIntroImage: Boolean(reusableTemplate.introImageUrl),
-      questionsCount: reusableTemplate.questions.length,
-    },
-  });
+      reusableTemplateId: asString(formData, "reusableTemplateId"),
+      actor: { id: actor.id, login: actor.login, name: actor.name },
+      audit: {
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+    });
+  } catch (error) {
+    if (error instanceof SurveyApplicationError) {
+      redirect(
+        manageCourseUrl(courseId, {
+          section: "survey",
+          surveyError: error.message,
+        }),
+      );
+    }
+    throw error;
+  }
 
   revalidateCourseSurveyPaths(courseId);
-
   redirect(
     manageCourseUrl(courseId, {
       section: "survey",
-      surveySaved: `Шаблон «${formatCourseSurveyTitle(reusableTemplate.title)}» применен к опросу курса.`,
-    })
+      surveySaved: `Шаблон «${result.reusableTitle}» применен к опросу курса.`,
+    }),
   );
 }
 
@@ -404,193 +210,61 @@ export async function saveCourseItemSurveyTemplate(courseId: string, itemId: str
     redirect("/");
   }
 
-  const title = formatCourseSurveyTitle(asString(formData, "title"));
-  const description = asOptionalString(formData, "description");
-  const introImageUrl = asOptionalString(formData, "introImageUrl");
-  const introImageUploadBusy = formData.get("introImageUrlUploadBusy") === "1";
-  const isActive = asChecked(formData, "isActive");
-  const isRequired = asChecked(formData, "isRequired");
-  const saveAsReusableTemplate = formData.get("saveAsReusableTemplate") === "1";
   const questions = parseCourseSurveyQuestionsJson(asString(formData, "questionsJson"));
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(access.session.user);
 
-  if (introImageUploadBusy) {
-    redirect(
-      courseItemSurveyBuilderUrl(courseId, itemId, {
-        surveyError: "Дождитесь окончания загрузки фонового изображения и сохраните опрос еще раз.",
-      })
-    );
-  }
-
-  if (questions.length === 0) {
-    redirect(
-      courseItemSurveyBuilderUrl(courseId, itemId, {
-        surveyError: "Добавьте хотя бы один вопрос в опрос.",
-      })
-    );
-  }
-
-  const item = await prisma.courseItem.findFirst({
-    where: { id: itemId, courseId, archivedAt: null },
-    select: { id: true, type: true },
-  });
-
-  if (!item || item.type !== "SURVEY") {
-    redirect(manageCourseUrl(courseId, { section: "structure", structureError: "Опрос не найден." }));
-  }
-
-  const existingTemplate = await prisma.courseItemSurveyTemplate.findUnique({
-    where: { courseItemId: itemId },
-    include: {
-      questions: {
-        select: { id: true },
-      },
-    },
-  });
-
-  const result = await prisma.$transaction(async (tx) => {
-    await tx.courseItem.update({
-      where: { id: itemId },
-      data: {
-        title,
-        isRequired,
-        content: null,
-        fileUrl: null,
-        totalSlides: null,
-      },
-    });
-
-    const template = existingTemplate
-      ? await tx.courseItemSurveyTemplate.update({
-          where: { id: existingTemplate.id },
-          data: {
-            title,
-            description,
-            introImageUrl,
-            isActive,
-            isRequired,
-          },
-        })
-      : await tx.courseItemSurveyTemplate.create({
-          data: {
-            courseId,
-            courseItemId: itemId,
-            title,
-            description,
-            introImageUrl,
-            isActive,
-            isRequired,
-          },
-        });
-
-    const existingQuestionIds = new Set(existingTemplate?.questions.map((question) => question.id) ?? []);
-    const incomingExistingIds = questions.map((question) => question.id).filter((id): id is string => Boolean(id));
-    const incomingExistingIdsSet = new Set(incomingExistingIds);
-
-    for (const [index, question] of questions.entries()) {
-      if (question.id && existingQuestionIds.has(question.id)) {
-        await tx.courseItemSurveyQuestion.update({
-          where: { id: question.id },
-          data: {
-            title: question.title,
-            type: question.type,
-            optionsJson: serializeCourseSurveyQuestionOptions(question.options),
-            isRequired: question.isRequired,
-            orderIndex: index,
-          },
-        });
-      } else {
-        await tx.courseItemSurveyQuestion.create({
-          data: {
-            templateId: template.id,
-            title: question.title,
-            type: question.type,
-            optionsJson: serializeCourseSurveyQuestionOptions(question.options),
-            isRequired: question.isRequired,
-            orderIndex: index,
-          },
-        });
-      }
-    }
-
-    const removableQuestionIds = [...existingQuestionIds].filter((id) => !incomingExistingIdsSet.has(id));
-    if (removableQuestionIds.length > 0) {
-      await tx.courseItemSurveyQuestion.deleteMany({
-        where: {
-          templateId: template.id,
-          id: { in: removableQuestionIds },
-        },
-      });
-    }
-
-    const reusableTemplate = saveAsReusableTemplate
-      ? await tx.reusableCourseSurveyTemplate.create({
-          data: {
-            title,
-            description,
-            introImageUrl,
-            isRequired,
-            sourceCourseId: courseId,
-            createdById: access.session.user.id,
-            questions: {
-              create: questions.map((question, index) => ({
-                title: question.title,
-                type: question.type,
-                optionsJson: serializeCourseSurveyQuestionOptions(question.options),
-                isRequired: question.isRequired,
-                orderIndex: index,
-              })),
-            },
-          },
-        })
-      : null;
-
-    return { template, reusableTemplate };
-  });
-
-  await markCourseContentChanged(courseId);
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(access.session.user),
-    action: existingTemplate ? "course_item_survey:update" : "course_item_survey:create",
-    objectType: "course_item_survey",
-    objectId: result.template.id,
-    objectLabel: title,
-    metadata: {
+  let result;
+  try {
+    result = await saveCourseItemSurveyTemplateUseCase({
       courseId,
-      courseItemId: itemId,
-      isActive,
-      isRequired,
-      hasIntroImage: Boolean(introImageUrl),
-      questionsCount: questions.length,
-      savedAsReusableTemplate: Boolean(result.reusableTemplate),
-    },
-  });
-
-  if (result.reusableTemplate) {
-    await recordAuditEvent({
-      actor: auditActorFromSessionUser(access.session.user),
-      action: "course_survey_template:create",
-      objectType: "course_survey_template",
-      objectId: result.reusableTemplate.id,
-      objectLabel: title,
-      metadata: {
-        courseId,
-        sourceCourseId: courseId,
-        courseItemId: itemId,
-        hasIntroImage: Boolean(introImageUrl),
-        questionsCount: questions.length,
+      itemId,
+      actor: { id: actor.id, login: actor.login, name: actor.name },
+      audit: {
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
       },
+      title: asString(formData, "title"),
+      description: asOptionalString(formData, "description"),
+      introImageUrl: asOptionalString(formData, "introImageUrl"),
+      introImageUploadBusy: formData.get("introImageUrlUploadBusy") === "1",
+      isActive: asChecked(formData, "isActive"),
+      isRequired: asChecked(formData, "isRequired"),
+      saveAsReusableTemplate: formData.get("saveAsReusableTemplate") === "1",
+      questions: questions.map((question) => ({
+        id: question.id,
+        title: question.title,
+        type: question.type,
+        optionsJson: serializeCourseSurveyQuestionOptions(question.options),
+        isRequired: question.isRequired,
+      })),
     });
+  } catch (error) {
+    if (error instanceof SurveyApplicationError) {
+      if (error.code === "ITEM_NOT_SURVEY") {
+        redirect(
+          manageCourseUrl(courseId, {
+            section: "structure",
+            structureError: error.message,
+          }),
+        );
+      }
+      redirect(
+        courseItemSurveyBuilderUrl(courseId, itemId, {
+          surveyError: error.message,
+        }),
+      );
+    }
+    throw error;
   }
 
   revalidateCourseItemSurveyPaths(courseId, itemId);
-
   redirect(
     courseItemSurveyBuilderUrl(courseId, itemId, {
-      surveySaved: result.reusableTemplate
+      surveySaved: result.reusableTemplateId
         ? "Опрос сохранен и добавлен в шаблоны."
         : "Опрос сохранен.",
-    })
+    }),
   );
 }
 
@@ -600,123 +274,45 @@ export async function applyReusableCourseItemSurveyTemplate(courseId: string, it
     redirect("/");
   }
 
-  const reusableTemplateId = asString(formData, "reusableTemplateId");
-  if (!reusableTemplateId) {
-    redirect(
-      courseItemSurveyBuilderUrl(courseId, itemId, {
-        surveyError: "Выберите шаблон опроса.",
-      })
-    );
-  }
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(access.session.user);
 
-  const [item, reusableTemplate, existingTemplate] = await Promise.all([
-    prisma.courseItem.findFirst({
-      where: { id: itemId, courseId, archivedAt: null },
-      select: { id: true, type: true },
-    }),
-    prisma.reusableCourseSurveyTemplate.findUnique({
-      where: { id: reusableTemplateId },
-      include: {
-        questions: {
-          orderBy: { orderIndex: "asc" },
-        },
-      },
-    }),
-    prisma.courseItemSurveyTemplate.findUnique({
-      where: { courseItemId: itemId },
-      select: { id: true },
-    }),
-  ]);
-
-  if (!item || item.type !== "SURVEY") {
-    redirect(manageCourseUrl(courseId, { section: "structure", structureError: "Опрос не найден." }));
-  }
-
-  if (!reusableTemplate || reusableTemplate.questions.length === 0) {
-    redirect(
-      courseItemSurveyBuilderUrl(courseId, itemId, {
-        surveyError: "Шаблон опроса не найден или не содержит вопросов.",
-      })
-    );
-  }
-
-  const savedTemplate = await prisma.$transaction(async (tx) => {
-    const reusableTemplateTitle = formatCourseSurveyTitle(reusableTemplate.title);
-    await tx.courseItem.update({
-      where: { id: itemId },
-      data: {
-        title: reusableTemplateTitle,
-        isRequired: reusableTemplate.isRequired,
-        content: null,
-        fileUrl: null,
-        totalSlides: null,
-      },
-    });
-
-    const template = existingTemplate
-      ? await tx.courseItemSurveyTemplate.update({
-          where: { id: existingTemplate.id },
-          data: {
-            title: reusableTemplateTitle,
-            description: reusableTemplate.description,
-            introImageUrl: reusableTemplate.introImageUrl,
-            isActive: true,
-            isRequired: reusableTemplate.isRequired,
-          },
-        })
-      : await tx.courseItemSurveyTemplate.create({
-          data: {
-            courseId,
-            courseItemId: itemId,
-            title: reusableTemplateTitle,
-            description: reusableTemplate.description,
-            introImageUrl: reusableTemplate.introImageUrl,
-            isActive: true,
-            isRequired: reusableTemplate.isRequired,
-          },
-        });
-
-    await tx.courseItemSurveyQuestion.deleteMany({
-      where: { templateId: template.id },
-    });
-
-    await tx.courseItemSurveyQuestion.createMany({
-      data: reusableTemplate.questions.map((question, index) => ({
-        templateId: template.id,
-        title: question.title,
-        type: question.type,
-        optionsJson: question.optionsJson,
-        isRequired: question.isRequired,
-        orderIndex: index,
-      })),
-    });
-
-    return template;
-  });
-
-  await markCourseContentChanged(courseId);
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(access.session.user),
-    action: "course_survey_template:apply",
-    objectType: "course_survey_template",
-    objectId: reusableTemplate.id,
-    objectLabel: formatCourseSurveyTitle(reusableTemplate.title),
-    metadata: {
+  let result;
+  try {
+    result = await applyReusableCourseItemSurveyTemplateUseCase({
       courseId,
-      courseItemId: itemId,
-      targetSurveyTemplateId: savedTemplate.id,
-      hasIntroImage: Boolean(reusableTemplate.introImageUrl),
-      questionsCount: reusableTemplate.questions.length,
-    },
-  });
+      itemId,
+      reusableTemplateId: asString(formData, "reusableTemplateId"),
+      actor: { id: actor.id, login: actor.login, name: actor.name },
+      audit: {
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+    });
+  } catch (error) {
+    if (error instanceof SurveyApplicationError) {
+      if (error.code === "ITEM_NOT_SURVEY") {
+        redirect(
+          manageCourseUrl(courseId, {
+            section: "structure",
+            structureError: error.message,
+          }),
+        );
+      }
+      redirect(
+        courseItemSurveyBuilderUrl(courseId, itemId, {
+          surveyError: error.message,
+        }),
+      );
+    }
+    throw error;
+  }
 
   revalidateCourseItemSurveyPaths(courseId, itemId);
-
   redirect(
     courseItemSurveyBuilderUrl(courseId, itemId, {
-      surveySaved: `Шаблон «${formatCourseSurveyTitle(reusableTemplate.title)}» применен к опросу.`,
-    })
+      surveySaved: `Шаблон «${result.reusableTitle}» применен к опросу.`,
+    }),
   );
 }
 
@@ -725,302 +321,55 @@ export async function submitCourseItemSurvey(courseId: string, itemId: string, f
   const isStudent =
     hasRole(session.user.roles, ROLES.STUDENT) &&
     canTrackMaterialProgress(session.user.roles, session.user.permissions);
-
   if (!isStudent) {
     redirect(`/courses/${courseId}`);
   }
 
-  const allowed = await isUserAssignedToCourse(session.user.id, courseId);
-  if (!allowed) {
-    redirect(`/courses/${courseId}`);
-  }
-
-  const [course, learner] = await Promise.all([
-    prisma.course.findUnique({
-      where: { id: courseId },
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        navigationMode: true,
-        quizGateMode: true,
-        owner: {
-          select: {
-            name: true,
-            email: true,
-            firstName: true,
-          },
-        },
-        items: {
-          where: { archivedAt: null },
-          orderBy: { orderIndex: "asc" },
-          select: {
-            id: true,
-            moduleId: true,
-            orderIndex: true,
-            type: true,
-            title: true,
-            content: true,
-            fileUrl: true,
-            totalSlides: true,
-            isRequired: true,
-            module: {
-              select: {
-                id: true,
-                title: true,
-                description: true,
-                orderIndex: true,
-              },
-            },
-            views: {
-              where: { userId: session.user.id },
-              select: {
-                progressPercent: true,
-                viewedAt: true,
-              },
-              take: 1,
-            },
-            quiz: {
-              select: {
-                id: true,
-                description: true,
-                maxAttempts: true,
-                minCorrectAnswers: true,
-                lockMaterialsOnStart: true,
-                questions: {
-                  where: { archivedAt: null },
-                  select: { id: true },
-                },
-                attempts: {
-                  where: { userId: session.user.id },
-                  select: {
-                    id: true,
-                    outcome: true,
-                    correctAnswers: true,
-                    attemptNumber: true,
-                    score: true,
-                    maxScore: true,
-                    completedAt: true,
-                  },
-                },
-              },
-            },
-            surveyTemplate: {
-              include: {
-                questions: {
-                  orderBy: { orderIndex: "asc" },
-                },
-                responses: {
-                  where: { userId: session.user.id },
-                  take: 1,
-                },
-              },
-            },
-          },
-        },
-      },
-    }),
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        login: true,
-      },
-    }),
-  ]);
-
-  if (!course || course.status !== "PUBLISHED") {
-    redirect(`/courses/${courseId}`);
-  }
-
-  const surveyItem = course.items.find((item) => item.id === itemId) ?? null;
-  if (!surveyItem || surveyItem.type !== "SURVEY" || !surveyItem.surveyTemplate?.isActive) {
-    redirect(`/courses/${courseId}`);
-  }
-
-  const outline = buildCourseOutline(
-    course.items.map((item) => ({
-      ...item,
-      quiz: item.quiz
-        ? {
-            ...item.quiz,
-            attempts: item.quiz.attempts,
-          }
-        : null,
-    })),
-    course.navigationMode === "SEQUENTIAL" ? "SEQUENTIAL" : "FREE",
-    {
-      lockQuizzesUntilPreviousRequiredComplete: true,
-      lockMaterialsWhenQuizStarted: true,
-      quizGateMode: course.quizGateMode === "PASSED" ? "PASSED" : "RESOLVED",
-    }
-  );
-  const surveyEntry = outline.find((item) => item.id === itemId) ?? null;
-  if (surveyEntry?.isLocked) {
-    redirect(`/courses/${courseId}?item=${itemId}`);
-  }
-
-  const existingResponse = await prisma.courseItemSurveyResponse.findUnique({
-    where: {
-      courseItemId_userId: {
-        courseItemId: itemId,
-        userId: session.user.id,
-      },
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
+  const result = await submitCourseItemSurveyUseCase({
+    courseId,
+    itemId,
+    actor: {
+      id: actor.id,
+      login: actor.login,
+      name: actor.name,
+      displayName: session.user.name ?? session.user.email ?? "Ученик",
+      email: session.user.email ?? null,
     },
-    select: { id: true },
+    audit: {
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+    },
+    now: new Date(),
+    getRawAnswer: (questionId) => asString(formData, `question:${questionId}`),
+    parseQuestionOptionsJson: parseCourseSurveyQuestionOptionsJson,
   });
 
-  if (existingResponse) {
+  if (result.status === "REDIRECT_HOME") redirect(`/courses/${courseId}`);
+  if (result.status === "LOCKED") redirect(`/courses/${courseId}?item=${itemId}`);
+  if (result.status === "ALREADY_SUBMITTED") {
     redirect(courseItemSurveyPageUrl(courseId, itemId, { survey: "saved" }));
   }
+  if (result.status === "MISSING_ANSWER") {
+    throw new Error(`Заполните вопрос «${result.questionTitle}».`);
+  }
 
-  const answers = surveyItem.surveyTemplate.questions.map((question) => {
-    if (question.type === "RATING_5") {
-      const raw = Number.parseInt(asString(formData, `question:${question.id}`), 10);
-      const ratingValue = Number.isInteger(raw) && raw >= 1 && raw <= 5 ? raw : null;
-
-      if (question.isRequired && ratingValue === null) {
-        throw new Error(`Заполните вопрос «${question.title}».`);
-      }
-
-      return {
-        questionId: question.id,
-        ratingValue,
-        textValue: null,
-      };
-    }
-
-    if (question.type === "SINGLE_CHOICE") {
-      const options = parseCourseSurveyQuestionOptionsJson(question.optionsJson);
-      const textValue = asOptionalString(formData, `question:${question.id}`);
-      const selectedOption = textValue && options.includes(textValue) ? textValue : null;
-
-      if (question.isRequired && !selectedOption) {
-        throw new Error(`Заполните вопрос «${question.title}».`);
-      }
-
-      return {
-        questionId: question.id,
-        ratingValue: null,
-        textValue: selectedOption,
-      };
-    }
-
-    const textValue = asOptionalString(formData, `question:${question.id}`);
-    if (question.isRequired && !textValue) {
-      throw new Error(`Заполните вопрос «${question.title}».`);
-    }
-
-    return {
-      questionId: question.id,
-      ratingValue: null,
-      textValue,
-    };
-  });
-  const answerByQuestionId = new Map(answers.map((answer) => [answer.questionId, answer]));
-  const reportAnswers = surveyItem.surveyTemplate.questions.map((question) => {
-    const answer = answerByQuestionId.get(question.id);
-    return {
-      questionTitle: question.title,
-      questionType: normalizeSurveyQuestionType(question.type),
-      answerText:
-        typeof answer?.ratingValue === "number"
-          ? String(answer.ratingValue)
-          : answer?.textValue ?? null,
-    };
-  });
-  const submittedAt = new Date();
-
-  await prisma.$transaction(async (tx) => {
-    const response = await tx.courseItemSurveyResponse.create({
-      data: {
-        templateId: surveyItem.surveyTemplate!.id,
-        courseId,
-        courseItemId: itemId,
-        userId: session.user.id,
-      },
-    });
-
-    await tx.courseItemSurveyAnswer.deleteMany({
-      where: { responseId: response.id },
-    });
-
-    if (answers.length > 0) {
-      await tx.courseItemSurveyAnswer.createMany({
-        data: answers.map((answer) => ({
-          responseId: response.id,
-          questionId: answer.questionId,
-          ratingValue: answer.ratingValue,
-          textValue: answer.textValue,
-        })),
-      });
-    }
-
-    await tx.courseItemView.upsert({
-      where: {
-        courseItemId_userId: {
-          courseItemId: itemId,
-          userId: session.user.id,
-        },
-      },
-      create: {
-        courseItemId: itemId,
-        userId: session.user.id,
-        progressPercent: 100,
-        maxPageSeen: 1,
-        totalPages: 1,
-        viewedAt: submittedAt,
-      },
-      update: {
-        progressPercent: 100,
-        maxPageSeen: 1,
-        totalPages: 1,
-        viewedAt: submittedAt,
-      },
-    });
-  });
-
-  if (course.owner?.email) {
-    await enqueueCourseSurveyReportEmails(
-      [
-        {
-          email: course.owner.email,
-          name: course.owner.name,
-          firstName: course.owner.firstName,
-        },
-      ],
-      {
-        courseId,
-        courseTitle: course.title,
-        surveyTitle: formatCourseSurveyTitle(surveyItem.surveyTemplate.title),
-        learnerId: session.user.id,
-        learnerName: learner?.name ?? session.user.name ?? session.user.email ?? "Ученик",
-        learnerEmail: learner?.email ?? null,
-        submittedAt,
-        manageUrl: `${appBaseUrl()}/courses/${courseId}/survey/${itemId}/builder`,
-        answers: reportAnswers,
-      }
-    ).catch((error) => {
+  if (result.reportRecipient) {
+    await enqueueCourseSurveyReportEmails([result.reportRecipient], {
+      courseId,
+      courseTitle: result.reportPayload.courseTitle,
+      surveyTitle: formatCourseSurveyTitle(result.reportPayload.surveyTitle),
+      learnerId: result.reportPayload.learnerId,
+      learnerName: result.reportPayload.learnerName,
+      learnerEmail: result.reportPayload.learnerEmail,
+      submittedAt: result.reportPayload.submittedAt,
+      manageUrl: `${appBaseUrl()}/courses/${courseId}/survey/${itemId}/builder`,
+      answers: result.reportPayload.answers,
+    }).catch((error) => {
       console.error("Failed to queue course item survey report email", error);
     });
   }
-
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "course_item_survey:submit",
-    objectType: "course_item_survey_response",
-    objectId: `${itemId}:${session.user.id}`,
-    objectLabel: surveyItem.title,
-    metadata: {
-      courseId,
-      courseItemId: itemId,
-      templateId: surveyItem.surveyTemplate.id,
-      answersCount: answers.length,
-      reportEmailQueued: Boolean(course.owner?.email),
-    },
-  });
 
   revalidateCourseItemSurveyPaths(courseId, itemId);
   redirect(courseItemSurveyPageUrl(courseId, itemId, { survey: "saved" }));
@@ -1031,242 +380,57 @@ export async function submitCourseSurvey(courseId: string, formData: FormData) {
   const isStudent =
     hasRole(session.user.roles, ROLES.STUDENT) &&
     canTrackMaterialProgress(session.user.roles, session.user.permissions);
-
   if (!isStudent) {
     redirect(`/courses/${courseId}`);
   }
 
-  const allowed = await isUserAssignedToCourse(session.user.id, courseId);
-  if (!allowed) {
-    redirect(`/courses/${courseId}`);
-  }
-
-  const [course, learner] = await Promise.all([
-    prisma.course.findUnique({
-      where: { id: courseId },
-      select: {
-        id: true,
-        title: true,
-        quizGateMode: true,
-        owner: {
-          select: {
-            name: true,
-            email: true,
-            firstName: true,
-          },
-        },
-        items: {
-          where: { archivedAt: null },
-          select: {
-            id: true,
-            type: true,
-            title: true,
-            isRequired: true,
-            views: {
-              where: { userId: session.user.id },
-              select: { progressPercent: true },
-              take: 1,
-            },
-            quiz: {
-              select: {
-                maxAttempts: true,
-                minCorrectAnswers: true,
-                attempts: {
-                  where: { userId: session.user.id },
-                  select: {
-                    outcome: true,
-                    correctAnswers: true,
-                    attemptNumber: true,
-                    score: true,
-                    completedAt: true,
-                  },
-                },
-              },
-            },
-          },
-          orderBy: { orderIndex: "asc" },
-        },
-        surveyTemplate: {
-          include: {
-            questions: {
-              orderBy: { orderIndex: "asc" },
-            },
-          },
-        },
-      },
-    }),
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        login: true,
-      },
-    }),
-  ]);
-
-  if (!course || !course.surveyTemplate || !course.surveyTemplate.isActive) {
-    redirect(`/courses/${courseId}`);
-  }
-
-  const progress = getCourseProgress({
-    quizGateMode: course.quizGateMode === "PASSED" ? "PASSED" : "RESOLVED",
-    items: course.items.map((item) => ({
-      id: item.id,
-      type: item.type,
-      title: item.title,
-      isRequired: item.isRequired,
-      viewed: item.type === "QUIZ" ? false : item.views.length > 0,
-      materialProgress: item.type === "QUIZ" ? 0 : item.views[0]?.progressPercent ?? 0,
-      quiz: item.quiz,
-    })),
+  const auditContext = await getAuditRequestContext();
+  const actor = auditActorFromSessionUser(session.user);
+  const result = await submitCourseSurveyUseCase({
+    courseId,
+    actor: {
+      id: actor.id,
+      login: actor.login,
+      name: actor.name,
+      displayName: session.user.name ?? session.user.email ?? "Ученик",
+      email: session.user.email ?? null,
+    },
+    audit: {
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+    },
+    now: new Date(),
+    getRawAnswer: (questionId) => asString(formData, `question:${questionId}`),
+    parseQuestionOptionsJson: parseCourseSurveyQuestionOptionsJson,
   });
 
-  if (!progress.isCompleted) {
+  if (result.status === "REDIRECT_HOME") redirect(`/courses/${courseId}`);
+  if (result.status === "COURSE_NOT_COMPLETED") {
     redirect(surveyPageUrl(courseId, { survey: "locked" }));
   }
-
-  const existingResponse = await prisma.courseSurveyResponse.findUnique({
-    where: {
-      courseId_userId: {
-        courseId,
-        userId: session.user.id,
-      },
-    },
-    select: { id: true },
-  });
-
-  if (existingResponse) {
+  if (result.status === "ALREADY_SUBMITTED") {
     redirect(surveyPageUrl(courseId, { survey: "saved" }));
   }
+  if (result.status === "MISSING_ANSWER") {
+    throw new Error(`Заполните вопрос «${result.questionTitle}».`);
+  }
 
-  const answers = course.surveyTemplate.questions.map((question) => {
-    if (question.type === "RATING_5") {
-      const raw = Number.parseInt(asString(formData, `question:${question.id}`), 10);
-      const ratingValue = Number.isInteger(raw) && raw >= 1 && raw <= 5 ? raw : null;
-
-      if (question.isRequired && ratingValue === null) {
-        throw new Error(`Заполните вопрос «${question.title}».`);
-      }
-
-      return {
-        questionId: question.id,
-        ratingValue,
-        textValue: null,
-      };
-    }
-
-    if (question.type === "SINGLE_CHOICE") {
-      const options = parseCourseSurveyQuestionOptionsJson(question.optionsJson);
-      const textValue = asOptionalString(formData, `question:${question.id}`);
-      const selectedOption = textValue && options.includes(textValue) ? textValue : null;
-
-      if (question.isRequired && !selectedOption) {
-        throw new Error(`Заполните вопрос «${question.title}».`);
-      }
-
-      return {
-        questionId: question.id,
-        ratingValue: null,
-        textValue: selectedOption,
-      };
-    }
-
-    const textValue = asOptionalString(formData, `question:${question.id}`);
-    if (question.isRequired && !textValue) {
-      throw new Error(`Заполните вопрос «${question.title}».`);
-    }
-
-    return {
-      questionId: question.id,
-      ratingValue: null,
-      textValue,
-    };
-  });
-  const answerByQuestionId = new Map(answers.map((answer) => [answer.questionId, answer]));
-  const reportAnswers = course.surveyTemplate.questions.map((question) => {
-    const answer = answerByQuestionId.get(question.id);
-    return {
-      questionTitle: question.title,
-      questionType: normalizeSurveyQuestionType(question.type),
-      answerText:
-        typeof answer?.ratingValue === "number"
-          ? String(answer.ratingValue)
-          : answer?.textValue ?? null,
-    };
-  });
-  const submittedAt = new Date();
-
-  await prisma.$transaction(async (tx) => {
-    const response = await tx.courseSurveyResponse.create({
-      data: {
-        templateId: course.surveyTemplate!.id,
-        courseId,
-        userId: session.user.id,
-      },
-    });
-
-    await tx.courseSurveyAnswer.deleteMany({
-      where: { responseId: response.id },
-    });
-
-    if (answers.length > 0) {
-      await tx.courseSurveyAnswer.createMany({
-        data: answers.map((answer) => ({
-          responseId: response.id,
-          questionId: answer.questionId,
-          ratingValue: answer.ratingValue,
-          textValue: answer.textValue,
-        })),
-      });
-    }
-  });
-
-  if (course.owner?.email) {
-    await enqueueCourseSurveyReportEmails(
-      [
-        {
-          email: course.owner.email,
-          name: course.owner.name,
-          firstName: course.owner.firstName,
-        },
-      ],
-      {
-        courseId,
-        courseTitle: course.title,
-        surveyTitle: formatCourseSurveyTitle(course.surveyTemplate.title),
-        learnerId: session.user.id,
-        learnerName: learner?.name ?? session.user.name ?? session.user.email ?? "Ученик",
-        learnerEmail: learner?.email ?? null,
-        submittedAt,
-        manageUrl: `${appBaseUrl()}/courses/${courseId}/manage?section=survey`,
-        answers: reportAnswers,
-      }
-    ).catch((error) => {
+  if (result.reportRecipient) {
+    await enqueueCourseSurveyReportEmails([result.reportRecipient], {
+      courseId,
+      courseTitle: result.reportPayload.courseTitle,
+      surveyTitle: formatCourseSurveyTitle(result.reportPayload.surveyTitle),
+      learnerId: result.reportPayload.learnerId,
+      learnerName: result.reportPayload.learnerName,
+      learnerEmail: result.reportPayload.learnerEmail,
+      submittedAt: result.reportPayload.submittedAt,
+      manageUrl: `${appBaseUrl()}/courses/${courseId}/manage?section=survey`,
+      answers: result.reportPayload.answers,
+    }).catch((error) => {
       console.error("Failed to queue course survey report email", error);
     });
   }
 
-  await recordAuditEvent({
-    actor: auditActorFromSessionUser(session.user),
-    action: "course_survey:submit",
-    objectType: "course_survey_response",
-    objectId: `${courseId}:${session.user.id}`,
-    objectLabel: course.title,
-    metadata: {
-      courseId,
-      templateId: course.surveyTemplate.id,
-      answersCount: answers.length,
-      reportEmailQueued: Boolean(course.owner?.email),
-    },
-  });
-
   revalidateCourseSurveyPaths(courseId);
   redirect(surveyPageUrl(courseId, { survey: "saved" }));
-}
-
-function normalizeSurveyQuestionType(value: string): CourseSurveyQuestionType {
-  if (value === "RATING_5" || value === "SINGLE_CHOICE") return value;
-  return "TEXT";
 }

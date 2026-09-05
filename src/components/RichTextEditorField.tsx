@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import { Label } from "@/components/ui";
 import {
   extractRichTextText,
   normalizeRichTextForEditor,
@@ -24,7 +25,7 @@ function ToolbarButton({ label, onClick }: ToolbarButtonProps) {
     <button
       type="button"
       onClick={onClick}
-      className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+      className="rounded-lg border border-[var(--line)] bg-[var(--surface-raised)] px-2.5 py-1 text-xs font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
     >
       {label}
     </button>
@@ -73,12 +74,12 @@ export function RichTextEditorField({
 
   return (
     <div>
-      <label htmlFor={inputId} className="block text-sm font-medium text-zinc-900">
+      <Label htmlFor={inputId} className="block">
         {label}
-      </label>
+      </Label>
       <input ref={hiddenInputRef} type="hidden" name={name} defaultValue={initialHtml} />
-      <div className="mt-1 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-        <div className="flex flex-wrap gap-2 border-b border-zinc-200 bg-zinc-50 px-3 py-2">
+      <div className="mt-1 overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] shadow-sm">
+        <div className="flex flex-wrap gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-3 py-2">
           <ToolbarButton label="Текст" onClick={() => setBlock("p")} />
           <ToolbarButton label="H2" onClick={() => setBlock("h2")} />
           <ToolbarButton label="H3" onClick={() => setBlock("h3")} />
@@ -93,7 +94,7 @@ export function RichTextEditorField({
 
         <div className="relative">
           {!hasText ? (
-            <div className="pointer-events-none absolute inset-x-0 top-0 px-4 py-3 text-sm text-zinc-400">
+            <div className="pointer-events-none absolute inset-x-0 top-0 px-4 py-3 text-sm text-[var(--ink-muted)]">
               {placeholder}
             </div>
           ) : null}
@@ -110,11 +111,11 @@ export function RichTextEditorField({
             suppressContentEditableWarning
             onInput={syncEditorValue}
             onBlur={syncEditorValue}
-            className="min-h-40 px-4 py-3 text-sm leading-relaxed text-zinc-800 outline-none [&_a]:text-emerald-700 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-zinc-300 [&_blockquote]:pl-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-semibold [&_li]:ml-5 [&_ol]:list-decimal [&_p]:mb-3 [&_ul]:list-disc"
+            className="min-h-40 px-4 py-3 text-sm leading-relaxed text-[var(--ink)] outline-none [&_a]:text-[var(--success)] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-[var(--line)] [&_blockquote]:pl-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-semibold [&_li]:ml-5 [&_ol]:list-decimal [&_p]:mb-3 [&_ul]:list-disc"
           />
         </div>
       </div>
-      <p className="mt-2 text-xs text-zinc-500">
+      <p className="mt-2 text-xs text-[var(--ink-muted)]">
         Базовый WYSIWYG: заголовки, списки, выделение и ссылки. Содержимое сохранится как HTML.
       </p>
     </div>

@@ -35,15 +35,12 @@ COPY --from=builder /app/scripts ./scripts
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
-  && mkdir -p /app/data /app/public/uploads /app/public/branding \
+  && mkdir -p /app/data /app/data/uploads /app/public/branding \
   && chown -R nextjs:nextjs /app
 
 EXPOSE 3000
 ENTRYPOINT ["docker-entrypoint.sh"]
-# ВНИМАНИЕ: здесь намеренно `db push`, а не `migrate deploy`.
-# Прод-схема исторически накатывалась через `db push`, поэтому таблицы
-# `_prisma_migrations` в базе нет, и `migrate deploy` падает с P3005
-# ("The database schema is not empty") — контейнер уходит в рестарт-луп.
-# Перевод на миграции требует разового baseline существующей базы
-# (`prisma migrate resolve --applied <миграция>`) и делается отдельной задачей.
-CMD ["sh", "-c", "npx prisma db push && npm run db:wal && npm run start -- -p 3000 -H 0.0.0.0"]
+# Схема применяется через `prisma migrate deploy` (ADR-014). База — PostgreSQL
+# с чистой историей миграций (baseline `*_init_postgres`), поэтому P3005 из
+# ADR-010 больше не возникает. `db:wal` убран — он был SQLite-специфичен.
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start -- -p 3000 -H 0.0.0.0"]

@@ -2,234 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
 import { requireManageCourse, requireSession } from "@/lib/auth-guards";
 import { auditActorFromSessionUser, recordAuditEvent } from "@/lib/audit-log";
-import { canManageCourse, canOpenQuizPage } from "@/lib/access";
-import { normalizePresentationViewMode } from "@/lib/constants";
+import { canOpenQuizPage } from "@/lib/access";
 import { getCourseManualReviewStatusParam } from "@/lib/course-manual-reviews";
-import { isPublishedSnapshotActive, parsePublishedCourseSnapshot } from "@/lib/course-content";
-import { buildCourseOutline } from "@/lib/course-navigation";
 import { getManualReviewQuestions, parseAttemptAnswers as parseAttemptAnswersFromJson, parseManualReviewData, parseQuestionSnapshot } from "@/lib/quiz-manual-review";
-import { canTrackLearningProgress } from "@/lib/roles";
 import { enqueueQuizReviewedEmails } from "@/lib/email/queue";
-import { prepareAssessmentQuestions } from "@/modules/assessment/domain/delivery";
+import { issueCertificateIfCompleted } from "@/modules/certification/server/issue-certificate-if-completed";
+import { getAssessmentRetryAvailableAt, prepareAssessmentQuestions } from "@/modules/assessment/domain/delivery";
+import { isAssessmentTimeLimitExpired } from "@/modules/assessment/domain/assessment";
+import { normalizeFileAnswer } from "@/modules/assessment/domain/file-answer";
+import { loadQuizDeliveryContext } from "@/modules/assessment/server/quiz-delivery-context";
+import { assertQuizUnlockedByRequiredLessons } from "@/modules/assessment/server/quiz-unlock-gate";
+import { loadQuizAttemptForReview } from "@/modules/assessment/server/quiz-attempt-review-context";
 import { reviewAssessmentAttempt } from "@/modules/assessment/server/review-assessment-attempt";
 import { saveAssessmentDraft } from "@/modules/assessment/server/save-assessment-draft";
 import { startAssessmentAttempt } from "@/modules/assessment/server/start-assessment-attempt";
 import { submitAssessmentAttempt } from "@/modules/assessment/server/submit-assessment-attempt";
 import { asOptionalString, asString } from "./course-action-input";
-
-async function loadQuizDeliveryContext(args: {
-  quizId: string;
-  courseId: string;
-  user: {
-    id: string;
-    roles: string[];
-    permissions?: string[] | null;
-  };
-}) {
-  const quiz = await prisma.quiz.findUnique({
-    where: { id: args.quizId },
-    include: {
-      courseItem: {
-        include: {
-          course: {
-            select: {
-              id: true,
-              ownerId: true,
-              status: true,
-              hasUnpublishedChanges: true,
-              publishedSnapshotJson: true,
-              navigationMode: true,
-              quizGateMode: true,
-            },
-          },
-        },
-      },
-      questions: {
-        where: { archivedAt: null },
-        orderBy: { orderIndex: "asc" },
-      },
-      attempts: {
-        where: { userId: args.user.id },
-        orderBy: { attemptNumber: "asc" },
-      },
-    },
-  });
-
-  if (!quiz || quiz.courseItem.courseId !== args.courseId) {
-    throw new Error("Тест не найден");
-  }
-
-  const shouldUsePublishedSnapshot =
-    quiz.courseItem.course.status === "PUBLISHED" &&
-    quiz.courseItem.course.hasUnpublishedChanges &&
-    !canManageCourse(args.user.roles, args.user.id, {
-      ownerId: quiz.courseItem.course.ownerId,
-    });
-  const publishedSnapshot = shouldUsePublishedSnapshot
-    ? parsePublishedCourseSnapshot(quiz.courseItem.course.publishedSnapshotJson)
-    : null;
-  const snapshotItem = publishedSnapshot?.items.find((item) => item.quiz?.id === args.quizId) ?? null;
-
-  return {
-    quiz,
-    questions: snapshotItem?.quiz?.questions ?? quiz.questions,
-    title: snapshotItem?.title ?? quiz.courseItem.title,
-    description: snapshotItem?.quiz?.description ?? quiz.description,
-    usingPublishedSnapshot: Boolean(snapshotItem),
-  };
-}
-
-async function ensureQuizUnlockedByRequiredLessons(args: {
-  courseId: string;
-  quizId: string;
-  quizCourseItemId: string;
-  user: {
-    id: string;
-    roles: string[];
-    permissions?: string[] | null;
-  };
-  course: {
-    id: string;
-    ownerId: string | null;
-    status: string;
-    hasUnpublishedChanges: boolean;
-    publishedSnapshotJson: string | null;
-    navigationMode: string;
-    quizGateMode: string;
-  };
-}) {
-  if (!canTrackLearningProgress(args.user.roles, args.user.permissions)) return;
-
-  const publishedSnapshot =
-    isPublishedSnapshotActive(args.course) &&
-    !canManageCourse(args.user.roles, args.user.id, {
-      ownerId: args.course.ownerId,
-    })
-      ? parsePublishedCourseSnapshot(args.course.publishedSnapshotJson)
-      : null;
-
-  const courseItems = await prisma.courseItem.findMany({
-    where: publishedSnapshot
-      ? {
-          id: {
-            in: publishedSnapshot.items.map((item) => item.id),
-          },
-        }
-      : { courseId: args.courseId, archivedAt: null },
-    orderBy: { orderIndex: "asc" },
-    select: {
-      id: true,
-      moduleId: true,
-      orderIndex: true,
-      type: true,
-      title: true,
-      content: true,
-      fileUrl: true,
-      totalSlides: true,
-      presentationViewMode: true,
-      isRequired: true,
-      module: {
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          orderIndex: true,
-        },
-      },
-      views: {
-        where: { userId: args.user.id },
-        select: {
-          progressPercent: true,
-          viewedAt: true,
-        },
-        take: 1,
-      },
-      quiz: {
-        select: {
-          id: true,
-	          description: true,
-	          maxAttempts: true,
-	          minCorrectAnswers: true,
-	          timeLimitMinutes: true,
-	          shuffleQuestions: true,
-	          shuffleAnswers: true,
-	          lockMaterialsOnStart: true,
-          questions: {
-            where: { archivedAt: null },
-            select: {
-              id: true,
-            },
-          },
-          attempts: {
-            where: { userId: args.user.id },
-            orderBy: { attemptNumber: "asc" },
-            select: {
-              id: true,
-              outcome: true,
-              correctAnswers: true,
-              attemptNumber: true,
-              score: true,
-              maxScore: true,
-              completedAt: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  const displayCourseItems = publishedSnapshot
-    ? publishedSnapshot.items.map((item) => {
-        const liveItem = courseItems.find((candidate) => candidate.id === item.id);
-        return {
-          id: item.id,
-          moduleId: item.moduleId,
-          orderIndex: item.orderIndex,
-          type: item.type,
-          title: item.title,
-          content: item.content,
-          fileUrl: item.fileUrl,
-          totalSlides: item.totalSlides,
-          presentationViewMode: normalizePresentationViewMode(item.presentationViewMode),
-          isRequired: item.isRequired,
-          module:
-            item.moduleId ? publishedSnapshot.modules.find((module) => module.id === item.moduleId) ?? null : null,
-          views: liveItem?.views ?? [],
-          quiz: item.quiz
-            ? {
-                id: item.quiz.id,
-                description: item.quiz.description,
-                maxAttempts: item.quiz.maxAttempts,
-                minCorrectAnswers: item.quiz.minCorrectAnswers,
-                lockMaterialsOnStart: item.quiz.lockMaterialsOnStart,
-                questions: item.quiz.questions.map((question) => ({ id: question.id })),
-                attempts: liveItem?.quiz?.attempts ?? [],
-              }
-            : null,
-        };
-      })
-    : courseItems.map((item) => ({
-        ...item,
-        quiz: item.quiz ? { ...item.quiz } : null,
-      }));
-
-  const navigationMode =
-    (publishedSnapshot?.navigationMode ?? args.course.navigationMode) === "SEQUENTIAL" ? "SEQUENTIAL" : "FREE";
-  const quizGateMode =
-    (publishedSnapshot?.quizGateMode ?? args.course.quizGateMode) === "PASSED" ? "PASSED" : "RESOLVED";
-  const outline = buildCourseOutline(displayCourseItems, navigationMode, {
-    lockQuizzesUntilPreviousRequiredComplete: true,
-    quizGateMode,
-  });
-  const quizEntry = outline.find((item) => item.id === args.quizCourseItemId) ?? null;
-
-  if (quizEntry?.isLocked) {
-    throw new Error("Тест станет доступен после завершения предыдущего обязательного материала");
-  }
-}
 
 function readAnswersFromFormData(
   questions: { id: string; type: string; config: string }[],
@@ -285,28 +75,6 @@ function getQuizAttemptDeliveryQuestions<T extends {
   return snapshot.length > 0 ? snapshot : fallbackQuestions;
 }
 
-function isQuizAttemptTimeLimitExpired(
-  draftAttempt: { createdAt: Date } | null,
-  timeLimitMinutes: number | null
-) {
-  if (!draftAttempt || !timeLimitMinutes) return false;
-  const expiresAt = draftAttempt.createdAt.getTime() + timeLimitMinutes * 60 * 1000;
-  return Date.now() > expiresAt;
-}
-
-function getQuizRetryAvailableAt(
-  completedAttempts: Array<{ outcome: string; completedAt: Date }>,
-  retryDelayMinutes: number | null
-) {
-  if (!retryDelayMinutes || retryDelayMinutes < 1) return null;
-  const latestFailedAttempt =
-    completedAttempts
-      .filter((attempt) => attempt.outcome === "FAILED")
-      .sort((left, right) => right.completedAt.getTime() - left.completedAt.getTime())[0] ?? null;
-  if (!latestFailedAttempt) return null;
-  return new Date(latestFailedAttempt.completedAt.getTime() + retryDelayMinutes * 60 * 1000);
-}
-
 function normalizeSecurityEventsJson(formData: FormData) {
   const raw = asString(formData, "securityEventsJson");
   if (!raw) return null;
@@ -351,67 +119,6 @@ function parseQuestionConfig<T>(raw: string, fallback: T): T {
   }
 }
 
-function normalizeAllowedFileExtensions(extensions: string[] | null | undefined) {
-  return [...new Set((extensions ?? [])
-    .map((value) => value.trim().replace(/^\./, "").toLowerCase())
-    .filter(Boolean))];
-}
-
-function extractFileExtension(value: string) {
-  const normalized = value.split("?")[0] ?? value;
-  const dotIndex = normalized.lastIndexOf(".");
-  return dotIndex >= 0 ? normalized.slice(dotIndex + 1).toLowerCase() : "";
-}
-
-function normalizeFileAnswer(
-  rawValue: string,
-  config: { allowedExtensions?: string[] | null; maxFileSizeMb?: number | null }
-) {
-  const trimmed = rawValue.trim();
-  if (!trimmed) return "";
-
-  let parsed: { url?: unknown; fileName?: unknown; size?: unknown };
-  try {
-    parsed = JSON.parse(trimmed) as { url?: unknown; fileName?: unknown; size?: unknown };
-  } catch {
-    throw new Error("Некорректный ответ с файлом");
-  }
-
-  const url = typeof parsed.url === "string" ? parsed.url.trim() : "";
-  const fileName = typeof parsed.fileName === "string" ? parsed.fileName.trim() : "";
-  const size = typeof parsed.size === "number" ? parsed.size : Number(parsed.size ?? NaN);
-
-  if (!url.startsWith("/uploads/quiz-attachments/")) {
-    throw new Error("Файл должен быть загружен через форму теста");
-  }
-  if (!fileName) {
-    throw new Error("Не указано имя загруженного файла");
-  }
-  if (!Number.isFinite(size) || size < 1) {
-    throw new Error("Не удалось определить размер загруженного файла");
-  }
-
-  const allowedExtensions = normalizeAllowedFileExtensions(config.allowedExtensions);
-  const ext = extractFileExtension(fileName) || extractFileExtension(url);
-  if (allowedExtensions.length > 0 && !allowedExtensions.includes(ext)) {
-    throw new Error("Тип загруженного файла не соответствует настройкам вопроса");
-  }
-
-  const maxFileSizeMb =
-    Number.isFinite(config.maxFileSizeMb) && Number(config.maxFileSizeMb) >= 1
-      ? Math.min(Number(config.maxFileSizeMb), 200)
-      : 10;
-  if (size > maxFileSizeMb * 1024 * 1024) {
-    throw new Error("Размер загруженного файла превышает ограничение вопроса");
-  }
-
-  return JSON.stringify({
-    url,
-    fileName,
-    size,
-  });
-}
-
 function parseManualReviewAccepted(formData: FormData, questionId: string) {
   return asString(formData, `reviewAccepted_${questionId}`) !== "rejected";
 }
@@ -445,7 +152,7 @@ export async function saveQuizAttemptProgress(
     session.user.permissions
   );
   if (!allowed) throw new Error("Нет доступа к тесту");
-  await ensureQuizUnlockedByRequiredLessons({
+  await assertQuizUnlockedByRequiredLessons({
     courseId,
     quizId,
     quizCourseItemId: quiz.courseItemId,
@@ -459,8 +166,16 @@ export async function saveQuizAttemptProgress(
   const hasPendingReview = completedAttempts.some((attempt) => attempt.outcome === "PENDING_REVIEW");
   if (alreadyPassed) return { saved: false };
   if (hasPendingReview) return { saved: false };
-  if (isQuizAttemptTimeLimitExpired(draftAttempt, quiz.timeLimitMinutes)) return { saved: false };
-  const retryAvailableAt = getQuizRetryAvailableAt(completedAttempts, quiz.retryDelayMinutes);
+  if (
+    isAssessmentTimeLimitExpired({
+      attempt: draftAttempt,
+      timeLimitMinutes: quiz.timeLimitMinutes,
+      now: new Date(),
+    })
+  ) {
+    return { saved: false };
+  }
+  const retryAvailableAt = getAssessmentRetryAvailableAt(completedAttempts, quiz.retryDelayMinutes);
   if (!draftAttempt && retryAvailableAt && retryAvailableAt.getTime() > Date.now()) return { saved: false };
 
   if (!draftAttempt && completedAttempts.length >= quiz.maxAttempts) {
@@ -503,7 +218,7 @@ export async function startQuizAttempt(quizId: string, courseId: string) {
     session.user.permissions,
   );
   if (!allowed) throw new Error("Нет доступа к тесту");
-  await ensureQuizUnlockedByRequiredLessons({
+  await assertQuizUnlockedByRequiredLessons({
     courseId,
     quizId,
     quizCourseItemId: quiz.courseItemId,
@@ -550,7 +265,7 @@ export async function submitQuizAttempt(
     session.user.permissions
   );
   if (!allowed) throw new Error("Нет доступа к тесту");
-  await ensureQuizUnlockedByRequiredLessons({
+  await assertQuizUnlockedByRequiredLessons({
     courseId,
     quizId,
     quizCourseItemId: quiz.courseItemId,
@@ -572,7 +287,7 @@ export async function submitQuizAttempt(
   if (!draftAttempt && completedAttempts.length >= quiz.maxAttempts) {
     throw new Error("Попытки закончились");
   }
-  const retryAvailableAt = getQuizRetryAvailableAt(completedAttempts, quiz.retryDelayMinutes);
+  const retryAvailableAt = getAssessmentRetryAvailableAt(completedAttempts, quiz.retryDelayMinutes);
   if (!draftAttempt && retryAvailableAt && retryAvailableAt.getTime() > Date.now()) {
     throw new Error(`Следующая попытка будет доступна ${retryAvailableAt.toLocaleString("ru-RU")}.`);
   }
@@ -592,6 +307,19 @@ export async function submitQuizAttempt(
     securityEventsJson,
   });
 
+  // Точка выдачи №2: сдача теста завершила курс. PENDING_REVIEW — ещё не завершение.
+  if (result.outcome === "PASSED" || result.outcome === "FAILED") {
+    try {
+      await issueCertificateIfCompleted({
+        userId: session.user.id,
+        courseId,
+        issuedVia: "ASSESSMENT_SUBMIT",
+      });
+    } catch (error) {
+      console.error("Не удалось выдать сертификат после сдачи теста:", error);
+    }
+  }
+
   revalidatePath("/");
   revalidatePath(`/courses/${courseId}`);
   revalidatePath(`/courses/${courseId}/manage`);
@@ -606,48 +334,7 @@ export async function reviewQuizAttempt(courseId: string, attemptId: string, for
     reviewStatus: reviewStatus === "all" ? undefined : reviewStatus,
     attempt: attemptId,
   } satisfies Record<string, string | undefined>;
-  const attempt = await prisma.quizAttempt.findUnique({
-    where: { id: attemptId },
-    select: {
-      id: true,
-      quizId: true,
-      userId: true,
-      attemptNumber: true,
-      answers: true,
-      questionSnapshot: true,
-      outcome: true,
-      manualReviewJson: true,
-      reviewComment: true,
-      reviewedAt: true,
-      quiz: {
-        select: {
-          id: true,
-          minCorrectAnswers: true,
-          maxAttempts: true,
-          courseItem: {
-            select: {
-              title: true,
-              courseId: true,
-              course: {
-                select: {
-                  title: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      user: {
-        select: {
-          id: true,
-          name: true,
-          login: true,
-          email: true,
-          firstName: true,
-        },
-      },
-    },
-  });
+  const attempt = await loadQuizAttemptForReview(attemptId);
 
   if (!attempt || attempt.quiz.courseItem.courseId !== courseId) {
     redirect(manageCourseUrl(courseId, { ...returnParams, reviewError: "Работа не найдена." }));
@@ -731,6 +418,20 @@ export async function reviewQuizAttempt(courseId: string, attemptId: string, for
       reviewData: nextReviewData,
     },
   });
+
+  // Точка выдачи №3: курс завершается в момент действия ПРЕПОДАВАТЕЛЯ. Без неё
+  // ученики с вопросами на ручной проверке остались бы без сертификата навсегда.
+  if (finalized.outcome === "PASSED" || finalized.outcome === "FAILED") {
+    try {
+      await issueCertificateIfCompleted({
+        userId: attempt.user.id,
+        courseId,
+        issuedVia: "ASSESSMENT_REVIEW",
+      });
+    } catch (error) {
+      console.error("Не удалось выдать сертификат после ручной проверки:", error);
+    }
+  }
 
   if (attempt.user.email) {
     await enqueueQuizReviewedEmails(

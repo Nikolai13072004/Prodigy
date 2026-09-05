@@ -299,7 +299,7 @@ export default async function QuizTakePage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <Link href={`/courses/${courseId}`} className="text-sm text-zinc-600 underline">
+      <Link href={`/courses/${courseId}`} className="text-sm text-[var(--ink-muted)] underline">
         ← {quiz.courseItem.course.title}
       </Link>
 
@@ -307,8 +307,8 @@ export default async function QuizTakePage({ params }: Props) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold">{displayTitle}</h1>
-            {displayDescription && <p className="mt-2 text-sm text-zinc-700">{displayDescription}</p>}
-            <p className="mt-2 text-sm text-zinc-700">
+            {displayDescription && <p className="mt-2 text-sm text-[var(--ink)]">{displayDescription}</p>}
+            <p className="mt-2 text-sm text-[var(--ink)]">
               Попыток использовано: {progress.attemptsUsed}/{quiz.maxAttempts}. Минимум правильных
               ответов для сдачи: {requiredCorrectAnswers}.
               {deliverySettings.timeLimitMinutes ? ` Лимит времени: ${deliverySettings.timeLimitMinutes} мин.` : ""}
@@ -317,24 +317,24 @@ export default async function QuizTakePage({ params }: Props) {
                 : ""}
             </p>
             {deliverySettings.lockMaterialsOnStart && draftAttempt ? (
-              <p className="mt-2 text-sm text-amber-700">
+              <p className="mt-2 text-sm text-[var(--warning)]">
                 Пока попытка не завершена, материалы курса будут недоступны.
               </p>
             ) : null}
             {isRetryDelayed && retryAvailableAt ? (
-              <p className="mt-2 text-sm text-amber-700">
+              <p className="mt-2 text-sm text-[var(--warning)]">
                 Следующая попытка будет доступна {retryAvailableAt.toLocaleString("ru-RU")}.
               </p>
             ) : null}
           </div>
-          <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
+          <span className="rounded-full bg-[var(--surface)] px-3 py-1 text-xs font-medium text-[var(--ink)]">
             {progress.status.label}
           </span>
         </div>
       </div>
 
       {latestReviewedAttempt ? (
-        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
+        <div className="mt-6 rounded-xl border border-[var(--success)] bg-[var(--success-soft)] p-5 text-sm text-[var(--success)]">
           <p className="font-medium">Последняя работа уже проверена преподавателем.</p>
           <p className="mt-1">
             {latestReviewedAttempt.reviewedAt
@@ -342,11 +342,11 @@ export default async function QuizTakePage({ params }: Props) {
               : "Результат проверки сохранен."}
           </p>
           {latestReviewedAttempt.reviewComment ? (
-            <p className="mt-2 whitespace-pre-wrap text-zinc-800">{latestReviewedAttempt.reviewComment}</p>
+            <p className="mt-2 whitespace-pre-wrap text-[var(--ink)]">{latestReviewedAttempt.reviewComment}</p>
           ) : null}
           <Link
             href={`/courses/${courseId}/quiz/${quizId}/result?attempt=${latestReviewedAttempt.id}`}
-            className="mt-4 inline-flex rounded-md bg-emerald-700 px-3 py-2 font-medium text-white hover:bg-emerald-800"
+            className="mt-4 inline-flex rounded-md bg-[var(--accent)] px-3 py-2 font-medium text-white hover:bg-[var(--accent-strong)]"
           >
             Открыть проверенную работу
           </Link>
@@ -354,12 +354,12 @@ export default async function QuizTakePage({ params }: Props) {
       ) : null}
 
       {deliveryQuestions.length === 0 ? (
-        <p className="mt-6 text-sm text-zinc-700">
+        <p className="mt-6 text-sm text-[var(--ink)]">
           В этом тесте пока нет вопросов. Откройте управление курсом и добавьте их.
         </p>
       ) : !canAttempt ? (
         <div className="mt-6 rounded-xl border border-black bg-white p-5">
-          <p className="text-sm text-zinc-700">
+          <p className="text-sm text-[var(--ink)]">
             {isRetryDelayed && retryAvailableAt
               ? `Следующая попытка будет доступна ${retryAvailableAt.toLocaleString("ru-RU")}.`
               : progress.status.code === "PENDING_REVIEW"
@@ -374,7 +374,7 @@ export default async function QuizTakePage({ params }: Props) {
           {resultAttempt && (
             <Link
               href={`/courses/${courseId}/quiz/${quizId}/result?attempt=${resultAttempt.id}`}
-              className="mt-4 inline-flex rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
+              className="mt-4 inline-flex rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)]"
             >
               {progress.status.code === "PENDING_REVIEW"
                 ? "Открыть отправленную работу"
@@ -384,10 +384,10 @@ export default async function QuizTakePage({ params }: Props) {
         </div>
       ) : !draftAttempt ? (
         <form action={startQuizAttempt.bind(null, quizId, courseId)} className="mt-6 rounded-xl border border-black bg-white p-5">
-          <p className="text-sm text-zinc-700">
+          <p className="text-sm text-[var(--ink)]">
             Попытка начнётся после нажатия кнопки. После старта включится таймер и могут заблокироваться материалы курса.
           </p>
-          <button type="submit" className="mt-4 rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800">
+          <button type="submit" className="mt-4 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-strong)]">
             Начать попытку
           </button>
         </form>

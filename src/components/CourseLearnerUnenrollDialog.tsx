@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { Button, buttonStyles } from "@/components/ui";
 
 type Props = {
   action: (formData: FormData) => Promise<void>;
@@ -9,6 +10,7 @@ type Props = {
   buttonLabel?: string;
   buttonClassName?: string;
   hiddenFields?: Record<string, string | undefined>;
+  hasCertificate?: boolean;
 };
 
 export function CourseLearnerUnenrollDialog({
@@ -18,6 +20,7 @@ export function CourseLearnerUnenrollDialog({
   buttonLabel = "Отчислить",
   buttonClassName,
   hiddenFields,
+  hasCertificate = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [progressDisposition, setProgressDisposition] = useState<"keep" | "delete">("keep");
@@ -32,10 +35,7 @@ export function CourseLearnerUnenrollDialog({
           setProgressDisposition("keep");
           setOpen(true);
         }}
-        className={
-          buttonClassName ??
-          "rounded-xl border border-rose-300 bg-white px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-50"
-        }
+        className={buttonClassName ?? buttonStyles("danger")}
       >
         {buttonLabel}
       </button>
@@ -46,14 +46,14 @@ export function CourseLearnerUnenrollDialog({
             role="dialog"
             aria-modal="true"
             aria-labelledby={dialogTitleId}
-            className="w-full max-w-lg rounded-2xl bg-white shadow-xl"
+            className="w-full max-w-lg rounded-2xl bg-[var(--surface-raised)] shadow-xl"
           >
-            <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
               <div>
-                <h3 id={dialogTitleId} className="text-lg font-semibold text-zinc-950">
+                <h3 id={dialogTitleId} className="text-lg font-semibold text-[var(--ink)]">
                   Отчислить ученика с курса
                 </h3>
-                <p className="mt-1 text-sm text-zinc-500">
+                <p className="mt-1 text-sm text-[var(--ink-muted)]">
                   {learnerName} · {courseTitle}
                 </p>
               </div>
@@ -61,7 +61,7 @@ export function CourseLearnerUnenrollDialog({
                 type="button"
                 aria-label="Закрыть"
                 onClick={() => setOpen(false)}
-                className="text-xl leading-none text-zinc-500 hover:text-zinc-700"
+                className="text-xl leading-none text-[var(--ink-muted)] hover:text-[var(--ink)]"
               >
                 ×
               </button>
@@ -73,37 +73,37 @@ export function CourseLearnerUnenrollDialog({
               )}
 
               <fieldset>
-                <legend className="text-sm font-medium text-zinc-900">Что делать с прогрессом по курсу?</legend>
+                <legend className="text-sm font-medium text-[var(--ink)]">Что делать с прогрессом по курсу?</legend>
                 <div className="mt-3 space-y-2">
-                  <label className="flex items-start gap-3 rounded-xl border border-zinc-200 px-4 py-3">
+                  <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] px-4 py-3">
                     <input
                       type="radio"
                       name={dispositionFieldName}
                       value="keep"
                       checked={progressDisposition === "keep"}
                       onChange={() => setProgressDisposition("keep")}
-                      className="mt-1 h-4 w-4 border-zinc-300 text-emerald-600 focus:ring-emerald-500"
+                      className="mt-1 h-4 w-4 border-[var(--line)] text-[var(--accent)] focus:ring-[var(--accent)]"
                     />
                     <span>
-                      <span className="block text-sm font-medium text-zinc-900">Сохранить прогресс по курсу</span>
-                      <span className="mt-1 block text-xs text-zinc-500">
+                      <span className="block text-sm font-medium text-[var(--ink)]">Сохранить прогресс по курсу</span>
+                      <span className="mt-1 block text-xs text-[var(--ink-muted)]">
                         Материалы, попытки тестов и отзыв останутся в системе для истории и аудита.
                       </span>
                     </span>
                   </label>
 
-                  <label className="flex items-start gap-3 rounded-xl border border-zinc-200 px-4 py-3">
+                  <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] px-4 py-3">
                     <input
                       type="radio"
                       name={dispositionFieldName}
                       value="delete"
                       checked={progressDisposition === "delete"}
                       onChange={() => setProgressDisposition("delete")}
-                      className="mt-1 h-4 w-4 border-zinc-300 text-rose-600 focus:ring-rose-500"
+                      className="mt-1 h-4 w-4 border-[var(--line)] text-[var(--danger)] focus:ring-[var(--danger)]"
                     />
                     <span>
-                      <span className="block text-sm font-medium text-zinc-900">Удалить прогресс по курсу</span>
-                      <span className="mt-1 block text-xs text-zinc-500">
+                      <span className="block text-sm font-medium text-[var(--ink)]">Удалить прогресс по курсу</span>
+                      <span className="mt-1 block text-xs text-[var(--ink-muted)]">
                         Будут очищены просмотры материалов, попытки тестов, лучший результат и отзыв по этому курсу.
                       </span>
                     </span>
@@ -113,24 +113,38 @@ export function CourseLearnerUnenrollDialog({
 
               <input type="hidden" name="progressDisposition" value={progressDisposition} />
 
-              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              {hasCertificate ? (
+                <label className="mt-3 flex items-start gap-3 rounded-xl border border-[var(--line)] px-4 py-3">
+                  <input
+                    type="checkbox"
+                    name="revokeCertificate"
+                    value="1"
+                    className="mt-1 h-4 w-4 border-[var(--line)] text-[var(--danger)] focus:ring-[var(--danger)]"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-[var(--ink)]">Аннулировать выданный сертификат</span>
+                    <span className="mt-1 block text-xs text-[var(--ink-muted)]">
+                      По умолчанию сертификат сохраняется: прохождение курса остаётся фактом. Отметьте, чтобы
+                      аннулировать его при отчислении.
+                    </span>
+                  </span>
+                </label>
+              ) : null}
+
+              <div className="mt-4 rounded-xl border border-[var(--danger-soft)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
                 После подтверждения ученик потеряет доступ к контенту курса и может лишиться сертификата.
                 {progressDisposition === "delete"
                   ? " Прогресс по этому курсу будет удален без возможности восстановления."
                   : " Прогресс по этому курсу останется в истории и может пригодиться при повторном назначении."}
               </div>
 
-              <div className="mt-6 flex justify-end gap-2 border-t border-zinc-200 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
-                >
+              <div className="mt-6 flex justify-end gap-2 border-t border-[var(--line)] pt-4">
+                <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                   Отмена
-                </button>
+                </Button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+                  className="rounded-xl bg-[var(--danger)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
                 >
                   Подтвердить отчисление
                 </button>
